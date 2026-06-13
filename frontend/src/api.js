@@ -1,1 +1,28 @@
+import axios from 'axios';
 
+const API = axios.create({
+  baseURL: import.meta.env.VITE_BACKEND_URL || 'https://talon-clash.onrender.com',
+  timeout: 15000
+});
+
+export const login = (telegramUser) => API.post('/api/players/login', { telegram_user: telegramUser });
+export const getPlayer = (id) => API.get(`/api/players/${id}`);
+export const getLeaderboard = () => API.get('/api/players/0/leaderboard');
+export const fight = (telegramId, mode) => API.post('/api/battles/fight', { telegram_id: telegramId, mode });
+export const getBattleHistory = (id) => API.get(`/api/battles/history/${id}`);
+export const getStoreItems = () => API.get('/api/store/items');
+export const buyItem = (telegramId, itemId) => API.post('/api/store/buy', { telegram_id: telegramId, item_id: itemId });
+export const openChest = (telegramId, chestType) => API.post('/api/store/chest', { telegram_id: telegramId, chest_type: chestType });
+export const getInventory = (id) => API.get(`/api/inventory/${id}`);
+export const equipItem = (telegramId, itemId) => API.post('/api/inventory/equip', { telegram_id: telegramId, item_id: itemId });
+export const burnItem = (telegramId, itemId) => API.post('/api/inventory/burn', { telegram_id: telegramId, item_id: itemId });
+export const forgeItem = (telegramId, itemId) => API.post('/api/inventory/forge', { telegram_id: telegramId, item_id: itemId });
+export const getQuests = (id) => API.get(`/api/quests/${id}`);
+export const claimQuest = (telegramId, questId) => API.post('/api/quests/claim', { telegram_id: telegramId, quest_id: questId });
+export const getClans = (sort) => API.get(`/api/clans?sort=${sort || 'power'}`);
+export const getMyClan = (id) => API.get(`/api/clans/my/${id}`);
+export const createClan = (telegramId, name, emblem, joinType) => API.post('/api/clans/create', { telegram_id: telegramId, name, emblem, join_type: joinType });
+export const joinClan = (telegramId, clanId) => API.post('/api/clans/join', { telegram_id: telegramId, clan_id: clanId });
+export const leaveClan = (telegramId) => API.post('/api/clans/leave', { telegram_id: telegramId });
+export const getSkills = (id) => API.get(`/api/skills/${id}`);
+export const upgradeSkill = (telegramId, skillType) => API.post('/api/skills/upgrade', { telegram_id: telegramId, skill_type: skillType });
