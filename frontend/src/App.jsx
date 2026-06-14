@@ -3,6 +3,7 @@ import { login } from './api';
 import Lobby from './components/Lobby';
 import Market from './components/Market';
 import Inventory from './components/Inventory';
+import { EAGLE_ICON_URL } from './birdImages';
 import Clans from './components/Clans';
 import SkillTree from './components/SkillTree';
 import Earn from './components/Earn';
@@ -55,7 +56,7 @@ export default function App() {
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center h-screen bg-amber-950">
-      <div className="text-6xl mb-4 animate-bounce">🦅</div>
+      <img src={EAGLE_ICON_URL} alt="Talon Clash" className="w-20 h-20 mb-4 animate-bounce object-contain" />
       <div className="text-amber-200 text-xl font-bold">Loading Talon Clash...</div>
       <div className="mt-4 w-48 h-2 bg-amber-900 rounded-full overflow-hidden">
         <div className="h-full bg-amber-400 animate-pulse rounded-full w-3/4"></div>
