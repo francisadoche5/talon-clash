@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getClans, getMyClan, createClan, joinClan, leaveClan, getPublicConfig } from '../api';
+import { getClans, getMyClan, createClan, joinClan, leaveClan, getPublicConfig, createInvoice } from '../api';
 
 export default function Clans({ player, onRefresh }) {
   const [tab, setTab] = useState('browse');
@@ -44,15 +44,32 @@ export default function Clans({ player, onRefresh }) {
   async function handleCreate() {
     if (!clanName.trim()) return;
     try {
-      // If stars, trigger Telegram Stars payment
+      // If stars, trigger Telegram Stars invoice
       if (clanCurrency === 'stars') {
-        if (window.Telegram?.WebApp?.openInvoice) {
-          window.Telegram.WebApp.openInvoice(`create_clan_${player.telegram_id}`);
-          return;
-        } else {
-          alert(`Pay ${clanCost.stars} ⭐ via Telegram Stars to create a clan.`);
-          return;
+        try {
+          const res = await createInvoice(player.telegram_id, 'clan_create');
+          const link = res.data.link;
+          if (window.Telegram?.WebApp?.openInvoice) {
+            window.Telegram.WebApp.openInvoice(link, async (status) => {
+              if (status === 'paid') {
+                // Now create the clan after payment
+                await createClan(player.telegram_id, clanName, '🦅', 'open');
+                setShowCreate(false);
+                setClanName('');
+                await loadData();
+                onRefresh();
+                setMessage({ type: 'success', text: 'Clan created!' });
+                setTimeout(() => setMessage(null), 3000);
+              }
+            });
+          } else {
+            window.open(link, '_blank');
+          }
+        } catch {
+          setMessage({ type: 'error', text: 'Could not create invoice. Try again.' });
+          setTimeout(() => setMessage(null), 3000);
         }
+        return;
       }
       await createClan(player.telegram_id, clanName, '🦅', 'open');
       setMessage({ type: 'success', text: 'Clan created!' });
