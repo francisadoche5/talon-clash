@@ -1,8 +1,19 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { getBirdUrl } from '../birdImages';
 
-const EVOLUTION_IMAGES = {
-  1: '🐣', 2: '🐦', 3: '🦅', 4: '⚔️', 5: '🔥', 6: '👑', 7: '💀'
-};
+// BirdImg — renders a bird image with optional horizontal flip for opponents
+function BirdImg({ tier, size = 'md', flip = false, className = '', style = {} }) {
+  const sizeMap = { sm: 'w-12 h-12', md: 'w-16 h-16', lg: 'w-20 h-20', xl: 'w-24 h-24' };
+  return (
+    <img
+      src={getBirdUrl(tier)}
+      alt={`Bird tier ${tier}`}
+      className={`${sizeMap[size]} object-contain select-none ${className}`}
+      style={{ transform: flip ? 'scaleX(-1)' : undefined, ...style }}
+      draggable={false}
+    />
+  );
+}
 
 const ARENA_STYLES = `
   @keyframes slideInLeft {
@@ -147,8 +158,8 @@ export default function BattleArena({ player, result, onClose }) {
   const totalRounds = log.length > 0 ? log[log.length - 1].round : 0;
   const currentRound = stepIdx < log.length ? log[stepIdx]?.round : totalRounds;
 
-  const oppBird    = EVOLUTION_IMAGES[result.opponent?.evolution_tier] || '🐦';
-  const playerBird = EVOLUTION_IMAGES[player?.evolution_tier] || '🐣';
+  const playerTier = player?.evolution_tier || 1;
+  const oppTier    = result.opponent?.evolution_tier || 1;
 
   const isEpic = result.mode === 'epic';
 
@@ -278,8 +289,8 @@ export default function BattleArena({ player, result, onClose }) {
 
             {/* Player bird entrance */}
             <div className="flex-1 flex flex-col items-center bird-slide-left">
-              <div className="text-7xl mb-3 drop-shadow-2xl" style={{ filter: 'drop-shadow(0 0 16px rgba(251,191,36,0.5))' }}>
-                {playerBird}
+              <div className="mb-3 drop-shadow-2xl">
+                <BirdImg tier={playerTier} size="xl" style={{ filter: 'drop-shadow(0 0 16px rgba(251,191,36,0.5))' }} />
               </div>
               <div className="text-white font-bold text-sm text-center truncate max-w-[100px]">
                 {player?.display_name || 'You'}
@@ -301,9 +312,8 @@ export default function BattleArena({ player, result, onClose }) {
 
             {/* Opponent bird entrance */}
             <div className="flex-1 flex flex-col items-center bird-slide-right">
-              <div className="text-7xl mb-3 drop-shadow-2xl"
-                style={{ transform: 'scaleX(-1)', filter: 'drop-shadow(0 0 16px rgba(239,68,68,0.5))' }}>
-                {oppBird}
+              <div className="mb-3 drop-shadow-2xl">
+                <BirdImg tier={oppTier} size="xl" flip style={{ filter: 'drop-shadow(0 0 16px rgba(239,68,68,0.5))' }} />
               </div>
               <div className="text-white font-bold text-sm text-center truncate max-w-[100px]">
                 {result.opponent?.display_name || 'Opponent'}
@@ -386,12 +396,8 @@ export default function BattleArena({ player, result, onClose }) {
               {/* Player bird */}
               <div className="relative flex flex-col items-center">
                 <div
-                  className={`text-6xl transition-none ${playerLunge ? 'bird-lunge-right' : ''} ${playerShake ? 'bird-shake' : ''}`}
-                  style={{
-                    filter: `drop-shadow(0 0 12px ${accentColor}88)`,
-                    '--flip': 1,
-                  }}>
-                  {playerBird}
+                  className={`transition-none ${playerLunge ? 'bird-lunge-right' : ''} ${playerShake ? 'bird-shake' : ''}`}>
+                  <BirdImg tier={playerTier} size="lg" style={{ filter: `drop-shadow(0 0 12px ${accentColor}88)` }} />
                 </div>
                 {damages.filter(d => d.target === 'player').map(d => (
                   <FloatingDamage key={d.id} damage={d.damage} isCrit={d.isCrit} isBlocked={d.isBlocked} />
@@ -412,13 +418,8 @@ export default function BattleArena({ player, result, onClose }) {
               {/* Opponent bird */}
               <div className="relative flex flex-col items-center">
                 <div
-                  className={`text-6xl transition-none ${oppLunge ? 'bird-lunge-left' : ''} ${oppShake ? 'bird-shake' : ''}`}
-                  style={{
-                    transform: 'scaleX(-1)',
-                    filter: 'drop-shadow(0 0 12px #ef444488)',
-                    '--flip': -1,
-                  }}>
-                  {oppBird}
+                  className={`transition-none ${oppLunge ? 'bird-lunge-left' : ''} ${oppShake ? 'bird-shake' : ''}`}>
+                  <BirdImg tier={oppTier} size="lg" flip style={{ filter: 'drop-shadow(0 0 12px #ef444488)' }} />
                 </div>
                 {damages.filter(d => d.target === 'opp').map(d => (
                   <FloatingDamage key={d.id} damage={d.damage} isCrit={d.isCrit} isBlocked={d.isBlocked} />
@@ -435,13 +436,17 @@ export default function BattleArena({ player, result, onClose }) {
 
           {/* Winner bird */}
           <div
-            className={result.playerWon ? 'victory-bounce text-7xl' : 'defeat-slump text-7xl'}
+            className={result.playerWon ? 'victory-bounce' : 'defeat-slump'}
             style={{
               filter: result.playerWon
                 ? `drop-shadow(0 0 20px ${accentColor})`
                 : 'drop-shadow(0 0 12px #ef444488) grayscale(0.4)',
             }}>
-            {result.playerWon ? playerBird : oppBird}
+            <BirdImg
+              tier={result.playerWon ? playerTier : oppTier}
+              size="xl"
+              flip={!result.playerWon}
+            />
           </div>
 
           {/* Outcome label */}
