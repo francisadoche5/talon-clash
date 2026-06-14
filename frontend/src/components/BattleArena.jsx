@@ -11,7 +11,7 @@ if (typeof document !== 'undefined' && !document.getElementById('bird-anim-css')
 
 // BirdImg — renders a bird image with optional flip + idle float animation
 function BirdImg({ tier, size = 'md', flip = false, animate = false, className = '', style = {} }) {
-  const sizeMap = { sm: 'w-12 h-12', md: 'w-16 h-16', lg: 'w-20 h-20', xl: 'w-24 h-24' };
+  const sizeMap = { sm: 'w-12 h-12', md: 'w-16 h-16', lg: 'w-24 h-24', xl: 'w-32 h-32', '2xl': 'w-40 h-40' };
   const animClass = animate ? (flip ? 'bird-float-flip' : 'bird-float') : '';
   return (
     <img
@@ -299,7 +299,7 @@ export default function BattleArena({ player, result, onClose }) {
             {/* Player bird entrance */}
             <div className="flex-1 flex flex-col items-center bird-slide-left">
               <div className="mb-3 drop-shadow-2xl">
-                <BirdImg tier={playerTier} size="xl" animate style={{ filter: 'drop-shadow(0 0 16px rgba(251,191,36,0.5))' }} />
+                <BirdImg tier={playerTier} size="2xl" animate style={{ filter: 'drop-shadow(0 0 16px rgba(251,191,36,0.5))' }} />
               </div>
               <div className="text-white font-bold text-sm text-center truncate max-w-[100px]">
                 {player?.display_name || 'You'}
@@ -322,7 +322,7 @@ export default function BattleArena({ player, result, onClose }) {
             {/* Opponent bird entrance */}
             <div className="flex-1 flex flex-col items-center bird-slide-right">
               <div className="mb-3 drop-shadow-2xl">
-                <BirdImg tier={oppTier} size="xl" flip animate style={{ filter: 'drop-shadow(0 0 16px rgba(239,68,68,0.5))' }} />
+                <BirdImg tier={oppTier} size="2xl" flip animate style={{ filter: 'drop-shadow(0 0 16px rgba(239,68,68,0.5))' }} />
               </div>
               <div className="text-white font-bold text-sm text-center truncate max-w-[100px]">
                 {result.opponent?.display_name || 'Opponent'}
@@ -386,12 +386,17 @@ export default function BattleArena({ player, result, onClose }) {
           {/* Arena floor */}
           <div className="flex-1 relative rounded-2xl overflow-hidden flex items-end"
             style={{
-              background: isEpic
-                ? 'radial-gradient(ellipse at 50% 80%, #200040 0%, #0d0020 100%)'
-                : 'radial-gradient(ellipse at 50% 80%, #0a1628 0%, #020810 100%)',
+              backgroundImage: isEpic
+                ? 'url(https://i.ibb.co/tMKtLLFR/Screenshot-20260614-164248-Google.jpg)'
+                : 'url(https://i.ibb.co/mV4QwPQx/file-00000000a27871f495da166fb66e7316.png)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
               minHeight: 190,
               border: `1px solid ${accentColor}22`,
             }}>
+
+            {/* Dark overlay so birds stand out */}
+            <div className="absolute inset-0 rounded-2xl" style={{ background: 'rgba(0,0,0,0.35)' }} />
 
             {/* Ground glow */}
             <div className="absolute bottom-0 left-0 right-0 h-12 rounded-b-2xl"
@@ -406,7 +411,7 @@ export default function BattleArena({ player, result, onClose }) {
               <div className="relative flex flex-col items-center">
                 <div
                   className={`transition-none ${playerLunge ? 'bird-lunge-right' : ''} ${playerShake ? 'bird-shake' : ''}`}>
-                  <BirdImg tier={playerTier} size="lg" style={{ filter: `drop-shadow(0 0 12px ${accentColor}88)` }} />
+                  <BirdImg tier={playerTier} size="xl" style={{ filter: `drop-shadow(0 0 12px ${accentColor}88)` }} />
                 </div>
                 {damages.filter(d => d.target === 'player').map(d => (
                   <FloatingDamage key={d.id} damage={d.damage} isCrit={d.isCrit} isBlocked={d.isBlocked} />
@@ -428,7 +433,7 @@ export default function BattleArena({ player, result, onClose }) {
               <div className="relative flex flex-col items-center">
                 <div
                   className={`transition-none ${oppLunge ? 'bird-lunge-left' : ''} ${oppShake ? 'bird-shake' : ''}`}>
-                  <BirdImg tier={oppTier} size="lg" flip style={{ filter: 'drop-shadow(0 0 12px #ef444488)' }} />
+                  <BirdImg tier={oppTier} size="xl" flip style={{ filter: 'drop-shadow(0 0 12px #ef444488)' }} />
                 </div>
                 {damages.filter(d => d.target === 'opp').map(d => (
                   <FloatingDamage key={d.id} damage={d.damage} isCrit={d.isCrit} isBlocked={d.isBlocked} />
@@ -453,7 +458,7 @@ export default function BattleArena({ player, result, onClose }) {
             }}>
             <BirdImg
               tier={result.playerWon ? playerTier : oppTier}
-              size="xl"
+              size="2xl"
               flip={!result.playerWon}
               animate
             />
