@@ -98,26 +98,42 @@ async function calculatePower(telegramId) {
 }
 
 async function regenEnergy(telegramId) {
-  const { data: player } = await supabase
-    .from('players')
-    .select('energy, max_energy, updated_at')
-    .eq('telegram_id', telegramId)
-    .single();
+  const [{ data: player }, { data: configRow }] = await Promise.all([
+    supabase
+      .from('players')
+      .select('energy, max_energy, energy_updated_at, updated_at')
+      .eq('telegram_id', telegramId)
+      .single(),
+    supabase
+      .from('game_config')
+      .select('value')
+      .eq('key', 'energy_regen_rate')
+      .single(),
+  ]);
 
   if (!player) return;
 
+  // energy_regen_rate = energy gained per 10 seconds (set in admin dashboard)
+  const regenPer10s = parseFloat(configRow?.value ?? '1');
+
   const now = new Date();
-  const lastUpdate = new Date(player.updated_at);
-  const secondsElapsed = (now - lastUpdate) / 1000;
-  const regenAmount = Math.floor(secondsElapsed / 10) * 0.17;
+  // Use energy_updated_at if available, fall back to updated_at
+  const lastEnergyUpdate = new Date(player.energy_updated_at || player.updated_at);
+  const secondsElapsed = Math.max(0, (now - lastEnergyUpdate) / 1000);
+  const intervals = Math.floor(secondsElapsed / 10);
+  const regenAmount = intervals * regenPer10s;
+
+  if (regenAmount <= 0) return player.energy;
+
   const newEnergy = Math.min(player.max_energy, player.energy + regenAmount);
 
-  if (newEnergy > player.energy) {
-    await supabase
-      .from('players')
-      .update({ energy: newEnergy, updated_at: now.toISOString() })
-      .eq('telegram_id', telegramId);
-  }
+  await supabase
+    .from('players')
+    .update({
+      energy: newEnergy,
+      energy_updated_at: now.toISOString(),
+    })
+    .eq('telegram_id', telegramId);
 
   return newEnergy;
 }
