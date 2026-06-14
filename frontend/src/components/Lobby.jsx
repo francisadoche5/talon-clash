@@ -1,7 +1,14 @@
 import { useState, useEffect } from 'react';
 import { fight, getPublicConfig, createInvoice } from '../api';
 import BattleArena from './BattleArena';
-import { getBirdUrl } from '../birdImages';
+import { getBirdUrl, BIRD_ANIMATION_CSS } from '../birdImages';
+
+if (typeof document !== 'undefined' && !document.getElementById('bird-anim-css')) {
+  const s = document.createElement('style');
+  s.id = 'bird-anim-css';
+  s.textContent = BIRD_ANIMATION_CSS;
+  document.head.appendChild(s);
+}
 
 export default function Lobby({ player, onRefresh }) {
   const [mode, setMode] = useState('normal');
@@ -96,7 +103,7 @@ export default function Lobby({ player, onRefresh }) {
             <img
               src={getBirdUrl(player?.evolution_tier || 1)}
               alt={player?.evolution_name || 'Bird'}
-              className="w-24 h-24 object-contain drop-shadow-2xl"
+              className="w-24 h-24 object-contain drop-shadow-2xl bird-float"
               style={{ filter: 'drop-shadow(0 0 16px rgba(251,191,36,0.5))' }}
             />
           </div>
