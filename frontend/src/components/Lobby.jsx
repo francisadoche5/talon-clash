@@ -1,10 +1,7 @@
 import { useState, useEffect } from 'react';
 import { fight, getPublicConfig, createInvoice } from '../api';
 import BattleArena from './BattleArena';
-
-const EVOLUTION_IMAGES = {
-  1: '🐣', 2: '🐦', 3: '🦅', 4: '⚔️', 5: '🔥', 6: '👑', 7: '💀'
-};
+import { getBirdUrl } from '../birdImages';
 
 export default function Lobby({ player, onRefresh }) {
   const [mode, setMode] = useState('normal');
@@ -95,7 +92,14 @@ export default function Lobby({ player, onRefresh }) {
         {/* Bird Display */}
         <div className="bg-gradient-to-b from-blue-900 to-blue-950 rounded-2xl p-6 text-center relative overflow-hidden" style={{minHeight: 200}}>
           <div className="absolute inset-0 opacity-20" style={{background: 'radial-gradient(circle, #4a90d9 0%, transparent 70%)'}}></div>
-          <div className="text-8xl mb-2 relative z-10">{EVOLUTION_IMAGES[player?.evolution_tier] || '🐣'}</div>
+          <div className="flex justify-center mb-2 relative z-10">
+            <img
+              src={getBirdUrl(player?.evolution_tier || 1)}
+              alt={player?.evolution_name || 'Bird'}
+              className="w-24 h-24 object-contain drop-shadow-2xl"
+              style={{ filter: 'drop-shadow(0 0 16px rgba(251,191,36,0.5))' }}
+            />
+          </div>
           <div className="text-amber-300 font-bold text-lg relative z-10">{player?.evolution_name}</div>
           <div className="text-amber-400 text-sm relative z-10">Power: {player?.power?.toLocaleString()}</div>
           <div className="flex justify-center gap-6 mt-3 relative z-10">
