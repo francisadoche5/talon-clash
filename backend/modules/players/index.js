@@ -27,6 +27,9 @@ async function getOrCreatePlayer(telegramUser) {
         hammers: 2,
         skill_points: 0,
         power: 0,
+        xp: 0,
+        xp_needed: 1000,
+        level: 1,
         evolution_tier: 1,
         evolution_name: 'Hatchling'
       })
