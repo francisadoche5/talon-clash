@@ -1,15 +1,24 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { getBirdUrl } from '../birdImages';
+import { getBirdUrl, BIRD_ANIMATION_CSS } from '../birdImages';
 
-// BirdImg — renders a bird image with optional horizontal flip for opponents
-function BirdImg({ tier, size = 'md', flip = false, className = '', style = {} }) {
+// Inject bird animation CSS once
+if (typeof document !== 'undefined' && !document.getElementById('bird-anim-css')) {
+  const s = document.createElement('style');
+  s.id = 'bird-anim-css';
+  s.textContent = BIRD_ANIMATION_CSS;
+  document.head.appendChild(s);
+}
+
+// BirdImg — renders a bird image with optional flip + idle float animation
+function BirdImg({ tier, size = 'md', flip = false, animate = false, className = '', style = {} }) {
   const sizeMap = { sm: 'w-12 h-12', md: 'w-16 h-16', lg: 'w-20 h-20', xl: 'w-24 h-24' };
+  const animClass = animate ? (flip ? 'bird-float-flip' : 'bird-float') : '';
   return (
     <img
       src={getBirdUrl(tier)}
       alt={`Bird tier ${tier}`}
-      className={`${sizeMap[size]} object-contain select-none ${className}`}
-      style={{ transform: flip ? 'scaleX(-1)' : undefined, ...style }}
+      className={`${sizeMap[size]} object-contain select-none ${animClass} ${className}`}
+      style={{ transform: (!animate && flip) ? 'scaleX(-1)' : undefined, ...style }}
       draggable={false}
     />
   );
@@ -290,7 +299,7 @@ export default function BattleArena({ player, result, onClose }) {
             {/* Player bird entrance */}
             <div className="flex-1 flex flex-col items-center bird-slide-left">
               <div className="mb-3 drop-shadow-2xl">
-                <BirdImg tier={playerTier} size="xl" style={{ filter: 'drop-shadow(0 0 16px rgba(251,191,36,0.5))' }} />
+                <BirdImg tier={playerTier} size="xl" animate style={{ filter: 'drop-shadow(0 0 16px rgba(251,191,36,0.5))' }} />
               </div>
               <div className="text-white font-bold text-sm text-center truncate max-w-[100px]">
                 {player?.display_name || 'You'}
@@ -313,7 +322,7 @@ export default function BattleArena({ player, result, onClose }) {
             {/* Opponent bird entrance */}
             <div className="flex-1 flex flex-col items-center bird-slide-right">
               <div className="mb-3 drop-shadow-2xl">
-                <BirdImg tier={oppTier} size="xl" flip style={{ filter: 'drop-shadow(0 0 16px rgba(239,68,68,0.5))' }} />
+                <BirdImg tier={oppTier} size="xl" flip animate style={{ filter: 'drop-shadow(0 0 16px rgba(239,68,68,0.5))' }} />
               </div>
               <div className="text-white font-bold text-sm text-center truncate max-w-[100px]">
                 {result.opponent?.display_name || 'Opponent'}
@@ -446,6 +455,7 @@ export default function BattleArena({ player, result, onClose }) {
               tier={result.playerWon ? playerTier : oppTier}
               size="xl"
               flip={!result.playerWon}
+              animate
             />
           </div>
 
