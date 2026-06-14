@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { fight, getPublicConfig } from '../api';
+import { fight, getPublicConfig, createInvoice } from '../api';
 
 const EVOLUTION_IMAGES = {
   1: '🐣', 2: '🐦', 3: '🦅', 4: '⚔️', 5: '🔥', 6: '👑', 7: '💀'
@@ -53,12 +53,23 @@ export default function Lobby({ player, onRefresh }) {
     }
   }
 
-  function handleAutoPurchase(days) {
-    const stars = days === 3 ? autoPrices.days3 : autoPrices.days14;
-    if (window.Telegram?.WebApp?.openInvoice) {
-      window.Telegram.WebApp.openInvoice(`auto_battle_${days}d_${player.telegram_id}`);
-    } else {
-      alert(`Purchase auto-battle (${days} days) for ${stars} ⭐ — connect via Telegram to pay.`);
+  async function handleAutoPurchase(days) {
+    try {
+      const product = days === 3 ? 'auto_battle_3d' : 'auto_battle_14d';
+      const res = await createInvoice(player.telegram_id, product);
+      const link = res.data.link;
+      if (window.Telegram?.WebApp?.openInvoice) {
+        window.Telegram.WebApp.openInvoice(link, (status) => {
+          if (status === 'paid') {
+            setShowAutoBattle(false);
+            onRefresh();
+          }
+        });
+      } else {
+        window.open(link, '_blank');
+      }
+    } catch (err) {
+      alert('Could not create invoice. Please try again.');
     }
   }
 
