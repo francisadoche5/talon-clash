@@ -14,7 +14,7 @@ app.use(express.json());
 app.get('/', (req, res) => res.json({ status: 'Talon Clash Backend Running 🦅' }));
 app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
 
-// Public config endpoint — readable by frontend without auth
+// Public config endpoint
 const supabase = require('./supabase');
 app.get('/api/config', async (req, res) => {
   try {
@@ -34,6 +34,8 @@ app.use('/api/quests', require('./api/routes/quests'));
 app.use('/api/clans', require('./api/routes/clans'));
 app.use('/api/skills', require('./api/routes/skills'));
 app.use('/api/admin', require('./api/routes/admin'));
+const paymentsModule = require('./api/routes/payments');
+app.use('/api/payments', paymentsModule.router);
 
 // Telegram Bot Setup
 const bot = new Telegraf(process.env.BOT_TOKEN);
@@ -67,6 +69,56 @@ bot.command('help', (ctx) => {
     `Your bird evolves as your power grows!`,
     { parse_mode: 'Markdown' }
   );
+});
+
+// Inject bot into payments module
+paymentsModule.setBot(bot);
+
+// ── Telegram Stars payment handlers ──
+
+// Step 1: Always approve pre-checkout
+bot.on('pre_checkout_query', async (ctx) => {
+  await ctx.answerPreCheckoutQuery(true);
+});
+
+// Step 2: Grant reward after successful payment
+bot.on('message', async (ctx) => {
+  const payment = ctx.message?.successful_payment;
+  if (!payment) return;
+
+  const payload = payment.invoice_payload;
+  const supabase = require('./supabase');
+
+  try {
+    if (payload.startsWith('auto_battle_3d_')) {
+      const telegramId = payload.replace('auto_battle_3d_', '');
+      const expiresAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+      await supabase.from('players')
+        .update({ auto_battle_active: true, auto_battle_expires_at: expiresAt })
+        .eq('telegram_id', telegramId);
+      await ctx.reply('✅ Auto Battle activated for 3 days! Your bird is now fighting automatically. 🦅');
+    }
+
+    else if (payload.startsWith('auto_battle_14d_')) {
+      const telegramId = payload.replace('auto_battle_14d_', '');
+      const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+      await supabase.from('players')
+        .update({ auto_battle_active: true, auto_battle_expires_at: expiresAt })
+        .eq('telegram_id', telegramId);
+      await ctx.reply('✅ Auto Battle activated for 14 days! Your bird is fighting non-stop! 🦅🔥');
+    }
+
+    else if (payload.startsWith('clan_create_')) {
+      const telegramId = payload.replace('clan_create_', '');
+      await supabase.from('players')
+        .update({ can_create_clan_stars: true })
+        .eq('telegram_id', telegramId);
+      await ctx.reply('✅ Clan creation unlocked! Go to Clans to found your clan. 👥');
+    }
+
+  } catch (err) {
+    console.error('Payment fulfillment error:', err);
+  }
 });
 
 bot.launch();
