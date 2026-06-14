@@ -3,7 +3,14 @@ import { login } from './api';
 import Lobby from './components/Lobby';
 import Market from './components/Market';
 import Inventory from './components/Inventory';
-import { EAGLE_ICON_URL } from './birdImages';
+import { EAGLE_ICON_URL, BIRD_ANIMATION_CSS } from './birdImages';
+
+if (typeof document !== 'undefined' && !document.getElementById('bird-anim-css')) {
+  const s = document.createElement('style');
+  s.id = 'bird-anim-css';
+  s.textContent = BIRD_ANIMATION_CSS;
+  document.head.appendChild(s);
+}
 import Clans from './components/Clans';
 import SkillTree from './components/SkillTree';
 import Earn from './components/Earn';
@@ -55,10 +62,21 @@ export default function App() {
   }
 
   if (loading) return (
-    <div className="flex flex-col items-center justify-center h-screen bg-amber-950">
-      <img src={EAGLE_ICON_URL} alt="Talon Clash" className="w-20 h-20 mb-4 animate-bounce object-contain" />
-      <div className="text-amber-200 text-xl font-bold">Loading Talon Clash...</div>
-      <div className="mt-4 w-48 h-2 bg-amber-900 rounded-full overflow-hidden">
+    <div className="flex flex-col items-center justify-center h-screen relative overflow-hidden"
+      style={{
+        backgroundImage: 'url(https://i.ibb.co/VpLzxzgB/Screenshot-20260614-164506-Google.jpg)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }}>
+      <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.45)' }} />
+      <img src={EAGLE_ICON_URL} alt="Talon Clash" className="w-32 h-32 mb-6 object-contain relative z-10 bird-float"
+        style={{ filter: 'drop-shadow(0 0 24px rgba(251,191,36,0.8))' }} />
+      <div className="text-amber-200 text-2xl font-black tracking-widest relative z-10"
+        style={{ textShadow: '0 0 20px rgba(251,191,36,0.6)' }}>
+        TALON CLASH
+      </div>
+      <div className="text-amber-400 text-sm mb-6 relative z-10">Loading...</div>
+      <div className="relative z-10 w-48 h-2 bg-amber-900 rounded-full overflow-hidden">
         <div className="h-full bg-amber-400 animate-pulse rounded-full w-3/4"></div>
       </div>
     </div>
