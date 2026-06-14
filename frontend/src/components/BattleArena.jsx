@@ -9,18 +9,34 @@ if (typeof document !== 'undefined' && !document.getElementById('bird-anim-css')
   document.head.appendChild(s);
 }
 
-// BirdImg — renders a bird image with optional flip + idle float animation
+// BirdImg — 3D CSS bird with depth perspective, dynamic shadow and idle float
 function BirdImg({ tier, size = 'md', flip = false, animate = false, className = '', style = {} }) {
   const sizeMap = { sm: 'w-12 h-12', md: 'w-16 h-16', lg: 'w-24 h-24', xl: 'w-32 h-32', '2xl': 'w-40 h-40' };
-  const animClass = animate ? (flip ? 'bird-float-flip' : 'bird-float') : '';
+  const animClass = animate ? (flip ? 'bird-3d-idle-flip' : 'bird-3d-idle') : '';
+  const baseTransform = flip
+    ? 'perspective(320px) rotateY(-22deg) scaleX(-1)'
+    : 'perspective(320px) rotateY(22deg)';
   return (
-    <img
-      src={getBirdUrl(tier)}
-      alt={`Bird tier ${tier}`}
-      className={`${sizeMap[size]} object-contain select-none ${animClass} ${className}`}
-      style={{ transform: (!animate && flip) ? 'scaleX(-1)' : undefined, ...style }}
-      draggable={false}
-    />
+    <div className="flex flex-col items-center">
+      <img
+        src={getBirdUrl(tier)}
+        alt={`Bird tier ${tier}`}
+        className={`${sizeMap[size]} object-contain select-none ${animClass} ${className}`}
+        style={{
+          transform: animate ? undefined : baseTransform,
+          filter: flip
+            ? 'drop-shadow(-4px 6px 8px rgba(0,0,0,0.6))'
+            : 'drop-shadow(4px 6px 8px rgba(0,0,0,0.6))',
+          ...style,
+        }}
+        draggable={false}
+      />
+      <div style={{
+        width: '60%', height: '8px',
+        background: 'radial-gradient(ellipse, rgba(0,0,0,0.45) 0%, transparent 75%)',
+        borderRadius: '50%', marginTop: '-4px', transform: 'scaleX(1.2)',
+      }} />
+    </div>
   );
 }
 
@@ -38,19 +54,30 @@ const ARENA_STYLES = `
     50%       { opacity: 0.6; transform: scale(1.15); text-shadow: 0 0 40px #ff0000, 0 0 80px #ff4444; }
   }
   @keyframes shake {
-    0%,100% { transform: scaleX(var(--flip,1)) translateX(0); }
-    20%     { transform: scaleX(var(--flip,1)) translateX(-10px); }
-    40%     { transform: scaleX(var(--flip,1)) translateX(10px); }
-    60%     { transform: scaleX(var(--flip,1)) translateX(-8px); }
-    80%     { transform: scaleX(var(--flip,1)) translateX(6px); }
+    0%,100% { transform: perspective(320px) rotateY(22deg) translateX(0); }
+    20%     { transform: perspective(320px) rotateY(10deg) translateX(-12px) rotate(-4deg); }
+    40%     { transform: perspective(320px) rotateY(30deg) translateX(10px)  rotate(3deg); }
+    60%     { transform: perspective(320px) rotateY(10deg) translateX(-8px)  rotate(-2deg); }
+    80%     { transform: perspective(320px) rotateY(25deg) translateX(5px); }
+  }
+  @keyframes shakeFlip {
+    0%,100% { transform: perspective(320px) rotateY(-22deg) scaleX(-1) translateX(0); }
+    20%     { transform: perspective(320px) rotateY(-10deg) scaleX(-1) translateX(12px) rotate(4deg); }
+    40%     { transform: perspective(320px) rotateY(-30deg) scaleX(-1) translateX(-10px) rotate(-3deg); }
+    60%     { transform: perspective(320px) rotateY(-10deg) scaleX(-1) translateX(8px) rotate(2deg); }
+    80%     { transform: perspective(320px) rotateY(-25deg) scaleX(-1) translateX(-5px); }
   }
   @keyframes lungeRight {
-    0%,100% { transform: translateX(0); }
-    45%     { transform: translateX(35px); }
+    0%     { transform: perspective(320px) rotateY(22deg) translateX(0) scale(1); }
+    35%    { transform: perspective(200px) rotateY(5deg)  translateX(45px) scale(1.18) rotate(-12deg); }
+    60%    { transform: perspective(200px) rotateY(2deg)  translateX(55px) scale(1.22) rotate(-16deg); }
+    100%   { transform: perspective(320px) rotateY(22deg) translateX(0) scale(1); }
   }
   @keyframes lungeLeft {
-    0%,100% { transform: translateX(0); }
-    45%     { transform: translateX(-35px); }
+    0%     { transform: perspective(320px) rotateY(-22deg) scaleX(-1) translateX(0) scale(1); }
+    35%    { transform: perspective(200px) rotateY(-5deg)  scaleX(-1) translateX(-45px) scale(1.18) rotate(12deg); }
+    60%    { transform: perspective(200px) rotateY(-2deg)  scaleX(-1) translateX(-55px) scale(1.22) rotate(16deg); }
+    100%   { transform: perspective(320px) rotateY(-22deg) scaleX(-1) translateX(0) scale(1); }
   }
   @keyframes floatDamage {
     0%   { opacity: 1; transform: translateY(0)   scale(0.8); }
@@ -92,12 +119,24 @@ const ARENA_STYLES = `
   .bird-slide-left  { animation: slideInLeft  0.65s cubic-bezier(0.22,1,0.36,1) both; }
   .bird-slide-right { animation: slideInRight 0.65s cubic-bezier(0.22,1,0.36,1) both; }
   .vs-flash         { animation: vsFlash 1.2s ease-in-out infinite; }
-  .bird-lunge-right { animation: lungeRight 0.42s ease-in-out; }
-  .bird-lunge-left  { animation: lungeLeft  0.42s ease-in-out; }
-  .bird-shake       { animation: shake 0.35s ease-in-out; }
+  .bird-lunge-right { animation: lungeRight 0.45s ease-in-out; }
+  .bird-lunge-left  { animation: lungeLeft  0.45s ease-in-out; }
+  .bird-shake       { animation: shake     0.38s ease-in-out; }
+  .bird-shake-flip  { animation: shakeFlip 0.38s ease-in-out; }
   .float-damage     { animation: floatDamage 0.85s ease-out forwards; }
   .victory-bounce   { animation: victoryBounce 0.7s ease-in-out infinite; }
   .defeat-slump     { animation: defeatSlump 0.5s ease-out forwards; }
+
+  @keyframes bird3dIdle {
+    0%,100% { transform: perspective(320px) rotateY(22deg) translateY(0)   scale(1); }
+    50%     { transform: perspective(320px) rotateY(18deg) translateY(-9px) scale(1.04); }
+  }
+  @keyframes bird3dIdleFlip {
+    0%,100% { transform: perspective(320px) rotateY(-22deg) scaleX(-1) translateY(0)   scale(1); }
+    50%     { transform: perspective(320px) rotateY(-18deg) scaleX(-1) translateY(-9px) scale(1.04); }
+  }
+  .bird-3d-idle      { animation: bird3dIdle     3s ease-in-out infinite; }
+  .bird-3d-idle-flip { animation: bird3dIdleFlip 3s ease-in-out infinite; }
   .battle-start-txt { animation: battleStart 0.9s ease-in-out forwards; }
   .reward-pop       { animation: rewardPop 0.45s cubic-bezier(0.22,1,0.36,1) both; }
 `;
@@ -432,7 +471,7 @@ export default function BattleArena({ player, result, onClose }) {
               {/* Opponent bird */}
               <div className="relative flex flex-col items-center">
                 <div
-                  className={`transition-none ${oppLunge ? 'bird-lunge-left' : ''} ${oppShake ? 'bird-shake' : ''}`}>
+                  className={`transition-none ${oppLunge ? 'bird-lunge-left' : ''} ${oppShake ? 'bird-shake-flip' : ''}`}>
                   <BirdImg tier={oppTier} size="xl" flip style={{ filter: 'drop-shadow(0 0 12px #ef444488)' }} />
                 </div>
                 {damages.filter(d => d.target === 'opp').map(d => (
