@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getClans, getMyClan, createClan, joinClan, leaveClan } from '../api';
+import { getClans, getMyClan, createClan, joinClan, leaveClan, getPublicConfig } from '../api';
 
 export default function Clans({ player, onRefresh }) {
   const [tab, setTab] = useState('browse');
@@ -8,8 +8,26 @@ export default function Clans({ player, onRefresh }) {
   const [showCreate, setShowCreate] = useState(false);
   const [clanName, setClanName] = useState('');
   const [message, setMessage] = useState(null);
+  const [clanCurrency, setClanCurrency] = useState('feathers'); // 'feathers' or 'stars'
+  const [clanCost, setClanCost] = useState({ feathers: 500, stars: 50 });
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    loadData();
+    getPublicConfig()
+      .then(res => {
+        const cfg = res.data?.config || [];
+        const get = (key, fallback) => {
+          const found = cfg.find(c => c.key === key);
+          return found ? found.value : fallback;
+        };
+        setClanCurrency(get('clan_creation_currency', 'feathers'));
+        setClanCost({
+          feathers: parseInt(get('clan_creation_feathers', '500')) || 500,
+          stars: parseInt(get('clan_creation_stars', '50')) || 50,
+        });
+      })
+      .catch(() => {});
+  }, []);
 
   async function loadData() {
     try {
@@ -26,6 +44,16 @@ export default function Clans({ player, onRefresh }) {
   async function handleCreate() {
     if (!clanName.trim()) return;
     try {
+      // If stars, trigger Telegram Stars payment
+      if (clanCurrency === 'stars') {
+        if (window.Telegram?.WebApp?.openInvoice) {
+          window.Telegram.WebApp.openInvoice(`create_clan_${player.telegram_id}`);
+          return;
+        } else {
+          alert(`Pay ${clanCost.stars} ⭐ via Telegram Stars to create a clan.`);
+          return;
+        }
+      }
       await createClan(player.telegram_id, clanName, '🦅', 'open');
       setMessage({ type: 'success', text: 'Clan created!' });
       setShowCreate(false);
@@ -61,6 +89,10 @@ export default function Clans({ player, onRefresh }) {
       setMessage({ type: 'error', text: err.response?.data?.error || 'Failed' });
     }
   }
+
+  const costLabel = clanCurrency === 'stars'
+    ? `${clanCost.stars} ⭐`
+    : `${clanCost.feathers} 🪶`;
 
   return (
     <div className="p-4">
@@ -111,7 +143,7 @@ export default function Clans({ player, onRefresh }) {
             <div className="text-amber-400 mb-4">You are not in a clan</div>
             <button onClick={() => setShowCreate(true)}
               className="bg-amber-600 text-white px-6 py-3 rounded-xl font-bold">
-              Create Clan (500🪶)
+              Create Clan ({costLabel})
             </button>
           </div>
         )
@@ -122,7 +154,7 @@ export default function Clans({ player, onRefresh }) {
           {!myClan && (
             <button onClick={() => setShowCreate(true)}
               className="w-full bg-amber-600 text-white py-3 rounded-xl font-bold">
-              + Create Clan (500🪶)
+              + Create Clan ({costLabel})
             </button>
           )}
           {clans.map(clan => (
@@ -148,10 +180,14 @@ export default function Clans({ player, onRefresh }) {
         </div>
       )}
 
+      {/* Create Clan Modal */}
       {showCreate && (
         <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
           <div className="bg-amber-900 rounded-2xl p-6 w-full max-w-sm">
-            <h3 className="text-white font-black text-lg mb-4 text-center">Create Clan</h3>
+            <h3 className="text-white font-black text-lg mb-1 text-center">Create Clan</h3>
+            <p className="text-amber-400 text-xs text-center mb-4">
+              Cost: {costLabel} {clanCurrency === 'stars' ? '(Telegram Stars)' : '(Feathers)'}
+            </p>
             <input
               value={clanName}
               onChange={e => setClanName(e.target.value)}
@@ -159,6 +195,14 @@ export default function Clans({ player, onRefresh }) {
               maxLength={18}
               className="w-full bg-amber-800 text-white rounded-xl px-4 py-3 mb-4 outline-none placeholder-amber-500"
             />
+
+            {/* Currency badge */}
+            <div className={`flex items-center justify-center gap-2 mb-4 py-2 rounded-xl text-sm font-bold ${
+              clanCurrency === 'stars' ? 'bg-blue-900 text-blue-200' : 'bg-amber-800 text-amber-200'
+            }`}>
+              {clanCurrency === 'stars' ? '⭐ Pay with Telegram Stars' : '🪶 Pay with Feathers'}
+            </div>
+
             <div className="flex gap-2">
               <button onClick={() => setShowCreate(false)}
                 className="flex-1 bg-amber-800 text-amber-300 py-3 rounded-xl font-bold">
@@ -166,7 +210,7 @@ export default function Clans({ player, onRefresh }) {
               </button>
               <button onClick={handleCreate}
                 className="flex-1 bg-amber-500 text-amber-900 py-3 rounded-xl font-bold">
-                Create (500🪶)
+                Create ({costLabel})
               </button>
             </div>
           </div>
