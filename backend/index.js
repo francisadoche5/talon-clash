@@ -14,6 +14,17 @@ app.use(express.json());
 app.get('/', (req, res) => res.json({ status: 'Talon Clash Backend Running 🦅' }));
 app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
 
+// Public config endpoint — readable by frontend without auth
+const supabase = require('./supabase');
+app.get('/api/config', async (req, res) => {
+  try {
+    const { data } = await supabase.from('game_config').select('key, value');
+    res.json({ success: true, config: data });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Routes
 app.use('/api/players', require('./api/routes/players'));
 app.use('/api/battles', require('./api/routes/battles'));
