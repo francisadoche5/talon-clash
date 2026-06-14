@@ -5,6 +5,10 @@ export default function Earn({ player, onRefresh }) {
   const [tab, setTab] = useState('daily');
   const [quests, setQuests] = useState([]);
   const [message, setMessage] = useState(null);
+  const [copied, setCopied] = useState(false);
+
+  const BOT_USERNAME = import.meta.env.VITE_BOT_USERNAME || 'Talonclashbot';
+  const referralLink = `https://t.me/${BOT_USERNAME}?start=ref_${player?.telegram_id}`;
 
   useEffect(() => { loadQuests(); }, []);
 
@@ -25,6 +29,38 @@ export default function Earn({ player, onRefresh }) {
       setMessage({ type: 'error', text: err.response?.data?.error || 'Failed' });
     }
     setTimeout(() => setMessage(null), 3000);
+  }
+
+  function handleCopyLink() {
+    navigator.clipboard.writeText(referralLink).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    }).catch(() => {
+      // Fallback for Telegram WebApp environment
+      const el = document.createElement('textarea');
+      el.value = referralLink;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    });
+  }
+
+  function handleShare() {
+    const text = `🦅 Join me in Talon Clash! Battle birds, level up, and earn rewards!\n\n${referralLink}`;
+    if (window.Telegram?.WebApp?.openTelegramLink) {
+      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent('🦅 Join me in Talon Clash! Battle birds, level up, and earn rewards!')}`;
+      window.Telegram.WebApp.openTelegramLink(shareUrl);
+    } else {
+      // Fallback: Web Share API
+      if (navigator.share) {
+        navigator.share({ title: 'Talon Clash', text, url: referralLink });
+      } else {
+        handleCopyLink();
+      }
+    }
   }
 
   const filtered = quests.filter(q => q.reset_type === tab);
@@ -67,15 +103,31 @@ export default function Earn({ player, onRefresh }) {
         </button>
       </div>
 
-      {/* Referral Banner */}
-      <div className="bg-blue-900 rounded-2xl p-4 mb-4 flex items-center gap-3">
-        <span className="text-3xl">👥</span>
-        <div className="flex-1">
-          <div className="text-white font-bold">Invite Friends</div>
-          <div className="text-blue-300 text-xs">Earn 🪶 for every friend you invite</div>
+      {/* Referral Card */}
+      <div className="bg-blue-900 rounded-2xl p-4 mb-4">
+        <div className="flex items-center gap-3 mb-3">
+          <span className="text-3xl">👥</span>
+          <div>
+            <div className="text-white font-bold">Invite Friends</div>
+            <div className="text-blue-300 text-xs">Earn 🪶 for every friend you invite</div>
+          </div>
         </div>
-        <button className="bg-blue-500 text-white text-xs px-3 py-2 rounded-xl font-bold">
-          INVITE
+
+        {/* Referral link box */}
+        <div className="bg-blue-950 rounded-xl px-3 py-2 mb-3 flex items-center gap-2">
+          <span className="text-blue-300 text-xs flex-1 truncate">{referralLink}</span>
+          <button onClick={handleCopyLink}
+            className={`flex-shrink-0 text-xs px-3 py-1 rounded-lg font-bold transition-all ${
+              copied ? 'bg-green-600 text-white' : 'bg-blue-600 text-white'
+            }`}>
+            {copied ? '✅ Copied!' : 'Copy'}
+          </button>
+        </div>
+
+        {/* Share button */}
+        <button onClick={handleShare}
+          className="w-full bg-blue-500 text-white py-2 rounded-xl font-bold text-sm">
+          📤 Share via Telegram
         </button>
       </div>
 
