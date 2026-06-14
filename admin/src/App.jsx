@@ -315,6 +315,70 @@ export default function App() {
         {activeTab === 'Config' && d && !loading && (
           <div>
             <h2 className="text-2xl font-black text-white mb-4">⚙️ Config</h2>
+
+            {/* Clan Creation Currency */}
+            <div className="bg-slate-800 rounded-2xl p-4 mb-4">
+              <div className="text-amber-400 font-bold text-sm mb-1">👥 Clan Creation Currency</div>
+              <div className="text-slate-400 text-xs mb-3">Choose how players pay to create a clan</div>
+              {(() => {
+                const curr = d.config?.find(c => c.key === 'clan_creation_currency')?.value || 'feathers';
+                const featherCost = d.config?.find(c => c.key === 'clan_creation_feathers')?.value || '500';
+                const starCost = d.config?.find(c => c.key === 'clan_creation_stars')?.value || '50';
+                return (
+                  <div>
+                    <div className="flex gap-2 mb-3">
+                      <button onClick={async () => {
+                        await updateConfig('clan_creation_currency', 'feathers');
+                        loadTab('Config');
+                        showMsg('Set to Feathers!');
+                      }}
+                        className={`flex-1 py-3 rounded-xl font-bold text-sm ${
+                          curr === 'feathers' ? 'bg-amber-500 text-amber-900' : 'bg-slate-700 text-slate-300'
+                        }`}>
+                        🪶 Feathers
+                      </button>
+                      <button onClick={async () => {
+                        await updateConfig('clan_creation_currency', 'stars');
+                        loadTab('Config');
+                        showMsg('Set to Telegram Stars!');
+                      }}
+                        className={`flex-1 py-3 rounded-xl font-bold text-sm ${
+                          curr === 'stars' ? 'bg-blue-500 text-white' : 'bg-slate-700 text-slate-300'
+                        }`}>
+                        ⭐ Stars
+                      </button>
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <div className="text-slate-400 text-xs mb-1">🪶 Feather cost</div>
+                        <div className="flex gap-1">
+                          <input defaultValue={featherCost} id="cfg-clan-feathers"
+                            className="flex-1 bg-slate-700 text-white rounded-xl px-3 py-2 text-sm outline-none" />
+                          <button onClick={async () => {
+                            const val = document.getElementById('cfg-clan-feathers').value;
+                            await updateConfig('clan_creation_feathers', val);
+                            loadTab('Config'); showMsg('Saved!');
+                          }} className="bg-amber-500 text-amber-900 px-3 py-2 rounded-xl text-sm font-bold">Save</button>
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-slate-400 text-xs mb-1">⭐ Star cost</div>
+                        <div className="flex gap-1">
+                          <input defaultValue={starCost} id="cfg-clan-stars"
+                            className="flex-1 bg-slate-700 text-white rounded-xl px-3 py-2 text-sm outline-none" />
+                          <button onClick={async () => {
+                            const val = document.getElementById('cfg-clan-stars').value;
+                            await updateConfig('clan_creation_stars', val);
+                            loadTab('Config'); showMsg('Saved!');
+                          }} className="bg-blue-500 text-white px-3 py-2 rounded-xl text-sm font-bold">Save</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
             <div className="flex flex-col gap-3">
               {d.config?.map(cfg => (
                 <div key={cfg.key} className="bg-slate-800 rounded-2xl p-4">
