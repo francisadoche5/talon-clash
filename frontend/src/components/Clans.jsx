@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getClans, getMyClan, createClan, joinClan, leaveClan, getPublicConfig, createInvoice } from '../api';
+import { EAGLE_ICON_URL } from '../birdImages';
 
 // Extra API calls for apply/approval system
 import axios from 'axios';
@@ -203,7 +204,7 @@ export default function Clans({ player, onRefresh }) {
           <div>
             {/* Clan Card */}
             <div className="bg-amber-900 rounded-2xl p-4 mb-4">
-              <div className="text-3xl text-center mb-2">🦅</div>
+              <div className="flex justify-center mb-2"><img src={EAGLE_ICON_URL} alt="Clan" className="w-10 h-10 object-contain" /></div>
               <div className="text-white font-black text-xl text-center">{myClan.name}</div>
               <div className="text-amber-400 text-sm text-center">
                 Level {myClan.level} • {myClan.member_count}/{myClan.max_members} members
@@ -354,7 +355,7 @@ export default function Clans({ player, onRefresh }) {
             return (
               <div key={clan.id} className="bg-amber-900 rounded-2xl p-4">
                 <div className="flex items-start gap-3">
-                  <div className="text-3xl">🦅</div>
+                  <img src={EAGLE_ICON_URL} alt="Clan" className="w-9 h-9 object-contain flex-shrink-0" />
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-0.5">
                       <div className="text-white font-bold">{clan.name}</div>
