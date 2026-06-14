@@ -14,27 +14,6 @@ function adminAuth(req, res, next) {
   }
 }
 
-router.get('/setup-admin', async (req, res) => {
-  try {
-    const { data: existing } = await supabase.from('admin_users').select('id').limit(1);
-    if (existing && existing.length > 0) {
-      return res.status(400).json({ error: 'Admin already exists' });
-    }
-
-    const { username, password } = req.query;
-    if (!username || !password) {
-      return res.status(400).json({ error: 'Missing username or password' });
-    }
-
-    const password_hash = await bcrypt.hash(password, 10);
-    await supabase.from('admin_users').insert({ username, password_hash });
-
-    res.json({ success: true, message: 'Admin created. Remove this route now.' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
 router.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
