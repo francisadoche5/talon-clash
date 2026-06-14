@@ -13,10 +13,10 @@ const CATEGORY_LABELS = {
 
 // Chest visuals
 const CHEST_DATA = [
-  { key: 'common',   img: 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgOr53orCwzG2h-OTJyBc6CvdnXzzhxRYw2GpWcwnt65ceF7GZKyMCr6V8d54LcINHOG-fVplj4ZGoSHrtgsNOb7XecWjt8IcxIVO4ZnzdweQ-BJ26hz9ka_BLdGtF2rhacpEUryoRZ8YOTIpZY52ge9RNHf44fTB5D0Y3ukB7bpFWjCX7WiQyf7JevXAw/s1024/file_000000001e0872439bc3f96641a60877.png', bg: 'bg-stone-600', label: 'Common',   price: 49,   qty: 1, stock: '5/5' },
-  { key: 'uncommon', img: 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjJcxcRRA9vAfJd2gObgZUpjOWoFk0zZYuEdfbm8YVAIGDcCwlcwUKNgeXReAEHTsKr09Vodg8JoO7l0Fzi1aVj-pOHbVt51x75HKFnMWXMXKuLk_S7sbjswVRuVoRq_Nmfvhu_uln8YzqOaU2rcndf348ZUJNBB4-fMybXqZR8Y6RbMJkp4zSy6NYyHhE/s1024/file_00000000ae3c71f48faa59584a3695d6.png', bg: 'bg-green-600', label: 'Uncommon', price: 149,  qty: 1, stock: '3/3' },
-  { key: 'rare',     img: 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg1GK-48TDSYsHV4XKU6DPlFQbF-QBBJgE0dduQhzoqdojvqVCz6la7YgIwHgc0ZACZV2VKFoN58y_WkqcwcGFEsW8ADRnGN7slnhMkXctAXp5oVkhrLcgzYcb5FqMAB4M2oHv-2wf2cVi2pjZZgx4FoM5zK0O_LSrrbZv-waQBhMAe69mlmKSOFLgAwXU/s1024/file_000000003d847243a48435ed1ae325ee.png', bg: 'bg-blue-600',  label: 'Rare',     price: 1449, qty: 1, stock: '2/2' },
-  { key: 'epic',     img: 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjlsV6quJy9rAt-qOAO9kZDw7v84cN9mncMHPrC2oCitgW08UVzlQvVugLs57PHtnEQl58nro6PhWg46KnZJmz4FQo7k4c4-0ZanhdxtpX1HxnKvfENtzVIILOA6Bx4PtEiligPKSQIvut-9nu7x-GnWRUMwyCfIrwlxSHUCujFQJJ2JGVDf7dX3tPyXek/s1024/file_00000000bd8c71f4a416c8ee128deed5.png', bg: 'bg-purple-700', label: 'Epic',     price: 7499, qty: 1, stock: '1/1', badge: '50% OFF' },
+  { key: 'common',   img: 'https://i.ibb.co/RkKjTT7X/file-000000001e0872439bc3f96641a60877.png', bg: 'bg-stone-600', label: 'Common',   price: 49,   qty: 1, stock: '5/5' },
+  { key: 'uncommon', img: 'https://i.ibb.co/d4F9bZQ9/file-00000000ae3c71f48faa59584a3695d6.png', bg: 'bg-green-600', label: 'Uncommon', price: 149,  qty: 1, stock: '3/3' },
+  { key: 'rare',     img: 'https://i.ibb.co/chC7yXqB/file-000000003d847243a48435ed1ae325ee.png', bg: 'bg-blue-600',  label: 'Rare',     price: 1449, qty: 1, stock: '2/2' },
+  { key: 'epic',     img: 'https://i.ibb.co/twMrKdg2/file-00000000bd8c71f4a416c8ee128deed5.png', bg: 'bg-purple-700', label: 'Epic',     price: 7499, qty: 1, stock: '1/1', badge: '50% OFF' },
 ];
 
 const CHEST_EMOJIS = { common: '📦', uncommon: '🗃️', rare: '🔒', epic: '👑' };
