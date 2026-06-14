@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { fight } from '../api';
+import { useState, useEffect } from 'react';
+import { fight, getPublicConfig } from '../api';
 
 const EVOLUTION_IMAGES = {
   1: '🐣', 2: '🐦', 3: '🦅', 4: '⚔️', 5: '🔥', 6: '👑', 7: '💀'
@@ -10,9 +10,33 @@ export default function Lobby({ player, onRefresh }) {
   const [battling, setBattling] = useState(false);
   const [result, setResult] = useState(null);
   const [showEpicInfo, setShowEpicInfo] = useState(false);
+  const [showAutoBattle, setShowAutoBattle] = useState(false);
+  const [autoPrices, setAutoPrices] = useState({ days3: 199, days14: 499 });
 
   const energyCost = mode === 'epic' ? 200 : 25;
   const hasEnergy = (player?.energy || 0) >= energyCost;
+
+  useEffect(() => {
+    getPublicConfig()
+      .then(res => {
+        const cfg = res.data?.config || [];
+        const get = (key, fallback) => {
+          const found = cfg.find(c => c.key === key);
+          return found ? parseInt(found.value) || fallback : fallback;
+        };
+        setAutoPrices({
+          days3: get('auto_battle_3days_stars', 199),
+          days14: get('auto_battle_14days_stars', 499),
+        });
+      })
+      .catch(() => {});
+  }, []);
+
+  function handleModeToggle() {
+    const next = mode === 'epic' ? 'normal' : 'epic';
+    setMode(next);
+    if (next === 'epic') setShowEpicInfo(true);
+  }
 
   async function handleBattle() {
     if (!hasEnergy) return;
@@ -26,6 +50,15 @@ export default function Lobby({ player, onRefresh }) {
       setResult({ error: err.response?.data?.error || 'Battle failed' });
     } finally {
       setBattling(false);
+    }
+  }
+
+  function handleAutoPurchase(days) {
+    const stars = days === 3 ? autoPrices.days3 : autoPrices.days14;
+    if (window.Telegram?.WebApp?.openInvoice) {
+      window.Telegram.WebApp.openInvoice(`auto_battle_${days}d_${player.telegram_id}`);
+    } else {
+      alert(`Purchase auto-battle (${days} days) for ${stars} ⭐ — connect via Telegram to pay.`);
     }
   }
 
@@ -65,17 +98,15 @@ export default function Lobby({ player, onRefresh }) {
 
       {/* Mode Selector */}
       <div className={`rounded-2xl p-4 flex items-center justify-between ${mode === 'epic' ? 'bg-purple-900 border border-purple-500' : 'bg-amber-800'}`}>
-        <button
-          onClick={() => setMode(mode === 'epic' ? 'normal' : 'epic')}
-          className="text-amber-300 text-sm font-bold">
+        <button onClick={handleModeToggle} className="text-amber-300 text-sm font-bold">
           MODE 🔄
         </button>
         <div className="text-center">
           <div className="text-white font-black text-xl">{mode === 'epic' ? 'EPIC' : 'BATTLE'}</div>
           <div className={`text-xs ${mode === 'epic' ? 'text-red-400' : 'text-yellow-300'}`}>{energyCost} ⚡</div>
         </div>
-        <button onClick={() => setShowEpicInfo(true)} className="text-amber-300 text-sm font-bold">
-          AUTO 🔒
+        <button onClick={() => setShowAutoBattle(true)} className="text-amber-300 text-sm font-bold">
+          AUTO ⚙️
         </button>
       </div>
 
@@ -128,7 +159,7 @@ export default function Lobby({ player, onRefresh }) {
         </div>
       )}
 
-      {/* Epic Info Modal */}
+      {/* Epic Mode Info Modal — shown only when switching TO epic */}
       {showEpicInfo && (
         <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
           <div className="bg-amber-50 text-amber-900 rounded-2xl p-6 max-w-sm w-full">
@@ -149,11 +180,89 @@ export default function Lobby({ player, onRefresh }) {
                 <div>• Food x100</div>
               </div>
             </div>
-            <button
-              onClick={() => setShowEpicInfo(false)}
+            <button onClick={() => setShowEpicInfo(false)}
               className="w-full bg-green-500 text-white py-3 rounded-xl font-bold">
               CLOSE
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Auto Battle Modal */}
+      {showAutoBattle && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-end justify-center z-50">
+          <div className="w-full max-w-sm rounded-t-3xl overflow-hidden" style={{ background: '#e8d5b7' }}>
+
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 pt-5 pb-2">
+              <h2 className="text-xl font-black text-amber-900">Auto Battle</h2>
+              <button onClick={() => setShowAutoBattle(false)}
+                className="text-red-500 text-2xl font-black leading-none">✕</button>
+            </div>
+
+            {/* Status badge */}
+            <div className="mx-5 mb-3">
+              <div className="rounded-xl py-2 text-center font-black text-base text-amber-100"
+                style={{ background: '#7a5230' }}>
+                {player?.auto_battle_active ? '✅ Active' : 'Inactive'}
+              </div>
+            </div>
+
+            {/* Battle image */}
+            <div className="mx-5 mb-3 rounded-2xl overflow-hidden" style={{ height: 160, background: '#c4a882' }}>
+              <div className="w-full h-full flex items-center justify-center text-7xl">
+                ⚔️🦅⚔️
+              </div>
+            </div>
+
+            {/* Description box */}
+            <div className="mx-5 mb-4 rounded-2xl p-4" style={{ background: '#d4b896', border: '2px solid #b8956a' }}>
+              <p className="text-amber-900 font-bold text-sm text-center leading-relaxed">
+                Unlock AutoBattle to speed up your progress! Complete multiple fights in just a few seconds.
+              </p>
+              <p className="text-amber-800 text-sm text-center mt-2">
+                ⏳ AutoBattle remains active for the purchased duration.
+              </p>
+            </div>
+
+            {/* Purchase buttons */}
+            <div className="flex gap-3 mx-5 mb-3">
+              {/* 3 Days */}
+              <div className="flex-1 flex flex-col items-center">
+                <div className="z-10 mb-[-10px] px-3 py-1 rounded-full font-black text-sm text-white flex items-center gap-1"
+                  style={{ background: '#3a3a3a' }}>
+                  {autoPrices.days3} ⭐
+                </div>
+                <button onClick={() => handleAutoPurchase(3)}
+                  className="w-full pt-4 pb-3 rounded-2xl font-black text-white text-lg"
+                  style={{ background: 'linear-gradient(180deg, #5bb8ff 0%, #2d7dd2 100%)', border: '3px solid #1a5fa0' }}>
+                  3 DAYS
+                </button>
+              </div>
+
+              {/* 14 Days */}
+              <div className="flex-1 flex flex-col items-center">
+                <div className="z-10 mb-[-10px] px-3 py-1 rounded-full font-black text-sm text-white flex items-center gap-1"
+                  style={{ background: '#3a3a3a' }}>
+                  {autoPrices.days14} ⭐
+                </div>
+                <button onClick={() => handleAutoPurchase(14)}
+                  className="w-full pt-4 pb-3 rounded-2xl font-black text-white text-lg"
+                  style={{ background: 'linear-gradient(180deg, #5bb8ff 0%, #2d7dd2 100%)', border: '3px solid #1a5fa0' }}>
+                  14 DAYS
+                </button>
+              </div>
+            </div>
+
+            {/* To Lobby button */}
+            <div className="mx-5 mb-6">
+              <button onClick={() => setShowAutoBattle(false)}
+                className="w-full py-4 rounded-2xl font-black text-amber-900 text-base"
+                style={{ background: '#e8d5b7', border: '2px solid #b8956a' }}>
+                TO LOBBY
+              </button>
+            </div>
+
           </div>
         </div>
       )}
