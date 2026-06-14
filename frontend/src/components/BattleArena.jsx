@@ -37,20 +37,24 @@ const ANIM_CONFIG = {
   defeat:  { frames: [5],          speed: 999 },
 };
 
-// SpriteAnimator — plays a sprite-sheet animation for a bird tier
+// SpriteAnimator — canvas-based sprite renderer with auto background removal
 function SpriteAnimator({ tier, animState = 'idle', flip = false, scale = 1.4, glowColor }) {
-  const url      = SPRITE_SHEETS[tier] || SPRITE_SHEETS[1];
-  const dispW    = Math.round(FRAME_W * scale);
-  const dispH    = Math.round(SHEET_H * scale);
-  const totalBgW = Math.round(SHEET_W  * scale);
+  const canvasRef  = useRef(null);
+  const imgRef     = useRef(null);
+  const loadedRef  = useRef(false);
+
+  const url   = SPRITE_SHEETS[tier] || SPRITE_SHEETS[1];
+  const dispW = Math.round(FRAME_W * scale);
+  const dispH = Math.round(SHEET_H * scale);
 
   const config = ANIM_CONFIG[animState] || ANIM_CONFIG.idle;
   const [fi, setFi] = useState(config.frames[0]);
 
+  // Frame cycling
   useEffect(() => {
     setFi(config.frames[0]);
-    let i = 0;
     if (config.frames.length === 1) return;
+    let i = 0;
     const id = setInterval(() => {
       i = (i + 1) % config.frames.length;
       setFi(config.frames[i]);
@@ -58,21 +62,57 @@ function SpriteAnimator({ tier, animState = 'idle', flip = false, scale = 1.4, g
     return () => clearInterval(id);
   }, [animState]); // eslint-disable-line
 
-  const bgX = -(fi * dispW);
+  // Draw a frame onto the canvas, stripping white/grey checkerboard background
+  const drawFrame = useCallback((img, frameIdx) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, dispW, dispH);
+    ctx.drawImage(img, frameIdx * FRAME_W, 0, FRAME_W, SHEET_H, 0, 0, dispW, dispH);
+    try {
+      const id   = ctx.getImageData(0, 0, dispW, dispH);
+      const data = id.data;
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i], g = data[i + 1], b = data[i + 2];
+        const avg      = (r + g + b) / 3;
+        const variance = Math.max(Math.abs(r - g), Math.abs(g - b), Math.abs(r - b));
+        // Erase grey-ish bright pixels (white + checkerboard grey)
+        if (avg > 155 && variance < 55) data[i + 3] = 0;
+      }
+      ctx.putImageData(id, 0, 0);
+    } catch (_) { /* CORS fallback — shows with background */ }
+  }, [dispW, dispH]);
+
+  // Load sprite sheet once, re-load if tier changes
+  useEffect(() => {
+    loadedRef.current = false;
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      imgRef.current  = img;
+      loadedRef.current = true;
+      drawFrame(img, fi);
+    };
+    img.src = url;
+  }, [url]); // eslint-disable-line
+
+  // Redraw whenever frame index changes
+  useEffect(() => {
+    if (loadedRef.current && imgRef.current) drawFrame(imgRef.current, fi);
+  }, [fi, drawFrame]);
 
   return (
-    <div style={{
-      width:               dispW,
-      height:              dispH,
-      backgroundImage:     `url(${url})`,
-      backgroundSize:      `${totalBgW}px ${dispH}px`,
-      backgroundPosition:  `${bgX}px 0px`,
-      backgroundRepeat:    'no-repeat',
-      imageRendering:      'auto',
-      transform:           flip ? 'scaleX(-1)' : undefined,
-      filter:              glowColor ? `drop-shadow(0 0 14px ${glowColor})` : undefined,
-      flexShrink:          0,
-    }} />
+    <canvas
+      ref={canvasRef}
+      width={dispW}
+      height={dispH}
+      style={{
+        display:         'block',
+        transform:       flip ? 'scaleX(-1)' : undefined,
+        filter:          glowColor ? `drop-shadow(0 0 14px ${glowColor})` : undefined,
+        imageRendering:  'auto',
+      }}
+    />
   );
 }
 
@@ -443,7 +483,7 @@ export default function BattleArena({ player, result, onClose }) {
                 : 'url(https://i.ibb.co/mV4QwPQx/file-00000000a27871f495da166fb66e7316.png)',
               backgroundSize: 'cover',
               backgroundPosition: 'center',
-              minHeight: 190,
+              minHeight: 260,
               border: `1px solid ${accentColor}22`,
             }}>
 
@@ -456,8 +496,8 @@ export default function BattleArena({ player, result, onClose }) {
             <div className="absolute bottom-10 left-6 right-6 h-px"
               style={{ background: accentColor, opacity: 0.25, animation: 'groundPulse 2s ease-in-out infinite' }} />
 
-            {/* Birds */}
-            <div className="absolute inset-0 flex items-center justify-between px-6 pb-10">
+            {/* Birds — anchored to ground level */}
+            <div className="absolute inset-x-0 bottom-8 flex items-end justify-between px-4">
 
               {/* Player bird */}
               <div className="relative flex flex-col items-center">
