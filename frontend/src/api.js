@@ -26,3 +26,5 @@ export const joinClan = (telegramId, clanId) => API.post('/api/clans/join', { te
 export const leaveClan = (telegramId) => API.post('/api/clans/leave', { telegram_id: telegramId });
 export const getSkills = (id) => API.get(`/api/skills/${id}`);
 export const upgradeSkill = (telegramId, skillType) => API.post('/api/skills/upgrade', { telegram_id: telegramId, skill_type: skillType });
+
+export const getPublicConfig = () => API.get('/api/config');
