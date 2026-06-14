@@ -46,33 +46,15 @@ async function getPlayerStats(telegramId) {
 }
 
 async function findOpponent(telegramId, mode) {
-  const { data: player } = await supabase
-    .from('players')
-    .select('power')
-    .eq('telegram_id', telegramId)
-    .single();
-
-  const powerRange = mode === 'epic' ? 5000 : 3000;
-
+  // Pull a pool of players and pick one at random
   const { data: opponents } = await supabase
     .from('players')
     .select('*')
     .neq('telegram_id', telegramId)
     .eq('is_banned', false)
-    .gte('power', Math.max(0, player.power - powerRange))
-    .lte('power', player.power + powerRange)
-    .limit(10);
+    .limit(50);
 
-  if (!opponents || opponents.length === 0) {
-    const { data: anyOpponent } = await supabase
-      .from('players')
-      .select('*')
-      .neq('telegram_id', telegramId)
-      .eq('is_banned', false)
-      .limit(5);
-    return anyOpponent?.[Math.floor(Math.random() * (anyOpponent?.length || 1))];
-  }
-
+  if (!opponents || opponents.length === 0) return null;
   return opponents[Math.floor(Math.random() * opponents.length)];
 }
 
@@ -125,7 +107,7 @@ async function runBattle(telegramId, mode = 'normal') {
 
   const { data: player } = await supabase
     .from('players')
-    .select('energy, battles_played, battles_won, battles_lost, xp, level, xp_needed, glory, feathers, food')
+    .select('energy, battles_played, battles_won, battles_lost, xp, level, xp_needed, glory, feathers, food, skill_points')
     .eq('telegram_id', telegramId)
     .single();
 
@@ -154,12 +136,14 @@ async function runBattle(telegramId, mode = 'normal') {
 
   let newXP = player.xp + xpEarned;
   let newLevel = player.level;
-  let newXPNeeded = player.xp_needed;
+  let newXPNeeded = player.xp_needed || 1000;
+  let skillPointsEarned = 0;
 
   if (newXP >= newXPNeeded) {
     newXP -= newXPNeeded;
     newLevel += 1;
-    newXPNeeded = Math.floor(newXPNeeded * 1.3);
+    newXPNeeded = Math.floor(newXPNeeded * 1.09); // 9% harder each level
+    skillPointsEarned = 1;                          // 1 skill point per level up
   }
 
   await supabase.from('players').update({
@@ -170,6 +154,7 @@ async function runBattle(telegramId, mode = 'normal') {
     glory: player.glory + gloryEarned,
     feathers: player.feathers + feathersEarned,
     food: player.food + foodEarned,
+    skill_points: (player.skill_points || 0) + skillPointsEarned,
     battles_played: player.battles_played + 1,
     battles_won: result.playerWon ? player.battles_won + 1 : player.battles_won,
     battles_lost: result.playerWon ? player.battles_lost : player.battles_lost + 1,
