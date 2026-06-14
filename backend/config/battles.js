@@ -39,7 +39,7 @@ const BATTLE_CONFIG = {
         xpMultiplier: 2,
         gloryMultiplier: 2,
         baseFood: 250,
-        baseFeathers: 0
+        baseFeathers: 200
       },
       lose: {
         xpMultiplier: 2,
