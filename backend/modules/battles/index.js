@@ -201,7 +201,8 @@ async function runBattle(telegramId, mode = 'normal') {
     opponent: {
       telegram_id: opponent.telegram_id,
       display_name: opponent.display_name,
-      power: opponent.power
+      power: opponent.power,
+      evolution_tier: opponent.evolution_tier  // needed for bird emoji in BattleArena
     },
     playerStats: { hp: playerStats.hp, attack: playerStats.attack },
     opponentStats: { hp: opponentStats.hp, attack: opponentStats.attack },
