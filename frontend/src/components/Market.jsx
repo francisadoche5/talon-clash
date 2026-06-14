@@ -1,123 +1,402 @@
 import { useState, useEffect } from 'react';
 import { getStoreItems, buyItem, openChest } from '../api';
 
-const CATEGORIES = ['special_offers','boosters','epic_boosters','hammers','chests'];
+const CATEGORIES = ['special_offers', 'chests', 'dust', 'boosters', 'epic_boosters', 'hammers'];
 const CATEGORY_LABELS = {
-  special_offers: 'Special Offers',
-  boosters: 'Boosters',
-  epic_boosters: 'Epic Boosters',
-  hammers: 'Hammers',
-  chests: 'Chests'
+  special_offers: '🔥 Special',
+  chests: '📦 Chests',
+  dust: '✨ Dust',
+  boosters: '⚗️ Boosters',
+  epic_boosters: '💥 Epic',
+  hammers: '🔨 Hammers',
 };
 
+// Chest visuals
+const CHEST_DATA = [
+  { key: 'common',   emoji: '🪨', bg: 'bg-stone-600',   border: 'border-stone-400', label: 'Common',   price: 49,   qty: 1, stock: '5/5' },
+  { key: 'uncommon', emoji: '🟩', bg: 'bg-green-600',   border: 'border-green-400', label: 'Uncommon', price: 149,  qty: 1, stock: '3/3' },
+  { key: 'rare',     emoji: '🔵', bg: 'bg-blue-600',    border: 'border-blue-400',  label: 'Rare',     price: 1449, qty: 1, stock: '2/2' },
+  { key: 'epic',     emoji: '💜', bg: 'bg-purple-700',  border: 'border-yellow-400',label: 'Epic',     price: 7499, qty: 1, stock: '1/1', badge: '50% OFF' },
+];
+
+const CHEST_EMOJIS = { common: '📦', uncommon: '🗃️', rare: '🔒', epic: '👑' };
+const CHEST_COLORS = {
+  common:   { card: 'bg-stone-100',  icon: 'bg-stone-300',   btn: 'from-blue-400 to-blue-600' },
+  uncommon: { card: 'bg-green-50',   icon: 'bg-green-200',   btn: 'from-blue-400 to-blue-600' },
+  rare:     { card: 'bg-blue-50',    icon: 'bg-blue-200',    btn: 'from-blue-400 to-blue-600' },
+  epic:     { card: 'bg-purple-50',  icon: 'bg-purple-300',  btn: 'from-blue-400 to-blue-600' },
+};
+
+// Dust packs
+const DUST_PACKS = [
+  { id: 'd1', qty: 500,    price: 0,    watchAd: true,  cooldown: '17h 33m', stock: '0/8' },
+  { id: 'd2', qty: 1000,   price: 149,  badge: '50% OFF', stock: '3/3' },
+  { id: 'd3', qty: 2500,   price: 749,  stock: '1/1' },
+  { id: 'd4', qty: 8500,   price: 1999, stock: '1/1' },
+  { id: 'd5', qty: 17000,  price: 4999, badge: 'HOT DEAL', stock: '1/1' },
+  { id: 'd6', qty: 50500,  price: 6999, badge: '50% OFF', stock: '1/1' },
+];
+
+// Booster packs
+const BOOSTER_PACKS = [
+  { id: 'b1', qty: 1,  price: 100,  label: 'GET X1' },
+  { id: 'b2', qty: 3,  price: 250,  label: 'GET X3' },
+  { id: 'b3', qty: 5,  price: 400,  label: 'GET X5' },
+];
+
+const EPIC_BOOSTER_PACKS = [
+  { id: 'eb1', qty: 1,  price: 250,  label: 'GET X1' },
+  { id: 'eb2', qty: 3,  price: 675,  label: 'GET X3' },
+  { id: 'eb3', qty: 5,  price: 1125, label: 'GET X5' },
+];
+
+// Hammer packs
+const HAMMER_PACKS = [
+  { id: 'h1', qty: 5,  price: 2700, label: 'GET X5' },
+  { id: 'h2', qty: 10, price: 4600, label: 'GET X10' },
+  { id: 'h3', qty: 15, price: 5500, label: 'GET X15' },
+];
+
+// Special offers
+const SPECIAL_OFFERS = [
+  { id: 'so1', name: 'Overcharge Pack', stock: '100/100', qty: 40, emoji: '💥', price: 5900, badge: 'HOT DEAL', desc: 'Epic Booster x40' },
+  { id: 'so2', name: 'Electra Pack',    stock: '100/100', qty: 60, emoji: '⚡', price: 3500, badge: 'HOT DEAL', desc: 'Booster x60' },
+  { id: 'so3', name: 'Energy Tesla',    stock: '100/100', multi: true, price: 2000, badge: 'HOT DEAL', desc: 'Dust x5,000 + Booster x30' },
+];
+
+function Badge({ text }) {
+  if (!text) return null;
+  return (
+    <div className="absolute -top-1 -right-1 z-10">
+      <div className="bg-red-600 text-white text-xs font-black px-3 py-1 rounded-sm shadow-md"
+        style={{ clipPath: 'polygon(0 0, 100% 0, 100% 100%, 8px 100%)' }}>
+        {text}
+      </div>
+    </div>
+  );
+}
+
+function StarPrice({ amount, brown }) {
+  return (
+    <div className={`flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-full font-black text-sm shadow ${
+      brown ? 'bg-amber-800 text-white' : 'bg-gradient-to-b from-blue-400 to-blue-600 text-white'
+    }`}>
+      <span>{amount.toLocaleString()}</span>
+      <span className="text-yellow-300">⭐</span>
+    </div>
+  );
+}
+
 export default function Market({ player, onRefresh }) {
-  const [items, setItems] = useState([]);
   const [activeCategory, setActiveCategory] = useState('special_offers');
-  const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => { loadItems(); }, []);
-
-  async function loadItems() {
-    try {
-      const res = await getStoreItems();
-      setItems(res.data.items || []);
-    } catch {}
-    finally { setLoading(false); }
+  function showMsg(type, text) {
+    setMessage({ type, text });
+    setTimeout(() => setMessage(null), 3000);
   }
 
-  async function handleBuy(item) {
+  async function handleChest(chestKey) {
     try {
-      let res;
-      if (item.category === 'chests') {
-        const chestMap = {
-          'Common Chest': 'common',
-          'Uncommon Chest': 'uncommon',
-          'Rare Chest': 'rare',
-          'Epic Chest': 'epic'
-        };
-        res = await openChest(player.telegram_id, chestMap[item.name] || 'common');
-        setMessage({ type: 'success', text: `Got: ${res.data.item?.name} (${res.data.item?.rarity})!` });
-      } else {
-        res = await buyItem(player.telegram_id, item.id);
-        setMessage({ type: 'success', text: `Bought ${item.name}!` });
-      }
+      const res = await openChest(player.telegram_id, chestKey);
+      showMsg('success', `🎉 Got: ${res.data.item?.name} (${res.data.item?.rarity})!`);
       onRefresh();
-      setTimeout(() => setMessage(null), 3000);
     } catch (err) {
-      setMessage({ type: 'error', text: err.response?.data?.error || 'Purchase failed' });
-      setTimeout(() => setMessage(null), 3000);
+      showMsg('error', err.response?.data?.error || 'Purchase failed');
     }
   }
 
-  const filteredItems = items.filter(i => i.category === activeCategory);
+  async function handleBuy(itemId) {
+    try {
+      await buyItem(player.telegram_id, itemId);
+      showMsg('success', 'Purchase successful!');
+      onRefresh();
+    } catch (err) {
+      showMsg('error', err.response?.data?.error || 'Purchase failed');
+    }
+  }
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Currency Bar */}
-      <div className="bg-amber-800 px-4 py-2 flex justify-center gap-4 text-sm">
-        <span>🪶 {player?.feathers?.toLocaleString()}</span>
-        <span>⭐ {player?.seeds || 0}</span>
-        <span>🔨 {player?.hammers || 0}</span>
+    <div className="flex flex-col h-full bg-amber-950">
+
+      {/* Wood-grain header bar */}
+      <div className="relative"
+        style={{ background: 'linear-gradient(180deg, #8B5E3C 0%, #6B4423 50%, #5C3A1E 100%)', borderBottom: '3px solid #3D2510' }}>
+
+        {/* Awning stripes at very top */}
+        <div className="h-3 flex overflow-hidden">
+          {Array.from({ length: 20 }).map((_, i) => (
+            <div key={i} className={`flex-1 ${i % 2 === 0 ? 'bg-red-600' : 'bg-white'}`} />
+          ))}
+        </div>
+
+        <div className="px-4 pt-2 pb-1 text-center">
+          <div className="text-yellow-300 font-black text-2xl tracking-widest drop-shadow"
+            style={{ textShadow: '2px 2px 0 #7c4a00' }}>
+            STORE
+          </div>
+        </div>
+
+        {/* Currency row */}
+        <div className="flex justify-center gap-3 pb-2 px-4">
+          <div className="bg-amber-900 bg-opacity-70 rounded-full px-3 py-1 flex items-center gap-1.5">
+            <span className="text-sm">🪶</span>
+            <span className="text-amber-200 text-xs font-bold">{(player?.feathers || 0).toLocaleString()}</span>
+          </div>
+          <div className="bg-amber-900 bg-opacity-70 rounded-full px-3 py-1 flex items-center gap-1.5">
+            <span className="text-sm">⭐</span>
+            <span className="text-amber-200 text-xs font-bold">{(player?.seeds || 0).toLocaleString()}</span>
+          </div>
+          <div className="bg-amber-900 bg-opacity-70 rounded-full px-3 py-1 flex items-center gap-1.5">
+            <span className="text-sm">🔨</span>
+            <span className="text-amber-200 text-xs font-bold">{player?.hammers || 0}</span>
+          </div>
+        </div>
       </div>
 
-      {/* Category Tabs */}
-      <div className="flex overflow-x-auto bg-amber-900 px-2 py-1 gap-1">
+      {/* Category tabs — scrollable */}
+      <div className="flex overflow-x-auto bg-amber-900 px-3 py-2 gap-2 no-scrollbar"
+        style={{ scrollbarWidth: 'none' }}>
         {CATEGORIES.map(cat => (
           <button key={cat} onClick={() => setActiveCategory(cat)}
-            className={`whitespace-nowrap px-3 py-1 rounded-full text-xs font-bold transition-all ${
-              activeCategory === cat ? 'bg-amber-500 text-amber-900' : 'text-amber-400'
+            className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-bold flex-shrink-0 transition-all ${
+              activeCategory === cat
+                ? 'bg-amber-500 text-amber-950 shadow-inner'
+                : 'bg-amber-800 text-amber-300'
             }`}>
             {CATEGORY_LABELS[cat]}
           </button>
         ))}
       </div>
 
-      {/* Message */}
+      {/* Message toast */}
       {message && (
-        <div className={`mx-4 mt-2 p-2 rounded-xl text-center text-sm ${
+        <div className={`mx-4 mt-2 p-2 rounded-xl text-center text-sm font-bold ${
           message.type === 'success' ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'
         }`}>
           {message.text}
         </div>
       )}
 
-      {/* Items */}
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
-        {loading ? (
-          <div className="text-center text-amber-400 mt-8">Loading...</div>
-        ) : filteredItems.length === 0 ? (
-          <div className="text-center text-amber-400 mt-8">No items available</div>
-        ) : (
-          filteredItems.map(item => (
-            <div key={item.id} className="bg-amber-900 rounded-2xl p-4 flex items-center gap-4">
-              <div className="w-16 h-16 bg-amber-800 rounded-xl flex items-center justify-center text-3xl">
-                {item.category === 'boosters' || item.category === 'epic_boosters' ? '⚗️' :
-                 item.category === 'hammers' ? '🔨' :
-                 item.category === 'chests' ? '📦' : '🎁'}
-              </div>
-              <div className="flex-1">
-                {item.label && (
-                  <div className="text-xs text-red-400 font-bold mb-1">{item.label}</div>
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto" style={{ background: '#2d1a0e' }}>
+
+        {/* ── SPECIAL OFFERS ── */}
+        {activeCategory === 'special_offers' && (
+          <div className="p-4 flex flex-col gap-4">
+            <div className="text-center text-amber-300 font-black text-lg tracking-wide">Special offers</div>
+            {SPECIAL_OFFERS.map(offer => (
+              <div key={offer.id} className="relative rounded-2xl overflow-hidden"
+                style={{ background: 'linear-gradient(135deg, #f5deb3 0%, #e8c99a 100%)', border: '2px solid #c8a96e' }}>
+                {offer.badge && (
+                  <div className="absolute top-0 right-0 bg-red-600 text-white font-black text-sm px-4 py-1 z-10"
+                    style={{ clipPath: 'polygon(10px 0, 100% 0, 100% 100%, 0 100%)' }}>
+                    {offer.badge}
+                  </div>
                 )}
-                <div className="text-white font-bold text-sm">{item.name}</div>
-                <div className="text-amber-400 text-xs">{item.description}</div>
-              </div>
-              <div className="text-right">
-                <div className="text-amber-300 text-sm font-bold mb-1">
-                  {item.discount_percent > 0
-                    ? Math.floor(item.price * (1 - item.discount_percent / 100))
-                    : item.price} 🪶
+                <div className="p-4">
+                  <div className="text-amber-900 font-black text-base mb-3">
+                    {offer.name} <span className="font-normal text-amber-700 text-sm">({offer.stock})</span>
+                  </div>
+                  <div className="flex items-end gap-3 mb-4">
+                    <div className="w-20 h-20 rounded-2xl bg-amber-200 border-2 border-amber-400 flex items-center justify-center text-4xl shadow-inner relative">
+                      {offer.emoji}
+                      <div className="absolute -bottom-2 -right-2 bg-amber-800 text-white text-xs font-black rounded-full px-2 py-0.5">
+                        x{offer.qty}
+                      </div>
+                    </div>
+                    {offer.multi && (
+                      <div className="w-16 h-16 rounded-2xl bg-amber-200 border-2 border-amber-400 flex items-center justify-center text-3xl shadow-inner relative">
+                        ⚗️
+                        <div className="absolute -bottom-2 -right-2 bg-amber-800 text-white text-xs font-black rounded-full px-2 py-0.5">
+                          x30
+                        </div>
+                      </div>
+                    )}
+                    {/* Hamster mascot */}
+                    <div className="flex-1 flex justify-end text-5xl select-none">🐹</div>
+                  </div>
+                  <button onClick={() => handleBuy(offer.id)}
+                    className="w-full py-3 rounded-2xl font-black text-xl text-white shadow-lg active:scale-95 transition-transform"
+                    style={{ background: 'linear-gradient(180deg, #5bb8ff 0%, #2a7fd4 100%)', boxShadow: '0 4px 0 #1a5fa0' }}>
+                    {offer.price.toLocaleString()} ⭐
+                  </button>
                 </div>
-                <button
-                  onClick={() => handleBuy(item)}
-                  className="bg-blue-500 text-white text-xs px-3 py-1.5 rounded-xl font-bold hover:bg-blue-400 active:scale-95 transition-all">
-                  BUY
-                </button>
               </div>
-            </div>
-          ))
+            ))}
+          </div>
         )}
+
+        {/* ── CHESTS ── */}
+        {activeCategory === 'chests' && (
+          <div className="p-4">
+            <div className="text-center text-amber-300 font-black text-lg tracking-wide mb-4">Chests</div>
+            <div className="grid grid-cols-2 gap-3">
+              {CHEST_DATA.map(chest => (
+                <div key={chest.key} className="relative rounded-2xl overflow-hidden"
+                  style={{ background: 'linear-gradient(135deg, #f0d9b5 0%, #e0c49a 100%)', border: '2px solid #c8a96e' }}>
+                  {chest.badge && (
+                    <div className="absolute top-0 right-0 bg-red-600 text-white font-black text-xs px-3 py-1 z-10"
+                      style={{ clipPath: 'polygon(8px 0, 100% 0, 100% 100%, 0 100%)' }}>
+                      {chest.badge}
+                    </div>
+                  )}
+                  <div className="p-3 flex flex-col items-center">
+                    <div className="text-amber-900 font-black text-sm mb-2">
+                      {chest.label} <span className="text-amber-600 font-normal">({chest.stock})</span>
+                    </div>
+                    {/* Chest icon box */}
+                    <div className={`w-20 h-20 rounded-xl ${chest.bg} border-2 ${chest.border} flex items-center justify-center text-4xl shadow-inner mb-2 relative`}>
+                      {chest.key === 'common' ? '📦' : chest.key === 'uncommon' ? '🗃️' : chest.key === 'rare' ? '🔐' : '👑'}
+                      <div className="absolute -bottom-2 -right-2 bg-amber-800 text-white text-xs font-black rounded-full px-2 py-0.5">
+                        x{chest.qty}
+                      </div>
+                    </div>
+                    <button onClick={() => handleChest(chest.key)}
+                      className="w-full mt-3 py-2.5 rounded-xl font-black text-lg text-white shadow active:scale-95 transition-transform"
+                      style={{ background: 'linear-gradient(180deg, #5bb8ff 0%, #2a7fd4 100%)', boxShadow: '0 3px 0 #1a5fa0' }}>
+                      {chest.price} ⭐
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── DUST ── */}
+        {activeCategory === 'dust' && (
+          <div className="p-4">
+            <div className="text-center text-amber-300 font-black text-lg tracking-wide mb-4">Dust</div>
+            <div className="grid grid-cols-2 gap-3">
+              {DUST_PACKS.map(pack => (
+                <div key={pack.id} className="relative rounded-2xl overflow-hidden"
+                  style={{ background: 'linear-gradient(135deg, #f0d9b5 0%, #e0c49a 100%)', border: '2px solid #c8a96e' }}>
+                  {pack.badge && (
+                    <div className="absolute top-0 right-0 bg-red-600 text-white font-black text-xs px-3 py-1 z-10"
+                      style={{ clipPath: 'polygon(8px 0, 100% 0, 100% 100%, 0 100%)' }}>
+                      {pack.badge}
+                    </div>
+                  )}
+                  <div className="p-3 flex flex-col items-center">
+                    <div className="text-amber-900 font-black text-xs mb-2">
+                      Dust <span className="text-amber-600">({pack.stock})</span>
+                    </div>
+                    <div className="w-18 h-18 rounded-xl bg-amber-200 border-2 border-amber-400 flex items-center justify-center text-4xl shadow-inner mb-1 relative p-2">
+                      ✨
+                      <div className="absolute -bottom-2 -right-2 bg-amber-800 text-white text-xs font-black rounded-full px-2 py-0.5">
+                        x{pack.qty.toLocaleString()}
+                      </div>
+                    </div>
+                    {pack.watchAd ? (
+                      <div className="w-full mt-3">
+                        <div className="bg-amber-700 text-amber-200 text-xs text-center py-1 rounded-t-lg font-bold flex items-center justify-center gap-1">
+                          ⏱ {pack.cooldown}
+                        </div>
+                        <button className="w-full py-2 rounded-b-xl font-black text-sm text-white bg-amber-800 flex items-center justify-center gap-2 active:scale-95 transition-transform">
+                          ▶ Watch Ad
+                        </button>
+                      </div>
+                    ) : (
+                      <button onClick={() => handleBuy(pack.id)}
+                        className="w-full mt-3 py-2.5 rounded-xl font-black text-lg text-white shadow active:scale-95 transition-transform"
+                        style={{ background: 'linear-gradient(180deg, #5bb8ff 0%, #2a7fd4 100%)', boxShadow: '0 3px 0 #1a5fa0' }}>
+                        {pack.price} ⭐
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── BOOSTERS ── */}
+        {activeCategory === 'boosters' && (
+          <div className="p-4 flex flex-col gap-3">
+            <div className="text-center text-amber-300 font-black text-lg tracking-wide mb-2">Boosters</div>
+            {BOOSTER_PACKS.map(pack => (
+              <div key={pack.id} className="rounded-2xl overflow-hidden flex items-center gap-4 px-4 py-3"
+                style={{ background: 'linear-gradient(135deg, #f5e6a3 0%, #e8d070 50%, #f5e6a3 100%)', border: '2px solid #c8a030', boxShadow: '0 2px 0 #7c6010, inset 0 1px 0 rgba(255,255,255,0.5)' }}>
+                {/* Glow icon */}
+                <div className="relative w-16 h-16 flex-shrink-0">
+                  <div className="absolute inset-0 rounded-full bg-yellow-300 opacity-30 blur-md" />
+                  <div className="relative z-10 w-16 h-16 flex items-center justify-center text-4xl">⚗️</div>
+                </div>
+                <div className="flex-1 flex flex-col gap-2">
+                  <div className="flex justify-end">
+                    <div className="bg-amber-800 text-white text-sm font-black px-4 py-1 rounded-full flex items-center gap-1">
+                      {pack.price} <span className="text-yellow-300">⭐</span>
+                    </div>
+                  </div>
+                  <button onClick={() => handleBuy(pack.id)}
+                    className="w-full py-2.5 rounded-xl font-black text-base text-white shadow active:scale-95 transition-transform"
+                    style={{ background: 'linear-gradient(180deg, #5bb8ff 0%, #2a7fd4 100%)', boxShadow: '0 3px 0 #1a5fa0' }}>
+                    {pack.label}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ── EPIC BOOSTERS ── */}
+        {activeCategory === 'epic_boosters' && (
+          <div className="p-4 flex flex-col gap-3">
+            <div className="text-center text-amber-300 font-black text-lg tracking-wide mb-2">Epic Boosters</div>
+            {EPIC_BOOSTER_PACKS.map(pack => (
+              <div key={pack.id} className="rounded-2xl overflow-hidden flex items-center gap-4 px-4 py-3"
+                style={{ background: 'linear-gradient(135deg, #f5e6a3 0%, #e8d070 50%, #f5e6a3 100%)', border: '2px solid #c8a030', boxShadow: '0 2px 0 #7c6010, inset 0 1px 0 rgba(255,255,255,0.5)' }}>
+                <div className="relative w-16 h-16 flex-shrink-0">
+                  <div className="absolute inset-0 rounded-full bg-purple-400 opacity-30 blur-md" />
+                  <div className="relative z-10 w-16 h-16 flex items-center justify-center text-4xl">💥</div>
+                </div>
+                <div className="flex-1 flex flex-col gap-2">
+                  <div className="flex justify-end">
+                    <div className="bg-amber-800 text-white text-sm font-black px-4 py-1 rounded-full flex items-center gap-1">
+                      {pack.price} <span className="text-yellow-300">⭐</span>
+                    </div>
+                  </div>
+                  <button onClick={() => handleBuy(pack.id)}
+                    className="w-full py-2.5 rounded-xl font-black text-base text-white shadow active:scale-95 transition-transform"
+                    style={{ background: 'linear-gradient(180deg, #5bb8ff 0%, #2a7fd4 100%)', boxShadow: '0 3px 0 #1a5fa0' }}>
+                    {pack.label}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ── HAMMERS ── */}
+        {activeCategory === 'hammers' && (
+          <div className="p-4 flex flex-col gap-3">
+            <div className="text-center text-amber-300 font-black text-lg tracking-wide mb-2">Hammers</div>
+            {HAMMER_PACKS.map(pack => (
+              <div key={pack.id} className="rounded-2xl overflow-hidden flex items-center gap-4 px-4 py-3"
+                style={{ background: 'linear-gradient(135deg, #f5e6a3 0%, #e8d070 50%, #f5e6a3 100%)', border: '2px solid #c8a030', boxShadow: '0 2px 0 #7c6010, inset 0 1px 0 rgba(255,255,255,0.5)' }}>
+                <div className="relative w-16 h-16 flex-shrink-0">
+                  <div className="absolute inset-0 rounded-full bg-orange-400 opacity-30 blur-md" />
+                  <div className="relative z-10 w-16 h-16 flex items-center justify-center text-4xl">🔨</div>
+                </div>
+                <div className="flex-1 flex flex-col gap-2">
+                  <div className="flex justify-end">
+                    <div className="bg-amber-800 text-white text-sm font-black px-4 py-1 rounded-full flex items-center gap-1">
+                      {pack.price.toLocaleString()} <span className="text-yellow-300">⭐</span>
+                    </div>
+                  </div>
+                  <button onClick={() => handleBuy(pack.id)}
+                    className="w-full py-2.5 rounded-xl font-black text-base text-white shadow active:scale-95 transition-transform"
+                    style={{ background: 'linear-gradient(180deg, #5bb8ff 0%, #2a7fd4 100%)', boxShadow: '0 3px 0 #1a5fa0' }}>
+                    {pack.label}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
       </div>
     </div>
   );
