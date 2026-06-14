@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { getStoreItems, buyItem, openChest } from '../api';
 
-const CATEGORIES = ['special_offers', 'chests', 'dust', 'boosters', 'epic_boosters', 'hammers'];
+const CATEGORIES = ['special_offers', 'chests', 'feathers', 'boosters', 'epic_boosters', 'hammers'];
 const CATEGORY_LABELS = {
   special_offers: '🔥 Special',
   chests: '📦 Chests',
-  dust: '✨ Dust',
+  feathers: '🪶 Feathers',
   boosters: '⚗️ Boosters',
   epic_boosters: '💥 Epic',
   hammers: '🔨 Hammers',
@@ -27,7 +27,7 @@ const CHEST_COLORS = {
   epic:     { card: 'bg-purple-50',  icon: 'bg-purple-300',  btn: 'from-blue-400 to-blue-600' },
 };
 
-// Dust packs
+// Feathers packs
 const DUST_PACKS = [
   { id: 'd1', qty: 500,    price: 0,    watchAd: true,  cooldown: '17h 33m', stock: '0/8' },
   { id: 'd2', qty: 1000,   price: 149,  badge: '50% OFF', stock: '3/3' },
@@ -61,7 +61,7 @@ const HAMMER_PACKS = [
 const SPECIAL_OFFERS = [
   { id: 'so1', name: 'Overcharge Pack', stock: '100/100', qty: 40, emoji: '💥', price: 5900, badge: 'HOT DEAL', desc: 'Epic Booster x40' },
   { id: 'so2', name: 'Electra Pack',    stock: '100/100', qty: 60, emoji: '⚡', price: 3500, badge: 'HOT DEAL', desc: 'Booster x60' },
-  { id: 'so3', name: 'Energy Tesla',    stock: '100/100', multi: true, price: 2000, badge: 'HOT DEAL', desc: 'Dust x5,000 + Booster x30' },
+  { id: 'so3', name: 'Energy Tesla',    stock: '100/100', multi: true, price: 2000, badge: 'HOT DEAL', desc: 'Feathers x5,000 + Booster x30' },
 ];
 
 function Badge({ text }) {
@@ -214,8 +214,8 @@ export default function Market({ player, onRefresh }) {
                         </div>
                       </div>
                     )}
-                    {/* Hamster mascot */}
-                    <div className="flex-1 flex justify-end text-5xl select-none">🐹</div>
+                    {/* Bird mascot */}
+                    <div className="flex-1 flex justify-end text-5xl select-none">🦅</div>
                   </div>
                   <button onClick={() => handleBuy(offer.id)}
                     className="w-full py-3 rounded-2xl font-black text-xl text-white shadow-lg active:scale-95 transition-transform"
@@ -266,9 +266,9 @@ export default function Market({ player, onRefresh }) {
         )}
 
         {/* ── DUST ── */}
-        {activeCategory === 'dust' && (
+        {activeCategory === 'feathers' && (
           <div className="p-4">
-            <div className="text-center text-amber-300 font-black text-lg tracking-wide mb-4">Dust</div>
+            <div className="text-center text-amber-300 font-black text-lg tracking-wide mb-4">Feathers</div>
             <div className="grid grid-cols-2 gap-3">
               {DUST_PACKS.map(pack => (
                 <div key={pack.id} className="relative rounded-2xl overflow-hidden"
@@ -281,10 +281,10 @@ export default function Market({ player, onRefresh }) {
                   )}
                   <div className="p-3 flex flex-col items-center">
                     <div className="text-amber-900 font-black text-xs mb-2">
-                      Dust <span className="text-amber-600">({pack.stock})</span>
+                      Feathers <span className="text-amber-600">({pack.stock})</span>
                     </div>
                     <div className="w-18 h-18 rounded-xl bg-amber-200 border-2 border-amber-400 flex items-center justify-center text-4xl shadow-inner mb-1 relative p-2">
-                      ✨
+                      🪶
                       <div className="absolute -bottom-2 -right-2 bg-amber-800 text-white text-xs font-black rounded-full px-2 py-0.5">
                         x{pack.qty.toLocaleString()}
                       </div>
