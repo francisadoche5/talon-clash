@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { getBirdUrl, BIRD_ANIMATION_CSS } from '../birdImages';
+import { BIRD_ANIMATION_CSS } from '../birdImages';
 
 // Inject bird animation CSS once
 if (typeof document !== 'undefined' && !document.getElementById('bird-anim-css')) {
@@ -9,34 +9,70 @@ if (typeof document !== 'undefined' && !document.getElementById('bird-anim-css')
   document.head.appendChild(s);
 }
 
-// BirdImg — 3D CSS bird with depth perspective, dynamic shadow and idle float
-function BirdImg({ tier, size = 'md', flip = false, animate = false, className = '', style = {} }) {
-  const sizeMap = { sm: 'w-12 h-12', md: 'w-16 h-16', lg: 'w-24 h-24', xl: 'w-32 h-32', '2xl': 'w-40 h-40' };
-  const animClass = animate ? (flip ? 'bird-3d-idle-flip' : 'bird-3d-idle') : '';
-  const baseTransform = flip
-    ? 'perspective(320px) rotateY(-22deg) scaleX(-1)'
-    : 'perspective(320px) rotateY(22deg)';
+// ── Sprite sheets ────────────────────────────────────────────────────────────
+// Each sheet: 6 frames in a row, 847×101px
+// Frame order: 0-idle | 1-walk | 2-attack | 3-hit | 4-victory | 5-defeat
+const SPRITE_SHEETS = {
+  1: 'https://i.ibb.co/GQtB7sch/IMG-20260614-222154-188.jpg',
+  2: 'https://i.ibb.co/zW10PRQq/IMG-20260614-222231-594.jpg',
+  3: 'https://i.ibb.co/PZ7ngmPt/IMG-20260614-222203-656.jpg',
+  4: 'https://i.ibb.co/JW2GvjBm/IMG-20260614-222207-198.jpg',
+  5: 'https://i.ibb.co/DHJ8HTMf/IMG-20260614-222211-201.jpg',
+  6: 'https://i.ibb.co/rfFckY1b/IMG-20260614-222214-922.jpg',
+  7: 'https://i.ibb.co/600bTbjy/IMG-20260614-222217-151.jpg',
+};
+
+const SHEET_FRAMES  = 6;
+const SHEET_W       = 847;
+const SHEET_H       = 101;
+const FRAME_W       = SHEET_W / SHEET_FRAMES; // ~141.17px
+
+// Animation configs: which frames to cycle and at what speed (ms per frame)
+const ANIM_CONFIG = {
+  idle:    { frames: [0, 1, 0],    speed: 380 },
+  walk:    { frames: [1, 0, 1],    speed: 280 },
+  attack:  { frames: [2, 2, 0],    speed: 110 },
+  hit:     { frames: [3, 3, 0],    speed: 130 },
+  victory: { frames: [4, 4, 4],    speed: 450 },
+  defeat:  { frames: [5],          speed: 999 },
+};
+
+// SpriteAnimator — plays a sprite-sheet animation for a bird tier
+function SpriteAnimator({ tier, animState = 'idle', flip = false, scale = 1.4, glowColor }) {
+  const url      = SPRITE_SHEETS[tier] || SPRITE_SHEETS[1];
+  const dispW    = Math.round(FRAME_W * scale);
+  const dispH    = Math.round(SHEET_H * scale);
+  const totalBgW = Math.round(SHEET_W  * scale);
+
+  const config = ANIM_CONFIG[animState] || ANIM_CONFIG.idle;
+  const [fi, setFi] = useState(config.frames[0]);
+
+  useEffect(() => {
+    setFi(config.frames[0]);
+    let i = 0;
+    if (config.frames.length === 1) return;
+    const id = setInterval(() => {
+      i = (i + 1) % config.frames.length;
+      setFi(config.frames[i]);
+    }, config.speed);
+    return () => clearInterval(id);
+  }, [animState]); // eslint-disable-line
+
+  const bgX = -(fi * dispW);
+
   return (
-    <div className="flex flex-col items-center">
-      <img
-        src={getBirdUrl(tier)}
-        alt={`Bird tier ${tier}`}
-        className={`${sizeMap[size]} object-contain select-none ${animClass} ${className}`}
-        style={{
-          transform: animate ? undefined : baseTransform,
-          filter: flip
-            ? 'drop-shadow(-4px 6px 8px rgba(0,0,0,0.6))'
-            : 'drop-shadow(4px 6px 8px rgba(0,0,0,0.6))',
-          ...style,
-        }}
-        draggable={false}
-      />
-      <div style={{
-        width: '60%', height: '8px',
-        background: 'radial-gradient(ellipse, rgba(0,0,0,0.45) 0%, transparent 75%)',
-        borderRadius: '50%', marginTop: '-4px', transform: 'scaleX(1.2)',
-      }} />
-    </div>
+    <div style={{
+      width:               dispW,
+      height:              dispH,
+      backgroundImage:     `url(${url})`,
+      backgroundSize:      `${totalBgW}px ${dispH}px`,
+      backgroundPosition:  `${bgX}px 0px`,
+      backgroundRepeat:    'no-repeat',
+      imageRendering:      'auto',
+      transform:           flip ? 'scaleX(-1)' : undefined,
+      filter:              glowColor ? `drop-shadow(0 0 14px ${glowColor})` : undefined,
+      flexShrink:          0,
+    }} />
   );
 }
 
@@ -54,30 +90,19 @@ const ARENA_STYLES = `
     50%       { opacity: 0.6; transform: scale(1.15); text-shadow: 0 0 40px #ff0000, 0 0 80px #ff4444; }
   }
   @keyframes shake {
-    0%,100% { transform: perspective(320px) rotateY(22deg) translateX(0); }
-    20%     { transform: perspective(320px) rotateY(10deg) translateX(-12px) rotate(-4deg); }
-    40%     { transform: perspective(320px) rotateY(30deg) translateX(10px)  rotate(3deg); }
-    60%     { transform: perspective(320px) rotateY(10deg) translateX(-8px)  rotate(-2deg); }
-    80%     { transform: perspective(320px) rotateY(25deg) translateX(5px); }
-  }
-  @keyframes shakeFlip {
-    0%,100% { transform: perspective(320px) rotateY(-22deg) scaleX(-1) translateX(0); }
-    20%     { transform: perspective(320px) rotateY(-10deg) scaleX(-1) translateX(12px) rotate(4deg); }
-    40%     { transform: perspective(320px) rotateY(-30deg) scaleX(-1) translateX(-10px) rotate(-3deg); }
-    60%     { transform: perspective(320px) rotateY(-10deg) scaleX(-1) translateX(8px) rotate(2deg); }
-    80%     { transform: perspective(320px) rotateY(-25deg) scaleX(-1) translateX(-5px); }
+    0%,100% { transform: scaleX(var(--flip,1)) translateX(0); }
+    20%     { transform: scaleX(var(--flip,1)) translateX(-10px); }
+    40%     { transform: scaleX(var(--flip,1)) translateX(10px); }
+    60%     { transform: scaleX(var(--flip,1)) translateX(-8px); }
+    80%     { transform: scaleX(var(--flip,1)) translateX(6px); }
   }
   @keyframes lungeRight {
-    0%     { transform: perspective(320px) rotateY(22deg) translateX(0) scale(1); }
-    35%    { transform: perspective(200px) rotateY(5deg)  translateX(45px) scale(1.18) rotate(-12deg); }
-    60%    { transform: perspective(200px) rotateY(2deg)  translateX(55px) scale(1.22) rotate(-16deg); }
-    100%   { transform: perspective(320px) rotateY(22deg) translateX(0) scale(1); }
+    0%,100% { transform: translateX(0); }
+    45%     { transform: translateX(35px); }
   }
   @keyframes lungeLeft {
-    0%     { transform: perspective(320px) rotateY(-22deg) scaleX(-1) translateX(0) scale(1); }
-    35%    { transform: perspective(200px) rotateY(-5deg)  scaleX(-1) translateX(-45px) scale(1.18) rotate(12deg); }
-    60%    { transform: perspective(200px) rotateY(-2deg)  scaleX(-1) translateX(-55px) scale(1.22) rotate(16deg); }
-    100%   { transform: perspective(320px) rotateY(-22deg) scaleX(-1) translateX(0) scale(1); }
+    0%,100% { transform: translateX(0); }
+    45%     { transform: translateX(-35px); }
   }
   @keyframes floatDamage {
     0%   { opacity: 1; transform: translateY(0)   scale(0.8); }
@@ -119,24 +144,12 @@ const ARENA_STYLES = `
   .bird-slide-left  { animation: slideInLeft  0.65s cubic-bezier(0.22,1,0.36,1) both; }
   .bird-slide-right { animation: slideInRight 0.65s cubic-bezier(0.22,1,0.36,1) both; }
   .vs-flash         { animation: vsFlash 1.2s ease-in-out infinite; }
-  .bird-lunge-right { animation: lungeRight 0.45s ease-in-out; }
-  .bird-lunge-left  { animation: lungeLeft  0.45s ease-in-out; }
-  .bird-shake       { animation: shake     0.38s ease-in-out; }
-  .bird-shake-flip  { animation: shakeFlip 0.38s ease-in-out; }
+  .bird-lunge-right { animation: lungeRight 0.42s ease-in-out; }
+  .bird-lunge-left  { animation: lungeLeft  0.42s ease-in-out; }
+  .bird-shake       { animation: shake 0.35s ease-in-out; }
   .float-damage     { animation: floatDamage 0.85s ease-out forwards; }
   .victory-bounce   { animation: victoryBounce 0.7s ease-in-out infinite; }
   .defeat-slump     { animation: defeatSlump 0.5s ease-out forwards; }
-
-  @keyframes bird3dIdle {
-    0%,100% { transform: perspective(320px) rotateY(22deg) translateY(0)   scale(1); }
-    50%     { transform: perspective(320px) rotateY(18deg) translateY(-9px) scale(1.04); }
-  }
-  @keyframes bird3dIdleFlip {
-    0%,100% { transform: perspective(320px) rotateY(-22deg) scaleX(-1) translateY(0)   scale(1); }
-    50%     { transform: perspective(320px) rotateY(-18deg) scaleX(-1) translateY(-9px) scale(1.04); }
-  }
-  .bird-3d-idle      { animation: bird3dIdle     3s ease-in-out infinite; }
-  .bird-3d-idle-flip { animation: bird3dIdleFlip 3s ease-in-out infinite; }
   .battle-start-txt { animation: battleStart 0.9s ease-in-out forwards; }
   .reward-pop       { animation: rewardPop 0.45s cubic-bezier(0.22,1,0.36,1) both; }
 `;
@@ -338,7 +351,7 @@ export default function BattleArena({ player, result, onClose }) {
             {/* Player bird entrance */}
             <div className="flex-1 flex flex-col items-center bird-slide-left">
               <div className="mb-3 drop-shadow-2xl">
-                <BirdImg tier={playerTier} size="2xl" animate style={{ filter: 'drop-shadow(0 0 16px rgba(251,191,36,0.5))' }} />
+                <SpriteAnimator tier={playerTier} animState="walk" scale={1.6} glowColor={`${accentColor}99`} />
               </div>
               <div className="text-white font-bold text-sm text-center truncate max-w-[100px]">
                 {player?.display_name || 'You'}
@@ -361,7 +374,7 @@ export default function BattleArena({ player, result, onClose }) {
             {/* Opponent bird entrance */}
             <div className="flex-1 flex flex-col items-center bird-slide-right">
               <div className="mb-3 drop-shadow-2xl">
-                <BirdImg tier={oppTier} size="2xl" flip animate style={{ filter: 'drop-shadow(0 0 16px rgba(239,68,68,0.5))' }} />
+                <SpriteAnimator tier={oppTier} animState="walk" flip scale={1.6} glowColor="#ef444499" />
               </div>
               <div className="text-white font-bold text-sm text-center truncate max-w-[100px]">
                 {result.opponent?.display_name || 'Opponent'}
@@ -448,10 +461,12 @@ export default function BattleArena({ player, result, onClose }) {
 
               {/* Player bird */}
               <div className="relative flex flex-col items-center">
-                <div
-                  className={`transition-none ${playerLunge ? 'bird-lunge-right' : ''} ${playerShake ? 'bird-shake' : ''}`}>
-                  <BirdImg tier={playerTier} size="xl" style={{ filter: `drop-shadow(0 0 12px ${accentColor}88)` }} />
-                </div>
+                <SpriteAnimator
+                  tier={playerTier}
+                  animState={playerShake ? 'hit' : playerLunge ? 'attack' : 'idle'}
+                  scale={1.4}
+                  glowColor={`${accentColor}88`}
+                />
                 {damages.filter(d => d.target === 'player').map(d => (
                   <FloatingDamage key={d.id} damage={d.damage} isCrit={d.isCrit} isBlocked={d.isBlocked} />
                 ))}
@@ -470,10 +485,13 @@ export default function BattleArena({ player, result, onClose }) {
 
               {/* Opponent bird */}
               <div className="relative flex flex-col items-center">
-                <div
-                  className={`transition-none ${oppLunge ? 'bird-lunge-left' : ''} ${oppShake ? 'bird-shake-flip' : ''}`}>
-                  <BirdImg tier={oppTier} size="xl" flip style={{ filter: 'drop-shadow(0 0 12px #ef444488)' }} />
-                </div>
+                <SpriteAnimator
+                  tier={oppTier}
+                  animState={oppShake ? 'hit' : oppLunge ? 'attack' : 'idle'}
+                  flip
+                  scale={1.4}
+                  glowColor="#ef444488"
+                />
                 {damages.filter(d => d.target === 'opp').map(d => (
                   <FloatingDamage key={d.id} damage={d.damage} isCrit={d.isCrit} isBlocked={d.isBlocked} />
                 ))}
@@ -488,18 +506,13 @@ export default function BattleArena({ player, result, onClose }) {
         <div className="flex-1 flex flex-col items-center justify-center gap-5 p-6">
 
           {/* Winner bird */}
-          <div
-            className={result.playerWon ? 'victory-bounce' : 'defeat-slump'}
-            style={{
-              filter: result.playerWon
-                ? `drop-shadow(0 0 20px ${accentColor})`
-                : 'drop-shadow(0 0 12px #ef444488) grayscale(0.4)',
-            }}>
-            <BirdImg
+          <div className={result.playerWon ? 'victory-bounce' : 'defeat-slump'}>
+            <SpriteAnimator
               tier={result.playerWon ? playerTier : oppTier}
-              size="2xl"
+              animState={result.playerWon ? 'victory' : 'defeat'}
               flip={!result.playerWon}
-              animate
+              scale={1.8}
+              glowColor={result.playerWon ? `${accentColor}cc` : '#ef4444aa'}
             />
           </div>
 
