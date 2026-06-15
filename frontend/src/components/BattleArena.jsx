@@ -413,44 +413,44 @@ export default function BattleArena({ player, result, onClose }) {
             </div>
           </div>
 
-          {/* Birds face-off */}
-          <div className="w-full flex items-end justify-between mt-auto px-1">
+          {/* Birds face-off — centered, both visible */}
+          <div className="w-full flex items-end justify-center gap-4 mt-auto">
 
             {/* Player bird entrance */}
-            <div className="flex-1 flex flex-col items-center bird-slide-left">
-              <div className="mb-3 drop-shadow-2xl">
-                <SpriteAnimator tier={playerTier} animState="walk" targetW={170} clipH={360} glowColor={`${accentColor}99`} />
+            <div className="flex flex-col items-center bird-slide-left">
+              <div className="mb-2 drop-shadow-2xl">
+                <SpriteAnimator tier={playerTier} animState="walk" targetW={140} clipH={280} glowColor={`${accentColor}99`} />
               </div>
-              <div className="text-white font-bold text-sm text-center truncate max-w-[100px]">
+              <div className="text-white font-bold text-xs text-center truncate max-w-[110px]">
                 {player?.display_name || 'You'}
               </div>
               <div className="text-xs mt-0.5 font-mono" style={{ color: accentColor }}>
                 ⚡ {player?.power?.toLocaleString()}
               </div>
-              <div className="mt-2 px-2 py-0.5 rounded-full text-xs font-bold border"
+              <div className="mt-1 px-2 py-0.5 rounded-full text-xs font-bold border"
                 style={{ borderColor: accentColor, color: accentColor, background: `${accentColor}18` }}>
                 LVL {player?.level}
               </div>
             </div>
 
             {/* VS */}
-            <div className="flex flex-col items-center gap-1 mx-2">
+            <div className="flex flex-col items-center gap-1 mb-16">
               <div className="vs-flash font-black text-4xl" style={{ color: '#ff4444' }}>VS</div>
-              <div className="w-px h-10 opacity-30" style={{ background: accentColor }} />
+              <div className="w-px h-8 opacity-30" style={{ background: accentColor }} />
             </div>
 
             {/* Opponent bird entrance */}
-            <div className="flex-1 flex flex-col items-center bird-slide-right">
-              <div className="mb-3 drop-shadow-2xl">
-                <SpriteAnimator tier={oppTier} animState="walk" flip targetW={170} clipH={360} glowColor="#ef444499" />
+            <div className="flex flex-col items-center bird-slide-right">
+              <div className="mb-2 drop-shadow-2xl">
+                <SpriteAnimator tier={oppTier} animState="walk" flip targetW={140} clipH={280} glowColor="#ef444499" />
               </div>
-              <div className="text-white font-bold text-sm text-center truncate max-w-[100px]">
+              <div className="text-white font-bold text-xs text-center truncate max-w-[110px]">
                 {result.opponent?.display_name || 'Opponent'}
               </div>
               <div className="text-xs mt-0.5 font-mono text-red-400">
                 ⚡ {result.opponent?.power?.toLocaleString()}
               </div>
-              <div className="mt-2 px-2 py-0.5 rounded-full text-xs font-bold border border-red-500 text-red-400"
+              <div className="mt-1 px-2 py-0.5 rounded-full text-xs font-bold border border-red-500 text-red-400"
                 style={{ background: '#ef444418' }}>
                 RIVAL
               </div>
@@ -571,79 +571,86 @@ export default function BattleArena({ player, result, onClose }) {
 
       {/* ── RESULT PHASE ───────────────────────────────────────────────── */}
       {phase === 'result' && (
-        <div className="flex-1 flex flex-col items-center justify-center gap-5 p-6">
+        <div className="flex-1 flex flex-col overflow-hidden">
 
-          {/* Winner bird */}
-          <div className={result.playerWon ? 'victory-bounce' : 'defeat-slump'}>
-            <SpriteAnimator
-              tier={result.playerWon ? playerTier : oppTier}
-              animState={result.playerWon ? 'victory' : 'defeat'}
-              flip={!result.playerWon}
-              targetW={160} clipH={320}
-              glowColor={result.playerWon ? `${accentColor}cc` : '#ef4444aa'}
-            />
-          </div>
+          {/* Scrollable content */}
+          <div className="flex-1 overflow-y-auto flex flex-col items-center gap-4 p-5 pb-2">
 
-          {/* Outcome label */}
-          <div className="text-center">
-            <div className="font-black text-4xl tracking-wider"
-              style={{ color: result.playerWon ? accentColor : '#ef4444',
-                       textShadow: result.playerWon ? `0 0 24px ${accentColor}` : '0 0 24px #ef4444' }}>
-              {result.playerWon ? '🏆 VICTORY' : '💀 DEFEAT'}
+            {/* Winner bird — centered, smaller so everything fits */}
+            <div className={`flex justify-center ${result.playerWon ? 'victory-bounce' : 'defeat-slump'}`}>
+              <SpriteAnimator
+                tier={result.playerWon ? playerTier : oppTier}
+                animState={result.playerWon ? 'victory' : 'defeat'}
+                flip={!result.playerWon}
+                targetW={130} clipH={220}
+                glowColor={result.playerWon ? `${accentColor}cc` : '#ef4444aa'}
+              />
             </div>
-            <div className="text-gray-500 text-sm mt-1">
-              vs {result.opponent?.display_name}
-            </div>
-          </div>
 
-          {/* Rewards */}
-          <div className="w-full rounded-2xl p-4 grid grid-cols-4 gap-3 text-center"
-            style={{ background: '#ffffff0d', border: `1px solid ${accentColor}33` }}>
-            {[
-              { label: 'EXP',    color: '#60a5fa', value: `+${result.rewards?.xp}`       },
-              { label: 'Glory',  color: accentColor, value: `+${result.rewards?.glory}`  },
-              { label: '🪶',     color: '#4ade80', value: `+${result.rewards?.feathers}` },
-              { label: 'Food',   color: '#fb923c', value: `+${result.rewards?.food}`     },
-            ].map((r, i) => (
-              <div key={r.label} className="reward-pop" style={{ animationDelay: `${i * 80}ms` }}>
-                <div className="text-xs mb-0.5" style={{ color: r.color }}>{r.label}</div>
-                <div className="text-white font-bold text-sm">{r.value}</div>
+            {/* Outcome label */}
+            <div className="text-center">
+              <div className="font-black text-4xl tracking-wider"
+                style={{ color: result.playerWon ? accentColor : '#ef4444',
+                         textShadow: result.playerWon ? `0 0 24px ${accentColor}` : '0 0 24px #ef4444' }}>
+                {result.playerWon ? '🏆 VICTORY' : '💀 DEFEAT'}
               </div>
-            ))}
-          </div>
-
-          {/* Bonus reward */}
-          {result.rewards?.bonus && (
-            <div className="reward-pop text-center px-4 py-2 rounded-xl"
-              style={{ background: `${accentColor}22`, border: `1px solid ${accentColor}55`,
-                       animationDelay: '350ms' }}>
-              <span className="text-sm font-bold" style={{ color: accentColor }}>
-                🎁 Bonus: {result.rewards.bonus.type} ×{result.rewards.bonus.amount}
-              </span>
-            </div>
-          )}
-
-          {/* Level up */}
-          {result.levelUp && (
-            <div className="reward-pop text-center" style={{ animationDelay: '450ms' }}>
-              <div className="font-black text-lg text-yellow-300 animate-bounce">
-                🎉 LEVEL UP → {result.newLevel}
+              <div className="text-gray-500 text-sm mt-1">
+                vs {result.opponent?.display_name}
               </div>
             </div>
-          )}
 
-          <button
-            onClick={onClose}
-            className="w-full py-4 rounded-2xl font-black text-lg active:scale-95 transition-transform mt-1"
-            style={{
-              background: result.playerWon
-                ? `linear-gradient(135deg, ${accentColor}, ${accentColor}bb)`
-                : 'linear-gradient(135deg, #374151, #1f2937)',
-              color: result.playerWon ? '#1a0a00' : '#d1d5db',
-              boxShadow: result.playerWon ? `0 4px 24px ${accentColor}66` : 'none',
-            }}>
-            CONTINUE
-          </button>
+            {/* Rewards */}
+            <div className="w-full rounded-2xl p-4 grid grid-cols-4 gap-3 text-center"
+              style={{ background: '#ffffff0d', border: `1px solid ${accentColor}33` }}>
+              {[
+                { label: 'EXP',    color: '#60a5fa', value: `+${result.rewards?.xp}`       },
+                { label: 'Glory',  color: accentColor, value: `+${result.rewards?.glory}`  },
+                { label: '🪶',     color: '#4ade80', value: `+${result.rewards?.feathers}` },
+                { label: 'Food',   color: '#fb923c', value: `+${result.rewards?.food}`     },
+              ].map((r, i) => (
+                <div key={r.label} className="reward-pop" style={{ animationDelay: `${i * 80}ms` }}>
+                  <div className="text-xs mb-0.5" style={{ color: r.color }}>{r.label}</div>
+                  <div className="text-white font-bold text-sm">{r.value}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Bonus reward */}
+            {result.rewards?.bonus && (
+              <div className="reward-pop text-center px-4 py-2 rounded-xl w-full"
+                style={{ background: `${accentColor}22`, border: `1px solid ${accentColor}55`,
+                         animationDelay: '350ms' }}>
+                <span className="text-sm font-bold" style={{ color: accentColor }}>
+                  🎁 Bonus: {result.rewards.bonus.type} ×{result.rewards.bonus.amount}
+                </span>
+              </div>
+            )}
+
+            {/* Level up */}
+            {result.levelUp && (
+              <div className="reward-pop text-center" style={{ animationDelay: '450ms' }}>
+                <div className="font-black text-lg text-yellow-300 animate-bounce">
+                  🎉 LEVEL UP → {result.newLevel}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Continue button — always pinned at bottom */}
+          <div className="p-4 pt-2">
+            <button
+              onClick={onClose}
+              className="w-full py-4 rounded-2xl font-black text-lg active:scale-95 transition-transform"
+              style={{
+                background: result.playerWon
+                  ? `linear-gradient(135deg, ${accentColor}, ${accentColor}bb)`
+                  : 'linear-gradient(135deg, #374151, #1f2937)',
+                color: result.playerWon ? '#1a0a00' : '#d1d5db',
+                boxShadow: result.playerWon ? `0 4px 24px ${accentColor}66` : 'none',
+              }}>
+              CONTINUE
+            </button>
+          </div>
         </div>
       )}
     </div>
