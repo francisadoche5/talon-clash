@@ -1,14 +1,7 @@
 import { useState, useEffect } from 'react';
 import { fight, getPublicConfig, createInvoice } from '../api';
 import BattleArena from './BattleArena';
-import { getBirdUrl, BIRD_ANIMATION_CSS } from '../birdImages';
-
-if (typeof document !== 'undefined' && !document.getElementById('bird-anim-css')) {
-  const s = document.createElement('style');
-  s.id = 'bird-anim-css';
-  s.textContent = BIRD_ANIMATION_CSS;
-  document.head.appendChild(s);
-}
+import { getBirdUrl } from '../birdImages';
 
 export default function Lobby({ player, onRefresh }) {
   const [mode, setMode] = useState('normal');
@@ -94,6 +87,39 @@ export default function Lobby({ player, onRefresh }) {
         />
       )}
 
+      {/* ── Searching for opponent overlay ─────────────────────────── */}
+      {battling && !battleResult && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center"
+          style={{ background: 'rgba(0,0,0,0.55)' }}>
+          <style>{`
+            @keyframes coinSpin {
+              0%   { transform: rotateY(0deg) scale(1); }
+              50%  { transform: rotateY(180deg) scale(1.08); }
+              100% { transform: rotateY(360deg) scale(1); }
+            }
+            @keyframes searchPulse {
+              0%,100% { opacity:1; } 50% { opacity:0.5; }
+            }
+            .coin-spin { animation: coinSpin 1.4s ease-in-out infinite; }
+            .search-pulse { animation: searchPulse 1.4s ease-in-out infinite; }
+          `}</style>
+          <div className="w-full rounded-t-3xl p-8 flex flex-col items-center gap-6"
+            style={{ background: '#f5efe0', paddingBottom: 48 }}>
+            <p className="text-2xl font-black search-pulse" style={{ color: '#c0392b' }}>
+              Searching for opponent...
+            </p>
+            {/* Spinning coin */}
+            <div className="coin-spin w-28 h-28 rounded-full flex items-center justify-center shadow-2xl"
+              style={{
+                background: 'radial-gradient(circle at 35% 35%, #ffe066, #f5a623 55%, #b8730a)',
+                boxShadow: '0 0 32px #f5a62388, 0 8px 24px #0006',
+              }}>
+              <span style={{ fontSize: 52 }}>🪶</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="p-4 flex flex-col gap-4">
 
         {/* Bird Display */}
@@ -103,7 +129,7 @@ export default function Lobby({ player, onRefresh }) {
             <img
               src={getBirdUrl(player?.evolution_tier || 1)}
               alt={player?.evolution_name || 'Bird'}
-              className="w-24 h-24 object-contain drop-shadow-2xl bird-float"
+              className="w-24 h-24 object-contain drop-shadow-2xl"
               style={{ filter: 'drop-shadow(0 0 16px rgba(251,191,36,0.5))' }}
             />
           </div>
