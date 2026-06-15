@@ -13,13 +13,13 @@ if (typeof document !== 'undefined' && !document.getElementById('bird-anim-css')
 // Each entry: totalW/totalH = full image size, cols/rows = frame grid layout
 // Frame order: 0-idle | 1-walk | 2-attack | 3-hit | 4-victory | 5-defeat
 const SPRITE_SHEETS = {
-  1: { url: 'https://i.ibb.co/Myw0BVCq/file-00000000a97471f4a6e4d20367884a33.png', totalW: 1536, totalH: 1024, cols: 3, rows: 2 },
-  2: { url: 'https://i.ibb.co/Cp3sMnJP/file-000000009bc471f48c3308efa3c7d098.png', totalW: 1536, totalH: 1024, cols: 3, rows: 2 },
-  3: { url: 'https://i.ibb.co/358ChV0H/file-00000000460471f4b811c0af85d0f18c.png', totalW: 1536, totalH: 1024, cols: 3, rows: 2 },
-  4: { url: 'https://i.ibb.co/HLXnfLP1/file-000000000b9c71f49dec1841fc559486.png', totalW: 1536, totalH: 1024, cols: 3, rows: 2 },
-  5: { url: 'https://i.ibb.co/vvMqjx1g/file-00000000063471f48f47da02ea25a8e1.png', totalW: 1536, totalH: 1024, cols: 3, rows: 2 },
-  6: { url: 'https://i.ibb.co/jkGRnvM9/file-000000003e1c71f4bdcc16db3a72308d.png', totalW: 1536, totalH: 1024, cols: 3, rows: 2 },
-  7: { url: 'https://i.ibb.co/spZghCrs/file-000000004c5471f4bd583d474681e6aa.png', totalW: 1536, totalH: 1024, cols: 3, rows: 2 },
+  1: { url: 'https://i.ibb.co/Myw0BVCq/file-00000000a97471f4a6e4d20367884a33.png', totalW: 1536, totalH: 1024, cols: 6, rows: 1 },
+  2: { url: 'https://i.ibb.co/Cp3sMnJP/file-000000009bc471f48c3308efa3c7d098.png', totalW: 1536, totalH: 1024, cols: 6, rows: 1 },
+  3: { url: 'https://i.ibb.co/358ChV0H/file-00000000460471f4b811c0af85d0f18c.png', totalW: 1536, totalH: 1024, cols: 6, rows: 1 },
+  4: { url: 'https://i.ibb.co/HLXnfLP1/file-000000000b9c71f49dec1841fc559486.png', totalW: 1536, totalH: 1024, cols: 6, rows: 1 },
+  5: { url: 'https://i.ibb.co/vvMqjx1g/file-00000000063471f48f47da02ea25a8e1.png', totalW: 1536, totalH: 1024, cols: 6, rows: 1 },
+  6: { url: 'https://i.ibb.co/jkGRnvM9/file-000000003e1c71f4bdcc16db3a72308d.png', totalW: 1536, totalH: 1024, cols: 6, rows: 1 },
+  7: { url: 'https://i.ibb.co/spZghCrs/file-000000004c5471f4bd583d474681e6aa.png', totalW: 1536, totalH: 1024, cols: 6, rows: 1 },
 };
 
 const TOTAL_FRAMES = 6;
@@ -414,12 +414,12 @@ export default function BattleArena({ player, result, onClose }) {
           </div>
 
           {/* Birds face-off */}
-          <div className="w-full flex items-center justify-between">
+          <div className="w-full flex items-end justify-around mt-auto pt-4">
 
             {/* Player bird entrance */}
             <div className="flex-1 flex flex-col items-center bird-slide-left">
               <div className="mb-3 drop-shadow-2xl">
-                <SpriteAnimator tier={playerTier} animState="walk" targetH={200} glowColor={`${accentColor}99`} />
+                <SpriteAnimator tier={playerTier} animState="walk" targetH={260} glowColor={`${accentColor}99`} />
               </div>
               <div className="text-white font-bold text-sm text-center truncate max-w-[100px]">
                 {player?.display_name || 'You'}
@@ -442,7 +442,7 @@ export default function BattleArena({ player, result, onClose }) {
             {/* Opponent bird entrance */}
             <div className="flex-1 flex flex-col items-center bird-slide-right">
               <div className="mb-3 drop-shadow-2xl">
-                <SpriteAnimator tier={oppTier} animState="walk" flip targetH={200} glowColor="#ef444499" />
+                <SpriteAnimator tier={oppTier} animState="walk" flip targetH={260} glowColor="#ef444499" />
               </div>
               <div className="text-white font-bold text-sm text-center truncate max-w-[100px]">
                 {result.opponent?.display_name || 'Opponent'}
@@ -511,7 +511,7 @@ export default function BattleArena({ player, result, onClose }) {
                 : 'url(https://i.ibb.co/mV4QwPQx/file-00000000a27871f495da166fb66e7316.png)',
               backgroundSize: 'cover',
               backgroundPosition: 'center',
-              minHeight: 260,
+              minHeight: 340,
               border: `1px solid ${accentColor}22`,
             }}>
 
@@ -524,15 +524,15 @@ export default function BattleArena({ player, result, onClose }) {
             <div className="absolute bottom-10 left-6 right-6 h-px"
               style={{ background: accentColor, opacity: 0.25, animation: 'groundPulse 2s ease-in-out infinite' }} />
 
-            {/* Birds — anchored to ground level */}
-            <div className="absolute inset-x-0 bottom-8 flex items-end justify-between px-4">
+            {/* Birds — centered, facing each other */}
+            <div className="absolute inset-x-0 bottom-4 flex items-end justify-around px-2">
 
               {/* Player bird */}
               <div className="relative flex flex-col items-center">
                 <SpriteAnimator
                   tier={playerTier}
                   animState={playerShake ? 'hit' : playerLunge ? 'attack' : 'idle'}
-                  targetH={160}
+                  targetH={220}
                   glowColor={`${accentColor}88`}
                 />
                 {damages.filter(d => d.target === 'player').map(d => (
@@ -557,7 +557,7 @@ export default function BattleArena({ player, result, onClose }) {
                   tier={oppTier}
                   animState={oppShake ? 'hit' : oppLunge ? 'attack' : 'idle'}
                   flip
-                  targetH={160}
+                  targetH={220}
                   glowColor="#ef444488"
                 />
                 {damages.filter(d => d.target === 'opp').map(d => (
