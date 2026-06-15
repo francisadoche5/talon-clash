@@ -35,7 +35,7 @@ const ANIM_CONFIG = {
 };
 
 // SpriteAnimator — canvas-based sprite renderer with auto background removal
-function SpriteAnimator({ tier, animState = 'idle', flip = false, targetH = 180, glowColor }) {
+function SpriteAnimator({ tier, animState = 'idle', flip = false, targetW = 160, clipH = 320, glowColor }) {
   const canvasRef  = useRef(null);
   const imgRef     = useRef(null);
   const loadedRef  = useRef(false);
@@ -43,10 +43,10 @@ function SpriteAnimator({ tier, animState = 'idle', flip = false, targetH = 180,
   const sheet  = SPRITE_SHEETS[tier] || SPRITE_SHEETS[1];
   const frameW = sheet.totalW / sheet.cols;
   const frameH = sheet.totalH / sheet.rows;
-  const sc     = targetH / frameH;
+  const sc     = targetW / frameW;
   const dispW  = Math.round(frameW * sc);
   const dispH  = Math.round(frameH * sc);
-
+  const visH   = Math.min(clipH, dispH);
   const config = ANIM_CONFIG[animState] || ANIM_CONFIG.idle;
   const [fi, setFi] = useState(config.frames[0]);
 
@@ -414,12 +414,12 @@ export default function BattleArena({ player, result, onClose }) {
           </div>
 
           {/* Birds face-off */}
-          <div className="w-full flex items-end justify-around mt-auto pt-4">
+          <div className="w-full flex items-end justify-between mt-auto px-1">
 
             {/* Player bird entrance */}
             <div className="flex-1 flex flex-col items-center bird-slide-left">
               <div className="mb-3 drop-shadow-2xl">
-                <SpriteAnimator tier={playerTier} animState="walk" targetH={260} glowColor={`${accentColor}99`} />
+                <SpriteAnimator tier={playerTier} animState="walk" targetW={170} clipH={360} glowColor={`${accentColor}99`} />
               </div>
               <div className="text-white font-bold text-sm text-center truncate max-w-[100px]">
                 {player?.display_name || 'You'}
@@ -442,7 +442,7 @@ export default function BattleArena({ player, result, onClose }) {
             {/* Opponent bird entrance */}
             <div className="flex-1 flex flex-col items-center bird-slide-right">
               <div className="mb-3 drop-shadow-2xl">
-                <SpriteAnimator tier={oppTier} animState="walk" flip targetH={260} glowColor="#ef444499" />
+                <SpriteAnimator tier={oppTier} animState="walk" flip targetW={170} clipH={360} glowColor="#ef444499" />
               </div>
               <div className="text-white font-bold text-sm text-center truncate max-w-[100px]">
                 {result.opponent?.display_name || 'Opponent'}
@@ -511,7 +511,7 @@ export default function BattleArena({ player, result, onClose }) {
                 : 'url(https://i.ibb.co/mV4QwPQx/file-00000000a27871f495da166fb66e7316.png)',
               backgroundSize: 'cover',
               backgroundPosition: 'center',
-              minHeight: 340,
+              minHeight: 420,
               border: `1px solid ${accentColor}22`,
             }}>
 
@@ -524,15 +524,15 @@ export default function BattleArena({ player, result, onClose }) {
             <div className="absolute bottom-10 left-6 right-6 h-px"
               style={{ background: accentColor, opacity: 0.25, animation: 'groundPulse 2s ease-in-out infinite' }} />
 
-            {/* Birds — centered, facing each other */}
-            <div className="absolute inset-x-0 bottom-4 flex items-end justify-around px-2">
+            {/* Birds — large, facing each other */}
+            <div className="absolute inset-x-0 bottom-0 flex items-end justify-between px-1">
 
               {/* Player bird */}
               <div className="relative flex flex-col items-center">
                 <SpriteAnimator
                   tier={playerTier}
                   animState={playerShake ? 'hit' : playerLunge ? 'attack' : 'idle'}
-                  targetH={220}
+                  targetW={160} clipH={320}
                   glowColor={`${accentColor}88`}
                 />
                 {damages.filter(d => d.target === 'player').map(d => (
@@ -557,7 +557,7 @@ export default function BattleArena({ player, result, onClose }) {
                   tier={oppTier}
                   animState={oppShake ? 'hit' : oppLunge ? 'attack' : 'idle'}
                   flip
-                  targetH={220}
+                  targetW={160} clipH={320}
                   glowColor="#ef444488"
                 />
                 {damages.filter(d => d.target === 'opp').map(d => (
@@ -579,7 +579,7 @@ export default function BattleArena({ player, result, onClose }) {
               tier={result.playerWon ? playerTier : oppTier}
               animState={result.playerWon ? 'victory' : 'defeat'}
               flip={!result.playerWon}
-              targetH={220}
+              targetW={160} clipH={320}
               glowColor={result.playerWon ? `${accentColor}cc` : '#ef4444aa'}
             />
           </div>
