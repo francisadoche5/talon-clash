@@ -122,7 +122,7 @@ function SpriteAnimator({ tier, animState = 'idle', flip = false, targetH = 180,
       drawFrame(img, fi);
     };
     img.src = sheet.url;
-  }, [url]); // eslint-disable-line
+  }, [sheet.url]); // eslint-disable-line
 
   // Redraw whenever frame index changes
   useEffect(() => {
