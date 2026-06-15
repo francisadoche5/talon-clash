@@ -13,8 +13,8 @@ if (typeof document !== 'undefined' && !document.getElementById('bird-anim-css')
 // Each entry: totalW/totalH = full image size, cols/rows = frame grid layout
 // Frame order: 0-idle | 1-walk | 2-attack | 3-hit | 4-victory | 5-defeat
 const SPRITE_SHEETS = {
-  1: { url: 'https://i.ibb.co/GQtB7sch/IMG-20260614-222154-188.jpg',              totalW: 847,  totalH: 101,  cols: 6, rows: 1 },
-  2: { url: 'https://i.ibb.co/zW10PRQq/IMG-20260614-222231-594.jpg',              totalW: 847,  totalH: 101,  cols: 6, rows: 1 },
+  1: { url: 'https://i.ibb.co/Myw0BVCq/file-00000000a97471f4a6e4d20367884a33.png', totalW: 1536, totalH: 1024, cols: 3, rows: 2 },
+  2: { url: 'https://i.ibb.co/Cp3sMnJP/file-000000009bc471f48c3308efa3c7d098.png', totalW: 1536, totalH: 1024, cols: 3, rows: 2 },
   3: { url: 'https://i.ibb.co/358ChV0H/file-00000000460471f4b811c0af85d0f18c.png', totalW: 1536, totalH: 1024, cols: 3, rows: 2 },
   4: { url: 'https://i.ibb.co/HLXnfLP1/file-000000000b9c71f49dec1841fc559486.png', totalW: 1536, totalH: 1024, cols: 3, rows: 2 },
   5: { url: 'https://i.ibb.co/vvMqjx1g/file-00000000063471f48f47da02ea25a8e1.png', totalW: 1536, totalH: 1024, cols: 3, rows: 2 },
