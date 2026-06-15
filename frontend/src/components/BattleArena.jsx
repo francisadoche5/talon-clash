@@ -10,22 +10,19 @@ if (typeof document !== 'undefined' && !document.getElementById('bird-anim-css')
 }
 
 // ── Sprite sheets ────────────────────────────────────────────────────────────
-// Each sheet: 6 frames in a row, 847×101px
+// Each entry: totalW/totalH = full image size, cols/rows = frame grid layout
 // Frame order: 0-idle | 1-walk | 2-attack | 3-hit | 4-victory | 5-defeat
 const SPRITE_SHEETS = {
-  1: 'https://i.ibb.co/GQtB7sch/IMG-20260614-222154-188.jpg',
-  2: 'https://i.ibb.co/zW10PRQq/IMG-20260614-222231-594.jpg',
-  3: 'https://i.ibb.co/PZ7ngmPt/IMG-20260614-222203-656.jpg',
-  4: 'https://i.ibb.co/JW2GvjBm/IMG-20260614-222207-198.jpg',
-  5: 'https://i.ibb.co/DHJ8HTMf/IMG-20260614-222211-201.jpg',
-  6: 'https://i.ibb.co/rfFckY1b/IMG-20260614-222214-922.jpg',
-  7: 'https://i.ibb.co/600bTbjy/IMG-20260614-222217-151.jpg',
+  1: { url: 'https://i.ibb.co/GQtB7sch/IMG-20260614-222154-188.jpg',              totalW: 847,  totalH: 101,  cols: 6, rows: 1 },
+  2: { url: 'https://i.ibb.co/zW10PRQq/IMG-20260614-222231-594.jpg',              totalW: 847,  totalH: 101,  cols: 6, rows: 1 },
+  3: { url: 'https://i.ibb.co/358ChV0H/file-00000000460471f4b811c0af85d0f18c.png', totalW: 1536, totalH: 1024, cols: 3, rows: 2 },
+  4: { url: 'https://i.ibb.co/HLXnfLP1/file-000000000b9c71f49dec1841fc559486.png', totalW: 1536, totalH: 1024, cols: 3, rows: 2 },
+  5: { url: 'https://i.ibb.co/vvMqjx1g/file-00000000063471f48f47da02ea25a8e1.png', totalW: 1536, totalH: 1024, cols: 3, rows: 2 },
+  6: { url: 'https://i.ibb.co/jkGRnvM9/file-000000003e1c71f4bdcc16db3a72308d.png', totalW: 1536, totalH: 1024, cols: 3, rows: 2 },
+  7: { url: 'https://i.ibb.co/spZghCrs/file-000000004c5471f4bd583d474681e6aa.png', totalW: 1536, totalH: 1024, cols: 3, rows: 2 },
 };
 
-const SHEET_FRAMES  = 6;
-const SHEET_W       = 847;
-const SHEET_H       = 101;
-const FRAME_W       = SHEET_W / SHEET_FRAMES; // ~141.17px
+const TOTAL_FRAMES = 6;
 
 // Animation configs: which frames to cycle and at what speed (ms per frame)
 const ANIM_CONFIG = {
@@ -38,14 +35,17 @@ const ANIM_CONFIG = {
 };
 
 // SpriteAnimator — canvas-based sprite renderer with auto background removal
-function SpriteAnimator({ tier, animState = 'idle', flip = false, scale = 1.4, glowColor }) {
+function SpriteAnimator({ tier, animState = 'idle', flip = false, targetH = 180, glowColor }) {
   const canvasRef  = useRef(null);
   const imgRef     = useRef(null);
   const loadedRef  = useRef(false);
 
-  const url   = SPRITE_SHEETS[tier] || SPRITE_SHEETS[1];
-  const dispW = Math.round(FRAME_W * scale);
-  const dispH = Math.round(SHEET_H * scale);
+  const sheet  = SPRITE_SHEETS[tier] || SPRITE_SHEETS[1];
+  const frameW = sheet.totalW / sheet.cols;
+  const frameH = sheet.totalH / sheet.rows;
+  const sc     = targetH / frameH;
+  const dispW  = Math.round(frameW * sc);
+  const dispH  = Math.round(frameH * sc);
 
   const config = ANIM_CONFIG[animState] || ANIM_CONFIG.idle;
   const [fi, setFi] = useState(config.frames[0]);
@@ -68,20 +68,48 @@ function SpriteAnimator({ tier, animState = 'idle', flip = false, scale = 1.4, g
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, dispW, dispH);
-    ctx.drawImage(img, frameIdx * FRAME_W, 0, FRAME_W, SHEET_H, 0, 0, dispW, dispH);
+    const col = frameIdx % sheet.cols;
+    const row = Math.floor(frameIdx / sheet.cols);
+    ctx.drawImage(img, col * frameW, row * frameH, frameW, frameH, 0, 0, dispW, dispH);
     try {
       const id   = ctx.getImageData(0, 0, dispW, dispH);
       const data = id.data;
+      const len  = dispW * dispH;
+
+      // Pass 1 — remove white + checkerboard grey pixels
       for (let i = 0; i < data.length; i += 4) {
-        const r = data[i], g = data[i + 1], b = data[i + 2];
+        const r = data[i], g = data[i+1], b = data[i+2];
         const avg      = (r + g + b) / 3;
-        const variance = Math.max(Math.abs(r - g), Math.abs(g - b), Math.abs(r - b));
-        // Erase grey-ish bright pixels (white + checkerboard grey)
-        if (avg > 155 && variance < 55) data[i + 3] = 0;
+        const variance = Math.max(Math.abs(r-g), Math.abs(g-b), Math.abs(r-b));
+        if (avg > 145 && variance < 65) data[i+3] = 0;
       }
+
+      // Pass 2 — remove fringe pixels (bright-ish pixels adjacent to transparent)
+      const wasRemoved = new Uint8Array(len);
+      for (let p = 0; p < len; p++) {
+        if (data[p * 4 + 3] === 0) wasRemoved[p] = 1;
+      }
+      for (let y = 0; y < dispH; y++) {
+        for (let x = 0; x < dispW; x++) {
+          const p = y * dispW + x;
+          if (wasRemoved[p]) continue;
+          const hasTransNeighbour =
+            (x > 0          && wasRemoved[p - 1]) ||
+            (x < dispW - 1  && wasRemoved[p + 1]) ||
+            (y > 0          && wasRemoved[p - dispW]) ||
+            (y < dispH - 1  && wasRemoved[p + dispW]);
+          if (!hasTransNeighbour) continue;
+          const i = p * 4;
+          const r = data[i], g = data[i+1], b = data[i+2];
+          const avg      = (r + g + b) / 3;
+          const variance = Math.max(Math.abs(r-g), Math.abs(g-b), Math.abs(r-b));
+          if (avg > 120 && variance < 80) data[i+3] = 0;
+        }
+      }
+
       ctx.putImageData(id, 0, 0);
-    } catch (_) { /* CORS fallback — shows with background */ }
-  }, [dispW, dispH]);
+    } catch (_) { /* CORS fallback */ }
+  }, [dispW, dispH, frameW, frameH, sheet.cols]); // eslint-disable-line
 
   // Load sprite sheet once, re-load if tier changes
   useEffect(() => {
@@ -93,7 +121,7 @@ function SpriteAnimator({ tier, animState = 'idle', flip = false, scale = 1.4, g
       loadedRef.current = true;
       drawFrame(img, fi);
     };
-    img.src = url;
+    img.src = sheet.url;
   }, [url]); // eslint-disable-line
 
   // Redraw whenever frame index changes
@@ -109,7 +137,7 @@ function SpriteAnimator({ tier, animState = 'idle', flip = false, scale = 1.4, g
       style={{
         display:         'block',
         transform:       flip ? 'scaleX(-1)' : undefined,
-        filter:          glowColor ? `drop-shadow(0 0 14px ${glowColor})` : undefined,
+        filter:          glowColor ? `drop-shadow(0 0 6px ${glowColor})` : undefined,
         imageRendering:  'auto',
       }}
     />
@@ -391,7 +419,7 @@ export default function BattleArena({ player, result, onClose }) {
             {/* Player bird entrance */}
             <div className="flex-1 flex flex-col items-center bird-slide-left">
               <div className="mb-3 drop-shadow-2xl">
-                <SpriteAnimator tier={playerTier} animState="walk" scale={1.6} glowColor={`${accentColor}99`} />
+                <SpriteAnimator tier={playerTier} animState="walk" targetH={200} glowColor={`${accentColor}99`} />
               </div>
               <div className="text-white font-bold text-sm text-center truncate max-w-[100px]">
                 {player?.display_name || 'You'}
@@ -414,7 +442,7 @@ export default function BattleArena({ player, result, onClose }) {
             {/* Opponent bird entrance */}
             <div className="flex-1 flex flex-col items-center bird-slide-right">
               <div className="mb-3 drop-shadow-2xl">
-                <SpriteAnimator tier={oppTier} animState="walk" flip scale={1.6} glowColor="#ef444499" />
+                <SpriteAnimator tier={oppTier} animState="walk" flip targetH={200} glowColor="#ef444499" />
               </div>
               <div className="text-white font-bold text-sm text-center truncate max-w-[100px]">
                 {result.opponent?.display_name || 'Opponent'}
@@ -504,7 +532,7 @@ export default function BattleArena({ player, result, onClose }) {
                 <SpriteAnimator
                   tier={playerTier}
                   animState={playerShake ? 'hit' : playerLunge ? 'attack' : 'idle'}
-                  scale={1.4}
+                  targetH={160}
                   glowColor={`${accentColor}88`}
                 />
                 {damages.filter(d => d.target === 'player').map(d => (
@@ -529,7 +557,7 @@ export default function BattleArena({ player, result, onClose }) {
                   tier={oppTier}
                   animState={oppShake ? 'hit' : oppLunge ? 'attack' : 'idle'}
                   flip
-                  scale={1.4}
+                  targetH={160}
                   glowColor="#ef444488"
                 />
                 {damages.filter(d => d.target === 'opp').map(d => (
@@ -551,7 +579,7 @@ export default function BattleArena({ player, result, onClose }) {
               tier={result.playerWon ? playerTier : oppTier}
               animState={result.playerWon ? 'victory' : 'defeat'}
               flip={!result.playerWon}
-              scale={1.8}
+              targetH={220}
               glowColor={result.playerWon ? `${accentColor}cc` : '#ef4444aa'}
             />
           </div>
