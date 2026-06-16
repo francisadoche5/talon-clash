@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { BIRD_ANIMATION_CSS } from '../birdImages';
+import ASSETS from '../config/assets';
 
 // Inject bird animation CSS once
 if (typeof document !== 'undefined' && !document.getElementById('bird-anim-css')) {
@@ -10,8 +11,8 @@ if (typeof document !== 'undefined' && !document.getElementById('bird-anim-css')
 }
 
 // ── Result screen header assets ──────────────────────────────────────────────
-const VICTORY_HEADER_IMG = 'https://i.ibb.co/jP7K8g76/file-00000000c16471f498d60fa3da37e61d.png';
-const DEFEAT_HEADER_IMG  = 'https://i.ibb.co/C3Hq1GBp/file-0000000037cc71f481c27f128ad8b1f3.png';
+const VICTORY_HEADER_IMG = ASSETS.battle.victoryHeader;
+const DEFEAT_HEADER_IMG  = ASSETS.battle.defeatHeader;
 
 // ── Sprite sheets ────────────────────────────────────────────────────────────
 // Each entry: totalW/totalH = full image size, cols/rows = frame grid layout
