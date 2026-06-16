@@ -1,33 +1,14 @@
-// Bird evolution images hosted on ImgBB
+// Bird evolution images — all URLs come from ASSETS, never from external hosts
+import ASSETS from './config/assets';
+
 export const BIRD_IMAGES = {
-  1: {
-    url: 'https://i.ibb.co/9kT3nZ7J/file-0000000014847246b80a48fe533f31d5.png',
-    name: 'Hatchling',
-  },
-  2: {
-    url: 'https://i.ibb.co/CKwfQtB7/file-000000007a1072469dd84108e55402bd.png',
-    name: 'Fledgling',
-  },
-  3: {
-    url: 'https://i.ibb.co/1fzHLSZH/file-0000000096487246931a2c0dbec005f0.png',
-    name: 'Sparrow Warrior',
-  },
-  4: {
-    url: 'https://i.ibb.co/hxxPRSjp/file-00000000013871f4a4b71b74836d094a.png',
-    name: 'Falcon Knight',
-  },
-  5: {
-    url: 'https://i.ibb.co/MD1hF5Kt/file-000000004e0471f4ac3392179d653351.png',
-    name: 'War Hawk',
-  },
-  6: {
-    url: 'https://i.ibb.co/5WBp9Vcb/file-00000000c7547243ad91c9ed0ef799d3.png',
-    name: 'Eagle Champion',
-  },
-  7: {
-    url: 'https://i.ibb.co/7twQ8YWx/file-000000007d3871f4ab13bc841fa74a5b.png',
-    name: 'Shadow Eagle',
-  },
+  1: { url: ASSETS.sprites.portrait1, name: 'Hatchling'       },
+  2: { url: ASSETS.sprites.portrait2, name: 'Fledgling'       },
+  3: { url: ASSETS.sprites.portrait3, name: 'Sparrow Warrior' },
+  4: { url: ASSETS.sprites.portrait4, name: 'Falcon Knight'   },
+  5: { url: ASSETS.sprites.portrait5, name: 'War Hawk'        },
+  6: { url: ASSETS.sprites.portrait6, name: 'Eagle Champion'  },
+  7: { url: ASSETS.sprites.portrait7, name: 'Shadow Eagle'    },
 };
 
 export function getBirdUrl(tier) {
