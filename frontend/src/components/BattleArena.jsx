@@ -18,13 +18,13 @@ const DEFEAT_HEADER_IMG  = ASSETS.battle.defeatHeader;
 // Each entry: totalW/totalH = full image size, cols/rows = frame grid layout
 // Frame order: 0-idle | 1-walk | 2-attack | 3-hit | 4-victory | 5-defeat
 const SPRITE_SHEETS = {
-  1: { url: 'https://i.ibb.co/Myw0BVCq/file-00000000a97471f4a6e4d20367884a33.png', totalW: 1536, totalH: 1024, cols: 6, rows: 1 },
-  2: { url: 'https://i.ibb.co/Cp3sMnJP/file-000000009bc471f48c3308efa3c7d098.png', totalW: 1536, totalH: 1024, cols: 6, rows: 1 },
-  3: { url: 'https://i.ibb.co/358ChV0H/file-00000000460471f4b811c0af85d0f18c.png', totalW: 1536, totalH: 1024, cols: 6, rows: 1 },
-  4: { url: 'https://i.ibb.co/HLXnfLP1/file-000000000b9c71f49dec1841fc559486.png', totalW: 1536, totalH: 1024, cols: 6, rows: 1 },
-  5: { url: 'https://i.ibb.co/vvMqjx1g/file-00000000063471f48f47da02ea25a8e1.png', totalW: 1536, totalH: 1024, cols: 6, rows: 1 },
-  6: { url: 'https://i.ibb.co/jkGRnvM9/file-000000003e1c71f4bdcc16db3a72308d.png', totalW: 1536, totalH: 1024, cols: 6, rows: 1 },
-  7: { url: 'https://i.ibb.co/spZghCrs/file-000000004c5471f4bd583d474681e6aa.png', totalW: 1536, totalH: 1024, cols: 6, rows: 1 },
+  1: { url: ASSETS.sprites.tier1, totalW: 1536, totalH: 1024, cols: 6, rows: 1 },
+  2: { url: ASSETS.sprites.tier2, totalW: 1536, totalH: 1024, cols: 6, rows: 1 },
+  3: { url: ASSETS.sprites.tier3, totalW: 1536, totalH: 1024, cols: 6, rows: 1 },
+  4: { url: ASSETS.sprites.tier4, totalW: 1536, totalH: 1024, cols: 6, rows: 1 },
+  5: { url: ASSETS.sprites.tier5, totalW: 1536, totalH: 1024, cols: 6, rows: 1 },
+  6: { url: ASSETS.sprites.tier6, totalW: 1536, totalH: 1024, cols: 6, rows: 1 },
+  7: { url: ASSETS.sprites.tier7, totalW: 1536, totalH: 1024, cols: 6, rows: 1 },
 };
 
 const TOTAL_FRAMES = 6;
@@ -297,6 +297,13 @@ export default function BattleArena({ player, result, onClose }) {
 
   const isEpic = result.mode === 'epic';
 
+  // Pick a random arena background once per mount
+  const arenaBackground = useRef(
+    isEpic
+      ? ASSETS.battle.arenaEpic[Math.floor(Math.random() * ASSETS.battle.arenaEpic.length)]
+      : ASSETS.battle.arenaDefault[Math.floor(Math.random() * ASSETS.battle.arenaDefault.length)]
+  ).current;
+
   // ── Phase transitions ────────────────────────────────────────────────────
   useEffect(() => {
     // After entrance (2.6s), show BATTLE START banner, then begin
@@ -511,9 +518,7 @@ export default function BattleArena({ player, result, onClose }) {
           {/* Arena floor */}
           <div className="flex-1 relative rounded-2xl overflow-hidden flex items-end"
             style={{
-              backgroundImage: isEpic
-                ? 'url(https://i.ibb.co/tMKtLLFR/Screenshot-20260614-164248-Google.jpg)'
-                : 'url(https://i.ibb.co/mV4QwPQx/file-00000000a27871f495da166fb66e7316.png)',
+              backgroundImage: `url(${arenaBackground})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               minHeight: 420,
@@ -650,7 +655,6 @@ export default function BattleArena({ player, result, onClose }) {
                       {[
                         { label:'EXP',      tile:'exp',     value: result.rewards?.xp       },
                         { label:'Glory',    tile:'glory',   value: result.rewards?.glory    },
-                        { label:'Food',     tile:'food',    value: result.rewards?.food     },
                         result.rewards?.feathers
                           ? { label:'Feathers', tile:'feather', value: result.rewards.feathers }
                           : null,
@@ -664,14 +668,9 @@ export default function BattleArena({ player, result, onClose }) {
                               boxShadow: '0 6px 0 #8a6810, 0 8px 20px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.55)',
                               border: '1.5px solid #d4a830',
                             }}>
-                            {r.tile==='exp' && (
-                              <span className="font-black text-base leading-none"
-                                style={{ background:'linear-gradient(180deg,#4fc3f7,#0277bd)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent',
-                                         filter:'drop-shadow(0 1px 2px rgba(0,0,0,0.3))', letterSpacing:1 }}>EXP</span>
-                            )}
-                            {r.tile==='glory'   && <span style={{fontSize:34,filter:'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'}}>🏅</span>}
-                            {r.tile==='food'    && <span style={{fontSize:34,filter:'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'}}>🍎</span>}
-                            {r.tile==='feather' && <span style={{fontSize:34,filter:'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'}}>🪶</span>}
+                            {r.tile==='exp'     && <img src={ASSETS.icons.exp}      alt="EXP"      style={{width:40,height:40,objectFit:'contain',filter:'drop-shadow(0 1px 2px rgba(0,0,0,0.3))'}} />}
+                            {r.tile==='glory'   && <img src={ASSETS.icons.glory}    alt="Glory"    style={{width:40,height:40,objectFit:'contain',filter:'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'}} />}
+                            {r.tile==='feather' && <img src={ASSETS.icons.feathers} alt="Feathers" style={{width:40,height:40,objectFit:'contain',filter:'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'}} />}
                           </div>
                           <p className="text-sm font-black text-gray-700">+{r.value}</p>
                         </div>
