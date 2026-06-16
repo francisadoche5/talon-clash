@@ -570,128 +570,168 @@ export default function BattleArena({ player, result, onClose }) {
       )}
 
       {/* ── RESULT PHASE ───────────────────────────────────────────────── */}
-      {phase === 'result' && (
-        <div className="flex-1 flex flex-col overflow-hidden"
-          style={{ background: result.playerWon
-            ? 'radial-gradient(ellipse at 50% 0%, #1a3a0a 0%, #0a1400 100%)'
-            : 'radial-gradient(ellipse at 50% 0%, #1a0a0a 0%, #0a0008 100%)' }}>
-          <style>{`
-            @keyframes bannerDrop { from { transform: translateY(-60px); opacity:0; } to { transform: translateY(0); opacity:1; } }
-            @keyframes tilePopIn  { from { transform: scale(0.5); opacity:0; } to { transform: scale(1); opacity:1; } }
-            @keyframes swordSlash { from { transform: rotate(-80deg) scale(0.5); opacity:0; } to { transform: rotate(-35deg) scale(1); opacity:1; } }
-            @keyframes swordSlashR{ from { transform: rotate(80deg) scale(0.5); opacity:0; } to { transform: rotate(35deg) scale(1); opacity:1; } }
-            .banner-drop { animation: bannerDrop 0.5s cubic-bezier(0.22,1,0.36,1) both; }
-            .tile-pop { animation: tilePopIn 0.4s cubic-bezier(0.22,1,0.36,1) both; }
-            .sword-l { animation: swordSlash 0.5s 0.1s cubic-bezier(0.22,1,0.36,1) both; }
-            .sword-r { animation: swordSlashR 0.5s 0.1s cubic-bezier(0.22,1,0.36,1) both; }
-          `}</style>
+      {phase === 'result' && (() => {
+        const won = result.playerWon;
+        const ribbonColor = won
+          ? 'linear-gradient(180deg, #5bc8f5 0%, #2980b9 40%, #1a6fa8 100%)'
+          : 'linear-gradient(180deg, #f07060 0%, #c0392b 40%, #922b21 100%)';
+        const ribbonShadow = won ? '#1a6fa8' : '#7b241c';
+        return (
+          <div className="flex-1 flex flex-col overflow-hidden" style={{
+            background: won
+              ? 'radial-gradient(ellipse at 50% 0%, #0d2b00 0%, #050e00 100%)'
+              : 'radial-gradient(ellipse at 50% 0%, #1a0500 0%, #070002 100%)',
+          }}>
+            <style>{`
+              @keyframes r3dDrop  { from{transform:translateY(-80px) translateX(-50%);opacity:0} to{transform:translateY(0) translateX(-50%);opacity:1} }
+              @keyframes swordInL { from{transform:translate(-50%,-50%) rotate(-10deg) scale(0.4);opacity:0}
+                                    to  {transform:translate(-50%,-50%) rotate(-38deg) scale(1);  opacity:1} }
+              @keyframes swordInR { from{transform:translate(-50%,-50%) rotate(10deg) scaleX(-1) scale(0.4);opacity:0}
+                                    to  {transform:translate(-50%,-50%) rotate(38deg) scaleX(-1) scale(1);  opacity:1} }
+              @keyframes tileIn   { from{transform:scale(0.4) translateY(20px);opacity:0} to{transform:scale(1) translateY(0);opacity:1} }
+              @keyframes btnShine { 0%{background-position:200% center} 100%{background-position:-200% center} }
+              .r3d-drop  { animation: r3dDrop  0.6s 0.05s cubic-bezier(0.22,1,0.36,1) both; }
+              .sw-l      { animation: swordInL 0.55s 0.0s  cubic-bezier(0.22,1,0.36,1) both; }
+              .sw-r      { animation: swordInR 0.55s 0.0s  cubic-bezier(0.22,1,0.36,1) both; }
+              .tile-in   { animation: tileIn   0.45s cubic-bezier(0.22,1,0.36,1) both; }
+            `}</style>
 
-          {/* Scrollable content */}
-          <div className="flex-1 overflow-y-auto flex flex-col items-center pb-2">
+            <div className="flex-1 overflow-y-auto">
+              <div className="relative flex flex-col items-center px-4 pt-3 pb-3">
 
-            {/* Header decoration — swords + crown + banner */}
-            <div className="w-full flex flex-col items-center" style={{ marginTop: -8 }}>
-              {/* Crossed swords + crown */}
-              <div className="relative flex items-center justify-center" style={{ height: 110 }}>
-                <span className="sword-l absolute text-5xl select-none"
-                  style={{ transform: 'rotate(-35deg)', left: '50%', marginLeft: -80, marginTop: 10 }}>🗡️</span>
-                <span className="sword-r absolute text-5xl select-none"
-                  style={{ transform: 'rotate(35deg) scaleX(-1)', left: '50%', marginLeft: 30, marginTop: 10 }}>🗡️</span>
-                <span className="absolute text-5xl banner-drop select-none" style={{ marginTop: -18 }}>
-                  {result.playerWon ? '👑' : '💎'}
-                </span>
+                {/* ── Swords + Crown (floats above ribbon) ── */}
+                <div className="relative w-full flex justify-center" style={{ height: 100, zIndex: 30 }}>
+                  <span className="sw-l absolute text-5xl select-none"
+                    style={{ top:'58%', left:'calc(50% - 56px)',
+                             transform:'translate(-50%,-50%) rotate(-38deg)',
+                             filter:'drop-shadow(0 4px 8px rgba(0,0,0,0.7)) drop-shadow(0 0 6px rgba(200,200,200,0.3))',
+                             lineHeight:1 }}>🗡️</span>
+                  <span className="sw-r absolute text-5xl select-none"
+                    style={{ top:'58%', left:'calc(50% + 56px)',
+                             transform:'translate(-50%,-50%) rotate(38deg) scaleX(-1)',
+                             filter:'drop-shadow(0 4px 8px rgba(0,0,0,0.7)) drop-shadow(0 0 6px rgba(200,200,200,0.3))',
+                             lineHeight:1 }}>🗡️</span>
+                  <span className="r3d-drop absolute text-6xl select-none"
+                    style={{ top: 0, left:'50%',
+                             filter: won
+                               ? 'drop-shadow(0 0 16px rgba(255,200,0,0.8)) drop-shadow(0 4px 8px rgba(0,0,0,0.6))'
+                               : 'drop-shadow(0 0 16px rgba(150,80,255,0.8)) drop-shadow(0 4px 8px rgba(0,0,0,0.6))',
+                             lineHeight:1 }}>
+                    {won ? '👑' : '💎'}
+                  </span>
+                </div>
+
+                {/* ── Ribbon banner ── */}
+                <div className="r3d-drop relative w-full flex items-center justify-center py-3"
+                  style={{
+                    background: ribbonColor,
+                    clipPath: 'polygon(3% 0%, 97% 0%, 100% 50%, 97% 100%, 3% 100%, 0% 50%)',
+                    boxShadow: `0 8px 0 ${ribbonShadow}, 0 12px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.35)`,
+                    marginTop: -16, zIndex: 20,
+                  }}>
+                  <span className="font-black text-white text-3xl tracking-widest"
+                    style={{ textShadow: `0 2px 0 ${ribbonShadow}, 0 4px 12px rgba(0,0,0,0.4)` }}>
+                    {won ? 'Victory' : 'Defeat'}
+                  </span>
+                </div>
+
+                {/* ── Reward card ── */}
+                <div className="w-full rounded-[28px] relative"
+                  style={{
+                    background: 'linear-gradient(160deg, #fdf6e0 0%, #ede1b4 60%, #e0d09a 100%)',
+                    boxShadow: '0 20px 60px rgba(0,0,0,0.6), 0 8px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.7)',
+                    border: '1px solid rgba(255,255,255,0.4)',
+                    marginTop: -10, zIndex: 10,
+                    paddingTop: 28,
+                  }}>
+
+                  <div className="px-5 pb-5">
+                    <p className="text-center font-black text-gray-700 text-base mb-5"
+                      style={{ textShadow: '0 1px 0 rgba(255,255,255,0.8)' }}>Your rewards</p>
+
+                    {/* Reward tiles */}
+                    <div className="flex justify-center gap-4 flex-wrap">
+                      {[
+                        { label:'EXP',      tile:'exp',     value: result.rewards?.xp       },
+                        { label:'Glory',    tile:'glory',   value: result.rewards?.glory    },
+                        { label:'Food',     tile:'food',    value: result.rewards?.food     },
+                        result.rewards?.feathers
+                          ? { label:'Feathers', tile:'feather', value: result.rewards.feathers }
+                          : null,
+                      ].filter(Boolean).map((r, i) => (
+                        <div key={r.label} className="tile-in flex flex-col items-center gap-1.5"
+                          style={{ animationDelay: `${0.25 + i*0.08}s` }}>
+                          <p className="text-xs font-bold text-gray-500">{r.label}</p>
+                          <div className="w-[68px] h-[68px] rounded-2xl flex items-center justify-center"
+                            style={{
+                              background: 'linear-gradient(145deg, #f5e8b0 0%, #c9a840 100%)',
+                              boxShadow: '0 6px 0 #8a6810, 0 8px 20px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.55)',
+                              border: '1.5px solid #d4a830',
+                            }}>
+                            {r.tile==='exp' && (
+                              <span className="font-black text-base leading-none"
+                                style={{ background:'linear-gradient(180deg,#4fc3f7,#0277bd)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent',
+                                         filter:'drop-shadow(0 1px 2px rgba(0,0,0,0.3))', letterSpacing:1 }}>EXP</span>
+                            )}
+                            {r.tile==='glory'   && <span style={{fontSize:34,filter:'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'}}>🏅</span>}
+                            {r.tile==='food'    && <span style={{fontSize:34,filter:'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'}}>🍎</span>}
+                            {r.tile==='feather' && <span style={{fontSize:34,filter:'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'}}>🪶</span>}
+                          </div>
+                          <p className="text-sm font-black text-gray-700">+{r.value}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Additional rewards */}
+                    {result.rewards?.bonus && (
+                      <>
+                        <div className="my-4 h-px" style={{ background:'linear-gradient(90deg,transparent,#c4a040,transparent)' }} />
+                        <p className="text-center font-black text-gray-700 text-base mb-4"
+                          style={{ textShadow:'0 1px 0 rgba(255,255,255,0.8)' }}>Additional rewards</p>
+                        <div className="flex justify-center">
+                          <div className="tile-in flex flex-col items-center gap-1.5" style={{ animationDelay:'0.55s' }}>
+                            <p className="text-xs font-bold text-gray-500">{result.rewards.bonus.type}</p>
+                            <div className="w-[68px] h-[68px] rounded-2xl flex items-center justify-center"
+                              style={{
+                                background:'linear-gradient(145deg,#f5e8b0 0%,#c9a840 100%)',
+                                boxShadow:'0 6px 0 #8a6810, 0 8px 20px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.55)',
+                                border:'1.5px solid #d4a830',
+                              }}>
+                              <span style={{fontSize:34,filter:'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'}}>✨</span>
+                            </div>
+                            <p className="text-sm font-black text-gray-700">+{result.rewards.bonus.amount}</p>
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    {result.levelUp && (
+                      <p className="text-center font-black text-amber-700 mt-3 animate-bounce">
+                        🎉 LEVEL UP → {result.newLevel}
+                      </p>
+                    )}
+                    <p className="text-center text-xs text-gray-400 mt-3">vs {result.opponent?.display_name}</p>
+                  </div>
+                </div>
               </div>
+            </div>
 
-              {/* Banner ribbon */}
-              <div className="banner-drop relative flex items-center justify-center w-72 py-3 -mt-2"
+            {/* ── Continue button ── */}
+            <div className="px-4 py-4">
+              <button onClick={onClose}
+                className="w-full py-4 rounded-2xl font-black text-xl text-white active:translate-y-1 transition-transform"
                 style={{
-                  background: result.playerWon
-                    ? 'linear-gradient(135deg, #2980b9, #3498db, #2471a3)'
-                    : 'linear-gradient(135deg, #c0392b, #e74c3c, #a93226)',
-                  clipPath: 'polygon(4% 0%, 96% 0%, 100% 50%, 96% 100%, 4% 100%, 0% 50%)',
-                  boxShadow: result.playerWon ? '0 4px 20px #2980b966' : '0 4px 20px #c0392b66',
+                  background: 'linear-gradient(180deg, #f9b234 0%, #e67e22 50%, #c95e00 100%)',
+                  boxShadow: '0 6px 0 #7a3800, 0 10px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.35)',
+                  border: '1.5px solid #f5c060',
+                  textShadow: '0 1px 3px rgba(0,0,0,0.4)',
                 }}>
-                <span className="font-black text-white text-2xl tracking-widest drop-shadow-lg">
-                  {result.playerWon ? 'Victory' : 'Defeat'}
-                </span>
-              </div>
-            </div>
-
-            {/* Card body */}
-            <div className="w-full mx-3 rounded-3xl overflow-hidden shadow-2xl"
-              style={{ background: '#f0e8d4', margin: '10px 12px 0 12px', width: 'calc(100% - 24px)' }}>
-
-              {/* Your rewards */}
-              <div className="p-5 pb-3">
-                <p className="text-center font-black text-gray-700 text-base mb-4">Your rewards</p>
-                <div className="flex justify-center gap-4 flex-wrap">
-                  {[
-                    { label: 'EXP',   icon: '📘', value: result.rewards?.xp,       color: '#3498db' },
-                    { label: 'Glory', icon: '🏅', value: result.rewards?.glory,    color: '#27ae60' },
-                    { label: 'Food',  icon: '🍎', value: result.rewards?.food,     color: '#e74c3c' },
-                    result.rewards?.feathers && { label: '🪶', icon: '🪶', value: result.rewards?.feathers, color: '#8e44ad' },
-                  ].filter(Boolean).map((r, i) => (
-                    <div key={r.label} className="tile-pop flex flex-col items-center gap-1"
-                      style={{ animationDelay: `${i * 80}ms` }}>
-                      <p className="text-xs font-bold text-gray-500">{r.label}</p>
-                      <div className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-md"
-                        style={{ background: '#e8d9b8', border: '2px solid #c8b890' }}>
-                        <span style={{ fontSize: 32 }}>{r.icon}</span>
-                      </div>
-                      <p className="text-sm font-black text-gray-700">+{r.value}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Additional rewards */}
-              {result.rewards?.bonus && (
-                <div className="px-5 pb-5">
-                  <div className="w-full h-px bg-amber-200 mb-4" />
-                  <p className="text-center font-black text-gray-700 text-base mb-4">Additional rewards</p>
-                  <div className="flex justify-center">
-                    <div className="tile-pop flex flex-col items-center gap-1" style={{ animationDelay: '350ms' }}>
-                      <p className="text-xs font-bold text-gray-500">{result.rewards.bonus.type}</p>
-                      <div className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-md"
-                        style={{ background: '#e8d9b8', border: '2px solid #c8b890' }}>
-                        <span style={{ fontSize: 32 }}>✨</span>
-                      </div>
-                      <p className="text-sm font-black text-gray-700">+{result.rewards.bonus.amount}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Level up */}
-              {result.levelUp && (
-                <div className="px-5 pb-4 text-center">
-                  <div className="font-black text-lg text-amber-600 animate-bounce">
-                    🎉 LEVEL UP → {result.newLevel}
-                  </div>
-                </div>
-              )}
-
-              {/* vs label */}
-              <div className="text-center pb-2 text-xs text-gray-400">
-                vs {result.opponent?.display_name}
-              </div>
+                Continue
+              </button>
             </div>
           </div>
-
-          {/* Continue button — always pinned */}
-          <div className="p-4 pt-2">
-            <button
-              onClick={onClose}
-              className="w-full py-4 rounded-2xl font-black text-lg text-white active:scale-95 transition-transform"
-              style={{
-                background: 'linear-gradient(135deg, #e67e22, #f39c12)',
-                boxShadow: '0 4px 20px #e67e2266',
-              }}>
-              Continue
-            </button>
-          </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
