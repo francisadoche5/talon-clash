@@ -10,13 +10,9 @@ if (typeof document !== 'undefined' && !document.getElementById('bird-anim-css')
   document.head.appendChild(s);
 }
 
-// ── Result screen header assets ──────────────────────────────────────────────
 const VICTORY_HEADER_IMG = ASSETS.battle.victoryHeader;
 const DEFEAT_HEADER_IMG  = ASSETS.battle.defeatHeader;
 
-// ── Sprite sheets ────────────────────────────────────────────────────────────
-// Each entry: totalW/totalH = full image size, cols/rows = frame grid layout
-// Frame order: 0-idle | 1-walk | 2-attack | 3-hit | 4-victory | 5-defeat
 const SPRITE_SHEETS = {
   1: { url: ASSETS.sprites.tier1, totalW: 1536, totalH: 1024, cols: 6, rows: 1 },
   2: { url: ASSETS.sprites.tier2, totalW: 1536, totalH: 1024, cols: 6, rows: 1 },
@@ -29,7 +25,6 @@ const SPRITE_SHEETS = {
 
 const TOTAL_FRAMES = 6;
 
-// Animation configs: which frames to cycle and at what speed (ms per frame)
 const ANIM_CONFIG = {
   idle:    { frames: [0, 1, 0],    speed: 380 },
   walk:    { frames: [1, 0, 1],    speed: 280 },
@@ -39,7 +34,6 @@ const ANIM_CONFIG = {
   defeat:  { frames: [5],          speed: 999 },
 };
 
-// SpriteAnimator — canvas-based sprite renderer with auto background removal
 function SpriteAnimator({ tier, animState = 'idle', flip = false, targetW = 160, clipH = 320, glowColor }) {
   const canvasRef  = useRef(null);
   const imgRef     = useRef(null);
@@ -55,7 +49,6 @@ function SpriteAnimator({ tier, animState = 'idle', flip = false, targetW = 160,
   const config = ANIM_CONFIG[animState] || ANIM_CONFIG.idle;
   const [fi, setFi] = useState(config.frames[0]);
 
-  // Frame cycling
   useEffect(() => {
     setFi(config.frames[0]);
     if (config.frames.length === 1) return;
@@ -65,9 +58,8 @@ function SpriteAnimator({ tier, animState = 'idle', flip = false, targetW = 160,
       setFi(config.frames[i]);
     }, config.speed);
     return () => clearInterval(id);
-  }, [animState]); // eslint-disable-line
+  }, [animState]);
 
-  // Draw a frame onto the canvas, stripping white/grey checkerboard background
   const drawFrame = useCallback((img, frameIdx) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -80,16 +72,12 @@ function SpriteAnimator({ tier, animState = 'idle', flip = false, targetW = 160,
       const id   = ctx.getImageData(0, 0, dispW, dispH);
       const data = id.data;
       const len  = dispW * dispH;
-
-      // Pass 1 — remove white + checkerboard grey pixels
       for (let i = 0; i < data.length; i += 4) {
         const r = data[i], g = data[i+1], b = data[i+2];
         const avg      = (r + g + b) / 3;
         const variance = Math.max(Math.abs(r-g), Math.abs(g-b), Math.abs(r-b));
         if (avg > 145 && variance < 65) data[i+3] = 0;
       }
-
-      // Pass 2 — remove fringe pixels (bright-ish pixels adjacent to transparent)
       const wasRemoved = new Uint8Array(len);
       for (let p = 0; p < len; p++) {
         if (data[p * 4 + 3] === 0) wasRemoved[p] = 1;
@@ -111,12 +99,10 @@ function SpriteAnimator({ tier, animState = 'idle', flip = false, targetW = 160,
           if (avg > 120 && variance < 80) data[i+3] = 0;
         }
       }
-
       ctx.putImageData(id, 0, 0);
-    } catch (_) { /* CORS fallback */ }
-  }, [dispW, dispH, frameW, frameH, sheet.cols]); // eslint-disable-line
+    } catch (_) {}
+  }, [dispW, dispH, frameW, frameH, sheet.cols]);
 
-  // Load sprite sheet once, re-load if tier changes
   useEffect(() => {
     loadedRef.current = false;
     const img = new Image();
@@ -127,9 +113,8 @@ function SpriteAnimator({ tier, animState = 'idle', flip = false, targetW = 160,
       drawFrame(img, fi);
     };
     img.src = sheet.url;
-  }, [sheet.url]); // eslint-disable-line
+  }, [sheet.url]);
 
-  // Redraw whenever frame index changes
   useEffect(() => {
     if (loadedRef.current && imgRef.current) drawFrame(imgRef.current, fi);
   }, [fi, drawFrame]);
@@ -204,14 +189,23 @@ const ARENA_STYLES = `
     0%,100% { filter: brightness(1); }
     50%     { filter: brightness(2); }
   }
-  @keyframes starField {
-    from { transform: translateY(0); }
-    to   { transform: translateY(-200px); }
-  }
   @keyframes rewardPop {
     0%   { opacity: 0; transform: scale(0.5) translateY(10px); }
     70%  { transform: scale(1.05) translateY(-2px); }
     100% { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  @keyframes levelUpEntrance {
+    0%   { opacity: 0; transform: scale(0.6) translateY(30px); }
+    60%  { transform: scale(1.05) translateY(-4px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  @keyframes expBarFill {
+    from { width: 0%; }
+    to   { width: 100%; }
+  }
+  @keyframes levelUpGlow {
+    0%,100% { box-shadow: 0 0 20px rgba(34,197,94,0.4); }
+    50%      { box-shadow: 0 0 40px rgba(34,197,94,0.8), 0 0 80px rgba(34,197,94,0.3); }
   }
 
   .bird-slide-left  { animation: slideInLeft  0.65s cubic-bezier(0.22,1,0.36,1) both; }
@@ -225,6 +219,9 @@ const ARENA_STYLES = `
   .defeat-slump     { animation: defeatSlump 0.5s ease-out forwards; }
   .battle-start-txt { animation: battleStart 0.9s ease-in-out forwards; }
   .reward-pop       { animation: rewardPop 0.45s cubic-bezier(0.22,1,0.36,1) both; }
+  .level-up-entrance { animation: levelUpEntrance 0.55s cubic-bezier(0.22,1,0.36,1) both; }
+  .level-up-glow    { animation: levelUpGlow 2s ease-in-out infinite; }
+  .exp-bar-fill     { animation: expBarFill 1.2s 0.3s ease-out both; }
 `;
 
 function HPBar({ current, max, flipped = false, flashing = false }) {
@@ -266,27 +263,140 @@ function FloatingDamage({ damage, isCrit, isBlocked }) {
   );
 }
 
+// ── Reward Tile ────────────────────────────────────────────────────────────────
+function RewardTile({ label, icon, value, delay = 0 }) {
+  if (value === undefined || value === null) return null;
+  return (
+    <div className="reward-pop flex flex-col items-center gap-1"
+      style={{ animationDelay: `${delay}s` }}>
+      <p className="text-xs font-bold text-gray-500 mb-0.5">{label}</p>
+      <div className="w-[62px] h-[62px] rounded-2xl flex items-center justify-center"
+        style={{
+          background: 'linear-gradient(145deg, #f5e8b0 0%, #c9a840 100%)',
+          boxShadow: '0 5px 0 #8a6810, 0 7px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.55)',
+          border: '1.5px solid #d4a830',
+        }}>
+        {typeof icon === 'string' && icon.startsWith('http') ? (
+          <img src={icon} alt={label} style={{ width: 36, height: 36, objectFit: 'contain', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }} />
+        ) : (
+          <span style={{ fontSize: 30, filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}>{icon}</span>
+        )}
+      </div>
+      <p className="text-sm font-black text-gray-700">+{value}</p>
+    </div>
+  );
+}
+
+// ── Level Up Modal ─────────────────────────────────────────────────────────────
+function LevelUpModal({ newLevel, onSelectUpgrade }) {
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center px-4"
+      style={{ background: 'rgba(0,0,0,0.78)', backdropFilter: 'blur(6px)' }}>
+      <div className="level-up-entrance level-up-glow w-full max-w-xs relative"
+        style={{
+          background: 'linear-gradient(160deg, #fdf6e0 0%, #ede1b4 100%)',
+          borderRadius: 28,
+          border: '2px solid rgba(255,255,255,0.4)',
+          boxShadow: '0 24px 60px rgba(0,0,0,0.7)',
+          paddingTop: 0,
+          overflow: 'visible',
+        }}>
+
+        {/* Character bust peeking above card */}
+        <div className="absolute left-0 right-0 flex justify-center"
+          style={{ top: -80, zIndex: 10 }}>
+          <div className="relative">
+            {/* Laurel leaves + glow */}
+            <div className="absolute inset-0 flex items-center justify-center"
+              style={{ top: 20 }}>
+              <span style={{ fontSize: 52, filter: 'drop-shadow(0 4px 12px rgba(255,200,0,0.6))' }}>🏅</span>
+            </div>
+            {/* Bird emoji as mascot */}
+            <div style={{ fontSize: 72, filter: 'drop-shadow(0 8px 20px rgba(0,0,0,0.5))' }}>🦅</div>
+          </div>
+        </div>
+
+        {/* Green ribbon banner */}
+        <div className="flex items-center justify-center"
+          style={{
+            marginTop: 60,
+            background: 'linear-gradient(180deg, #4ade80 0%, #16a34a 50%, #14532d 100%)',
+            clipPath: 'polygon(4% 0%, 96% 0%, 100% 50%, 96% 100%, 4% 100%, 0% 50%)',
+            boxShadow: '0 6px 0 #052e16, 0 10px 24px rgba(0,0,0,0.45)',
+            padding: '10px 32px',
+            marginLeft: 12,
+            marginRight: 12,
+            borderRadius: 4,
+          }}>
+          <span className="font-black text-white text-2xl tracking-widest"
+            style={{ textShadow: '0 2px 0 #052e16, 0 3px 8px rgba(0,0,0,0.4)' }}>
+            LEVEL UP
+          </span>
+        </div>
+
+        {/* Content */}
+        <div className="px-6 pt-4 pb-6">
+          {/* Level number */}
+          <p className="text-center font-black text-gray-800 text-lg mb-4">
+            Level {newLevel}
+          </p>
+
+          {/* EXP bar */}
+          <div className="mb-5">
+            <div className="flex items-center gap-2 mb-1.5">
+              <div className="bg-amber-500 text-white text-xs font-black px-2 py-0.5 rounded-full">EXP</div>
+              <div className="flex-1 relative bg-gray-200 rounded-full h-5 overflow-hidden"
+                style={{ boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.15)' }}>
+                <div className="exp-bar-fill h-full rounded-full absolute left-0 top-0"
+                  style={{
+                    background: 'linear-gradient(90deg, #38bdf8, #0ea5e9)',
+                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.5)',
+                  }} />
+                <span className="absolute inset-0 flex items-center justify-center text-xs font-black text-white"
+                  style={{ textShadow: '0 1px 2px rgba(0,0,0,0.4)', zIndex: 2 }}>
+                  100%
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Select Upgrade button */}
+          <button onClick={onSelectUpgrade}
+            className="w-full py-4 rounded-2xl font-black text-base text-white active:translate-y-0.5 transition-transform"
+            style={{
+              background: 'linear-gradient(180deg, #4ade80 0%, #16a34a 50%, #166534 100%)',
+              boxShadow: '0 5px 0 #052e16, 0 8px 24px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.3)',
+              border: '1.5px solid #4ade80',
+              textShadow: '0 1px 3px rgba(0,0,0,0.4)',
+            }}>
+            SELECT UPGRADE
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main component ──────────────────────────────────────────────────────────
 
 export default function BattleArena({ player, result, onClose }) {
-  // ── State ────────────────────────────────────────────────────────────────
-  const [phase, setPhase] = useState('entrance');   // entrance | countdown | battle | result
+  const [phase, setPhase] = useState('entrance');
   const [stepIdx, setStepIdx] = useState(0);
   const [showBattleStart, setShowBattleStart] = useState(false);
+  const [showLevelUp, setShowLevelUp] = useState(false);
 
   const [playerHP, setPlayerHP] = useState(result.playerStats.hp);
   const [oppHP, setOppHP] = useState(result.opponentStats.hp);
   const playerMaxHP = result.playerStats.hp;
   const oppMaxHP    = result.opponentStats.hp;
 
-  // animation flags
   const [playerLunge,   setPlayerLunge]   = useState(false);
   const [oppLunge,      setOppLunge]      = useState(false);
   const [playerShake,   setPlayerShake]   = useState(false);
   const [oppShake,      setOppShake]      = useState(false);
   const [playerHPFlash, setPlayerHPFlash] = useState(false);
   const [oppHPFlash,    setOppHPFlash]    = useState(false);
-  const [damages,       setDamages]       = useState([]); // { id, target, damage, isCrit, isBlocked }
+  const [damages,       setDamages]       = useState([]);
 
   const log     = result.log || [];
   const totalRounds = log.length > 0 ? log[log.length - 1].round : 0;
@@ -294,19 +404,15 @@ export default function BattleArena({ player, result, onClose }) {
 
   const playerTier = player?.evolution_tier || 1;
   const oppTier    = result.opponent?.evolution_tier || 1;
-
   const isEpic = result.mode === 'epic';
 
-  // Pick a random arena background once per mount
   const arenaBackground = useRef(
     isEpic
       ? ASSETS.battle.arenaEpic[Math.floor(Math.random() * ASSETS.battle.arenaEpic.length)]
       : ASSETS.battle.arenaDefault[Math.floor(Math.random() * ASSETS.battle.arenaDefault.length)]
   ).current;
 
-  // ── Phase transitions ────────────────────────────────────────────────────
   useEffect(() => {
-    // After entrance (2.6s), show BATTLE START banner, then begin
     const t1 = setTimeout(() => {
       setShowBattleStart(true);
       setPhase('countdown');
@@ -318,7 +424,6 @@ export default function BattleArena({ player, result, onClose }) {
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, []);
 
-  // ── Step through battle log ──────────────────────────────────────────────
   const advanceStep = useCallback(() => {
     setStepIdx(prev => {
       const next = prev + 1;
@@ -343,14 +448,12 @@ export default function BattleArena({ player, result, onClose }) {
     const HIT_DELAY    = 320;
     const NEXT_DELAY   = 950;
 
-    // Lunge
     const tLunge = setTimeout(() => {
       if (isPlayerTurn) setPlayerLunge(true);
       else              setOppLunge(true);
       setTimeout(() => { setPlayerLunge(false); setOppLunge(false); }, 420);
     }, LUNGE_DELAY);
 
-    // Hit + damage
     const tHit = setTimeout(() => {
       if (isPlayerTurn) {
         setOppShake(true);
@@ -376,18 +479,28 @@ export default function BattleArena({ player, result, onClose }) {
       setTimeout(() => setDamages(prev => prev.filter(d => d.id !== id)), 900);
     }, HIT_DELAY);
 
-    // Next step
     const tNext = setTimeout(advanceStep, NEXT_DELAY);
-
     return () => { clearTimeout(tLunge); clearTimeout(tHit); clearTimeout(tNext); };
-  }, [phase, stepIdx]);   // eslint-disable-line
+  }, [phase, stepIdx]);
 
-  // ── Helpers ──────────────────────────────────────────────────────────────
   const arenaGrad = isEpic
     ? 'linear-gradient(180deg, #1a0030 0%, #2d0050 50%, #0d0020 100%)'
     : 'linear-gradient(180deg, #050a1a 0%, #0a1628 50%, #020810 100%)';
 
   const accentColor = isEpic ? '#a855f7' : '#f59e0b';
+
+  // Build reward rows from result
+  const won = result.playerWon;
+  const rewards = result.rewards || {};
+  const rewardTiles = [
+    { label: 'EXP',    icon: ASSETS.icons.exp,      value: rewards.xp       },
+    { label: 'Glory',  icon: ASSETS.icons.glory,    value: rewards.glory    },
+    { label: 'Dust',   icon: '🌿',                  value: rewards.dust ?? rewards.feathers },
+    { label: 'Food',   icon: '🍓',                  value: rewards.food     },
+    won && rewards.crowns != null
+      ? { label: 'Crowns', icon: '👑', value: rewards.crowns }
+      : null,
+  ].filter(Boolean).filter(r => r.value != null);
 
   // ════════════════════════════════════════════════════════════════════════
   return (
@@ -396,7 +509,7 @@ export default function BattleArena({ player, result, onClose }) {
 
       <style>{ARENA_STYLES}</style>
 
-      {/* Subtle star field */}
+      {/* Star field */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-30">
         {[...Array(20)].map((_, i) => (
           <div key={i} className="absolute rounded-full bg-white"
@@ -413,11 +526,8 @@ export default function BattleArena({ player, result, onClose }) {
       {/* ── ENTRANCE PHASE ─────────────────────────────────────────────── */}
       {(phase === 'entrance' || phase === 'countdown') && (
         <div className="flex-1 flex flex-col items-center justify-center gap-8 px-6 relative">
-
-          {/* Header */}
           <div className="text-center">
-            <div className="text-xs tracking-[0.3em] font-bold mb-1"
-              style={{ color: accentColor }}>
+            <div className="text-xs tracking-[0.3em] font-bold mb-1" style={{ color: accentColor }}>
               {isEpic ? '⚡ EPIC BATTLE' : 'OPPONENT FOUND'}
             </div>
             <div className="text-gray-500 text-xs">
@@ -425,10 +535,7 @@ export default function BattleArena({ player, result, onClose }) {
             </div>
           </div>
 
-          {/* Birds face-off — centered, both visible */}
           <div className="w-full flex items-end justify-center gap-4 mt-auto">
-
-            {/* Player bird entrance */}
             <div className="flex flex-col items-center bird-slide-left">
               <div className="mb-2 drop-shadow-2xl">
                 <SpriteAnimator tier={playerTier} animState="walk" targetW={140} clipH={280} glowColor={`${accentColor}99`} />
@@ -445,13 +552,11 @@ export default function BattleArena({ player, result, onClose }) {
               </div>
             </div>
 
-            {/* VS */}
             <div className="flex flex-col items-center gap-1 mb-16">
               <div className="vs-flash font-black text-4xl" style={{ color: '#ff4444' }}>VS</div>
               <div className="w-px h-8 opacity-30" style={{ background: accentColor }} />
             </div>
 
-            {/* Opponent bird entrance */}
             <div className="flex flex-col items-center bird-slide-right">
               <div className="mb-2 drop-shadow-2xl">
                 <SpriteAnimator tier={oppTier} animState="walk" flip targetW={140} clipH={280} glowColor="#ef444499" />
@@ -469,7 +574,6 @@ export default function BattleArena({ player, result, onClose }) {
             </div>
           </div>
 
-          {/* Battle start flash */}
           {showBattleStart && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="battle-start-txt font-black text-5xl tracking-widest"
@@ -488,8 +592,6 @@ export default function BattleArena({ player, result, onClose }) {
       {/* ── BATTLE PHASE ───────────────────────────────────────────────── */}
       {phase === 'battle' && (
         <div className="flex-1 flex flex-col p-3 gap-3">
-
-          {/* Round counter */}
           <div className="flex items-center justify-center gap-2">
             <div className="h-px flex-1 opacity-20" style={{ background: accentColor }} />
             <span className="text-xs font-bold tracking-widest" style={{ color: accentColor }}>
@@ -498,7 +600,6 @@ export default function BattleArena({ player, result, onClose }) {
             <div className="h-px flex-1 opacity-20" style={{ background: accentColor }} />
           </div>
 
-          {/* HP bars */}
           <div className="flex gap-3 items-start">
             <div className="flex-1">
               <div className="text-white text-xs font-bold mb-1 truncate">
@@ -515,7 +616,6 @@ export default function BattleArena({ player, result, onClose }) {
             </div>
           </div>
 
-          {/* Arena floor */}
           <div className="flex-1 relative rounded-2xl overflow-hidden flex items-end"
             style={{
               backgroundImage: `url(${arenaBackground})`,
@@ -524,20 +624,13 @@ export default function BattleArena({ player, result, onClose }) {
               minHeight: 420,
               border: `1px solid ${accentColor}22`,
             }}>
-
-            {/* Dark overlay so birds stand out */}
             <div className="absolute inset-0 rounded-2xl" style={{ background: 'rgba(0,0,0,0.35)' }} />
-
-            {/* Ground glow */}
             <div className="absolute bottom-0 left-0 right-0 h-12 rounded-b-2xl"
               style={{ background: `linear-gradient(0deg, ${accentColor}18, transparent)` }} />
             <div className="absolute bottom-10 left-6 right-6 h-px"
               style={{ background: accentColor, opacity: 0.25, animation: 'groundPulse 2s ease-in-out infinite' }} />
 
-            {/* Birds — large, facing each other */}
             <div className="absolute inset-x-0 bottom-0 flex items-end justify-between px-1">
-
-              {/* Player bird */}
               <div className="relative flex flex-col items-center">
                 <SpriteAnimator
                   tier={playerTier}
@@ -550,7 +643,6 @@ export default function BattleArena({ player, result, onClose }) {
                 ))}
               </div>
 
-              {/* Battle log line */}
               <div className="absolute bottom-2 left-0 right-0 text-center">
                 {log[stepIdx] && (
                   <div className="text-xs font-bold" style={{ color: `${accentColor}cc` }}>
@@ -561,7 +653,6 @@ export default function BattleArena({ player, result, onClose }) {
                 )}
               </div>
 
-              {/* Opponent bird */}
               <div className="relative flex flex-col items-center">
                 <SpriteAnimator
                   tier={oppTier}
@@ -580,153 +671,124 @@ export default function BattleArena({ player, result, onClose }) {
       )}
 
       {/* ── RESULT PHASE ───────────────────────────────────────────────── */}
-      {phase === 'result' && (() => {
-        const won = result.playerWon;
-        const ribbonColor = won
-          ? 'linear-gradient(180deg, #22c55e 0%, #16a34a 50%, #14532d 100%)'
-          : 'linear-gradient(180deg, #ef4444 0%, #dc2626 50%, #991b1b 100%)';
-        const ribbonShadow = won ? '#052e16' : '#5a0a0a';
-        return (
-          <div className="flex-1 flex flex-col overflow-hidden" style={{
-            background: won
-              ? 'radial-gradient(ellipse at 50% 0%, #0d2b00 0%, #050e00 100%)'
-              : 'radial-gradient(ellipse at 50% 0%, #1a0500 0%, #070002 100%)',
-          }}>
-            <style>{`
-              @keyframes headerImgDrop { from{transform:translateY(-50px);opacity:0} to{transform:translateY(0);opacity:1} }
-              @keyframes ribbonSlide   { from{transform:scaleX(0.3);opacity:0} to{transform:scaleX(1);opacity:1} }
-              @keyframes tileIn        { from{transform:scale(0.4) translateY(20px);opacity:0} to{transform:scale(1) translateY(0);opacity:1} }
-              @keyframes btnShine      { 0%{background-position:200% center} 100%{background-position:-200% center} }
-              .header-img-drop { animation: headerImgDrop 0.6s 0.0s cubic-bezier(0.22,1,0.36,1) both; }
-              .ribbon-slide    { animation: ribbonSlide   0.5s 0.15s cubic-bezier(0.22,1,0.36,1) both; }
-              .tile-in         { animation: tileIn        0.45s cubic-bezier(0.22,1,0.36,1) both; }
-            `}</style>
+      {phase === 'result' && (
+        <div className="flex-1 flex flex-col overflow-hidden" style={{
+          background: won
+            ? 'radial-gradient(ellipse at 50% 0%, #0d2b00 0%, #050e00 100%)'
+            : 'radial-gradient(ellipse at 50% 0%, #1a0500 0%, #070002 100%)',
+        }}>
+          <style>{`
+            @keyframes headerImgDrop { from{transform:translateY(-50px);opacity:0} to{transform:translateY(0);opacity:1} }
+            @keyframes ribbonSlide   { from{transform:scaleX(0.3);opacity:0} to{transform:scaleX(1);opacity:1} }
+            @keyframes tileIn        { from{transform:scale(0.4) translateY(20px);opacity:0} to{transform:scale(1) translateY(0);opacity:1} }
+            .header-img-drop { animation: headerImgDrop 0.6s 0.0s cubic-bezier(0.22,1,0.36,1) both; }
+            .ribbon-slide    { animation: ribbonSlide   0.5s 0.15s cubic-bezier(0.22,1,0.36,1) both; }
+            .tile-in         { animation: tileIn        0.45s cubic-bezier(0.22,1,0.36,1) both; }
+          `}</style>
 
-            <div className="flex-1 overflow-y-auto">
-              <div className="relative flex flex-col items-center px-4 pt-0 pb-3">
+          <div className="flex-1 overflow-y-auto">
+            <div className="flex flex-col items-center px-4 pt-0 pb-3">
 
-                {/* ── Header artwork (swords + crown / defeat asset) ── */}
-                <div className="header-img-drop w-full flex justify-center"
-                  style={{ marginBottom: -28, zIndex: 30, position: 'relative' }}>
-                  <img
-                    src={won ? VICTORY_HEADER_IMG : DEFEAT_HEADER_IMG}
-                    alt={won ? 'Victory' : 'Defeat'}
-                    style={{
-                      width: 220,
-                      height: 'auto',
-                      objectFit: 'contain',
-                      filter: won
-                        ? 'drop-shadow(0 8px 24px rgba(255,200,0,0.5)) drop-shadow(0 4px 12px rgba(0,0,0,0.7))'
-                        : 'drop-shadow(0 8px 24px rgba(139,92,246,0.45)) drop-shadow(0 4px 12px rgba(0,0,0,0.7))',
-                    }}
-                  />
-                </div>
-
-                {/* ── Ribbon banner ── */}
-                <div className="ribbon-slide relative w-full flex items-center justify-center py-3"
+              {/* Header artwork */}
+              <div className="header-img-drop w-full flex justify-center"
+                style={{ marginBottom: -28, zIndex: 30, position: 'relative' }}>
+                <img
+                  src={won ? VICTORY_HEADER_IMG : DEFEAT_HEADER_IMG}
+                  alt={won ? 'Victory' : 'Defeat'}
                   style={{
-                    background: ribbonColor,
-                    clipPath: 'polygon(3% 0%, 97% 0%, 100% 50%, 97% 100%, 3% 100%, 0% 50%)',
-                    boxShadow: `0 8px 0 ${ribbonShadow}, 0 12px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.35)`,
-                    zIndex: 20,
-                  }}>
-                  <span className="font-black text-white text-3xl tracking-widest"
-                    style={{ textShadow: `0 2px 0 ${ribbonShadow}, 0 4px 12px rgba(0,0,0,0.4)` }}>
-                    {won ? 'Victory' : 'Defeat'}
-                  </span>
-                </div>
+                    width: 220,
+                    height: 'auto',
+                    objectFit: 'contain',
+                    filter: won
+                      ? 'drop-shadow(0 8px 24px rgba(255,200,0,0.5)) drop-shadow(0 4px 12px rgba(0,0,0,0.7))'
+                      : 'drop-shadow(0 8px 24px rgba(139,92,246,0.45)) drop-shadow(0 4px 12px rgba(0,0,0,0.7))',
+                  }}
+                />
+              </div>
 
-                {/* ── Reward card ── */}
-                <div className="w-full rounded-[28px] relative"
-                  style={{
-                    background: 'linear-gradient(160deg, #fdf6e0 0%, #ede1b4 60%, #e0d09a 100%)',
-                    boxShadow: '0 20px 60px rgba(0,0,0,0.6), 0 8px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.7)',
-                    border: '1px solid rgba(255,255,255,0.4)',
-                    marginTop: -10, zIndex: 10,
-                    paddingTop: 28,
-                  }}>
+              {/* Ribbon banner */}
+              <div className="ribbon-slide relative w-full flex items-center justify-center py-3"
+                style={{
+                  background: won
+                    ? 'linear-gradient(180deg, #22c55e 0%, #16a34a 50%, #14532d 100%)'
+                    : 'linear-gradient(180deg, #ef4444 0%, #dc2626 50%, #991b1b 100%)',
+                  clipPath: 'polygon(3% 0%, 97% 0%, 100% 50%, 97% 100%, 3% 100%, 0% 50%)',
+                  boxShadow: won
+                    ? '0 8px 0 #052e16, 0 12px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.35)'
+                    : '0 8px 0 #5a0a0a, 0 12px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.35)',
+                  zIndex: 20,
+                }}>
+                <span className="font-black text-white text-3xl tracking-widest"
+                  style={{ textShadow: `0 2px 0 ${won ? '#052e16' : '#5a0a0a'}, 0 4px 12px rgba(0,0,0,0.4)` }}>
+                  {won ? 'Victory' : 'Defeat'}
+                </span>
+              </div>
 
-                  <div className="px-5 pb-5">
-                    <p className="text-center font-black text-gray-700 text-base mb-5"
-                      style={{ textShadow: '0 1px 0 rgba(255,255,255,0.8)' }}>Your rewards</p>
+              {/* Reward card — no overlap, clean layout */}
+              <div className="w-full rounded-[28px]"
+                style={{
+                  background: 'linear-gradient(160deg, #fdf6e0 0%, #ede1b4 60%, #e0d09a 100%)',
+                  boxShadow: '0 20px 60px rgba(0,0,0,0.6), 0 8px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.7)',
+                  border: '1px solid rgba(255,255,255,0.4)',
+                  marginTop: -10,
+                  zIndex: 10,
+                  paddingTop: 32,
+                }}>
 
-                    {/* Reward tiles */}
-                    <div className="flex justify-center gap-4 flex-wrap">
-                      {[
-                        { label:'EXP',      tile:'exp',     value: result.rewards?.xp       },
-                        { label:'Glory',    tile:'glory',   value: result.rewards?.glory    },
-                        result.rewards?.feathers
-                          ? { label:'Feathers', tile:'feather', value: result.rewards.feathers }
-                          : null,
-                      ].filter(Boolean).map((r, i) => (
-                        <div key={r.label} className="tile-in flex flex-col items-center gap-1.5"
-                          style={{ animationDelay: `${0.25 + i*0.08}s` }}>
-                          <p className="text-xs font-bold text-gray-500">{r.label}</p>
-                          <div className="w-[68px] h-[68px] rounded-2xl flex items-center justify-center"
-                            style={{
-                              background: 'linear-gradient(145deg, #f5e8b0 0%, #c9a840 100%)',
-                              boxShadow: '0 6px 0 #8a6810, 0 8px 20px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.55)',
-                              border: '1.5px solid #d4a830',
-                            }}>
-                            {r.tile==='exp'     && <img src={ASSETS.icons.exp}      alt="EXP"      style={{width:40,height:40,objectFit:'contain',filter:'drop-shadow(0 1px 2px rgba(0,0,0,0.3))'}} />}
-                            {r.tile==='glory'   && <img src={ASSETS.icons.glory}    alt="Glory"    style={{width:40,height:40,objectFit:'contain',filter:'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'}} />}
-                            {r.tile==='feather' && <img src={ASSETS.icons.feathers} alt="Feathers" style={{width:40,height:40,objectFit:'contain',filter:'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'}} />}
-                          </div>
-                          <p className="text-sm font-black text-gray-700">+{r.value}</p>
-                        </div>
-                      ))}
-                    </div>
+                <div className="px-5 pb-5">
+                  <p className="text-center font-black text-gray-700 text-base mb-5"
+                    style={{ textShadow: '0 1px 0 rgba(255,255,255,0.8)' }}>Your rewards</p>
 
-                    {/* Additional rewards */}
-                    {result.rewards?.bonus && (
-                      <>
-                        <div className="my-4 h-px" style={{ background:'linear-gradient(90deg,transparent,#c4a040,transparent)' }} />
-                        <p className="text-center font-black text-gray-700 text-base mb-4"
-                          style={{ textShadow:'0 1px 0 rgba(255,255,255,0.8)' }}>Additional rewards</p>
-                        <div className="flex justify-center">
-                          <div className="tile-in flex flex-col items-center gap-1.5" style={{ animationDelay:'0.55s' }}>
-                            <p className="text-xs font-bold text-gray-500">{result.rewards.bonus.type}</p>
-                            <div className="w-[68px] h-[68px] rounded-2xl flex items-center justify-center"
-                              style={{
-                                background:'linear-gradient(145deg,#f5e8b0 0%,#c9a840 100%)',
-                                boxShadow:'0 6px 0 #8a6810, 0 8px 20px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.55)',
-                                border:'1.5px solid #d4a830',
-                              }}>
-                              <span style={{fontSize:34,filter:'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'}}>✨</span>
-                            </div>
-                            <p className="text-sm font-black text-gray-700">+{result.rewards.bonus.amount}</p>
-                          </div>
-                        </div>
-                      </>
-                    )}
-
-                    {result.levelUp && (
-                      <p className="text-center font-black text-amber-700 mt-3 animate-bounce">
-                        🎉 LEVEL UP → {result.newLevel}
-                      </p>
-                    )}
-                    <p className="text-center text-xs text-gray-400 mt-3">vs {result.opponent?.display_name}</p>
+                  {/* Reward tiles — centered row, wraps cleanly */}
+                  <div className="flex justify-center gap-3 flex-wrap">
+                    {rewardTiles.map((r, i) => (
+                      <RewardTile
+                        key={r.label}
+                        label={r.label}
+                        icon={r.icon}
+                        value={r.value}
+                        delay={0.2 + i * 0.07}
+                      />
+                    ))}
                   </div>
+
+                  <p className="text-center text-xs text-gray-400 mt-4">vs {result.opponent?.display_name}</p>
                 </div>
               </div>
             </div>
-
-            {/* ── Continue button ── */}
-            <div className="px-4 py-4">
-              <button onClick={onClose}
-                className="w-full py-4 rounded-2xl font-black text-xl text-white active:translate-y-1 transition-transform"
-                style={{
-                  background: 'linear-gradient(180deg, #f9b234 0%, #e67e22 50%, #c95e00 100%)',
-                  boxShadow: '0 6px 0 #7a3800, 0 10px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.35)',
-                  border: '1.5px solid #f5c060',
-                  textShadow: '0 1px 3px rgba(0,0,0,0.4)',
-                }}>
-                Continue
-              </button>
-            </div>
           </div>
-        );
-      })()}
+
+          {/* Continue button — fixed at bottom, never overlapping */}
+          <div className="px-4 py-4 flex-shrink-0"
+            style={{ background: won ? 'rgba(5,14,0,0.95)' : 'rgba(7,0,2,0.95)' }}>
+            <button
+              onClick={() => {
+                if (result.levelUp) {
+                  setShowLevelUp(true);
+                } else {
+                  onClose();
+                }
+              }}
+              className="w-full py-4 rounded-2xl font-black text-xl text-white active:translate-y-1 transition-transform"
+              style={{
+                background: 'linear-gradient(180deg, #f9b234 0%, #e67e22 50%, #c95e00 100%)',
+                boxShadow: '0 6px 0 #7a3800, 0 10px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.35)',
+                border: '1.5px solid #f5c060',
+                textShadow: '0 1px 3px rgba(0,0,0,0.4)',
+              }}>
+              Continue
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── LEVEL UP MODAL ─────────────────────────────────────────────── */}
+      {showLevelUp && (
+        <LevelUpModal
+          newLevel={result.newLevel}
+          onSelectUpgrade={onClose}
+        />
+      )}
     </div>
   );
 }
