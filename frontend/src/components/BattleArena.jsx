@@ -9,6 +9,10 @@ if (typeof document !== 'undefined' && !document.getElementById('bird-anim-css')
   document.head.appendChild(s);
 }
 
+// ── Result screen header assets ──────────────────────────────────────────────
+const VICTORY_HEADER_IMG = 'https://i.ibb.co/M53MVZp7/file-0000000078a8724398dc5894b0b6bf49.png';
+const DEFEAT_HEADER_IMG  = 'https://i.ibb.co/C3Hq1GBp/file-0000000037cc71f481c27f128ad8b1f3.png';
+
 // ── Sprite sheets ────────────────────────────────────────────────────────────
 // Each entry: totalW/totalH = full image size, cols/rows = frame grid layout
 // Frame order: 0-idle | 1-walk | 2-attack | 3-hit | 4-victory | 5-defeat
@@ -573,9 +577,9 @@ export default function BattleArena({ player, result, onClose }) {
       {phase === 'result' && (() => {
         const won = result.playerWon;
         const ribbonColor = won
-          ? 'linear-gradient(180deg, #5bc8f5 0%, #2980b9 40%, #1a6fa8 100%)'
-          : 'linear-gradient(180deg, #f07060 0%, #c0392b 40%, #922b21 100%)';
-        const ribbonShadow = won ? '#1a6fa8' : '#7b241c';
+          ? 'linear-gradient(180deg, #22c55e 0%, #16a34a 50%, #14532d 100%)'
+          : 'linear-gradient(180deg, #ef4444 0%, #dc2626 50%, #991b1b 100%)';
+        const ribbonShadow = won ? '#052e16' : '#5a0a0a';
         return (
           <div className="flex-1 flex flex-col overflow-hidden" style={{
             background: won
@@ -583,51 +587,42 @@ export default function BattleArena({ player, result, onClose }) {
               : 'radial-gradient(ellipse at 50% 0%, #1a0500 0%, #070002 100%)',
           }}>
             <style>{`
-              @keyframes r3dDrop  { from{transform:translateY(-80px) translateX(-50%);opacity:0} to{transform:translateY(0) translateX(-50%);opacity:1} }
-              @keyframes swordInL { from{transform:translate(-50%,-50%) rotate(-10deg) scale(0.4);opacity:0}
-                                    to  {transform:translate(-50%,-50%) rotate(-38deg) scale(1);  opacity:1} }
-              @keyframes swordInR { from{transform:translate(-50%,-50%) rotate(10deg) scaleX(-1) scale(0.4);opacity:0}
-                                    to  {transform:translate(-50%,-50%) rotate(38deg) scaleX(-1) scale(1);  opacity:1} }
-              @keyframes tileIn   { from{transform:scale(0.4) translateY(20px);opacity:0} to{transform:scale(1) translateY(0);opacity:1} }
-              @keyframes btnShine { 0%{background-position:200% center} 100%{background-position:-200% center} }
-              .r3d-drop  { animation: r3dDrop  0.6s 0.05s cubic-bezier(0.22,1,0.36,1) both; }
-              .sw-l      { animation: swordInL 0.55s 0.0s  cubic-bezier(0.22,1,0.36,1) both; }
-              .sw-r      { animation: swordInR 0.55s 0.0s  cubic-bezier(0.22,1,0.36,1) both; }
-              .tile-in   { animation: tileIn   0.45s cubic-bezier(0.22,1,0.36,1) both; }
+              @keyframes headerImgDrop { from{transform:translateY(-50px);opacity:0} to{transform:translateY(0);opacity:1} }
+              @keyframes ribbonSlide   { from{transform:scaleX(0.3);opacity:0} to{transform:scaleX(1);opacity:1} }
+              @keyframes tileIn        { from{transform:scale(0.4) translateY(20px);opacity:0} to{transform:scale(1) translateY(0);opacity:1} }
+              @keyframes btnShine      { 0%{background-position:200% center} 100%{background-position:-200% center} }
+              .header-img-drop { animation: headerImgDrop 0.6s 0.0s cubic-bezier(0.22,1,0.36,1) both; }
+              .ribbon-slide    { animation: ribbonSlide   0.5s 0.15s cubic-bezier(0.22,1,0.36,1) both; }
+              .tile-in         { animation: tileIn        0.45s cubic-bezier(0.22,1,0.36,1) both; }
             `}</style>
 
             <div className="flex-1 overflow-y-auto">
-              <div className="relative flex flex-col items-center px-4 pt-3 pb-3">
+              <div className="relative flex flex-col items-center px-4 pt-0 pb-3">
 
-                {/* ── Swords + Crown (floats above ribbon) ── */}
-                <div className="relative w-full flex justify-center" style={{ height: 100, zIndex: 30 }}>
-                  <span className="sw-l absolute text-5xl select-none"
-                    style={{ top:'58%', left:'calc(50% - 56px)',
-                             transform:'translate(-50%,-50%) rotate(-38deg)',
-                             filter:'drop-shadow(0 4px 8px rgba(0,0,0,0.7)) drop-shadow(0 0 6px rgba(200,200,200,0.3))',
-                             lineHeight:1 }}>🗡️</span>
-                  <span className="sw-r absolute text-5xl select-none"
-                    style={{ top:'58%', left:'calc(50% + 56px)',
-                             transform:'translate(-50%,-50%) rotate(38deg) scaleX(-1)',
-                             filter:'drop-shadow(0 4px 8px rgba(0,0,0,0.7)) drop-shadow(0 0 6px rgba(200,200,200,0.3))',
-                             lineHeight:1 }}>🗡️</span>
-                  <span className="r3d-drop absolute text-6xl select-none"
-                    style={{ top: 0, left:'50%',
-                             filter: won
-                               ? 'drop-shadow(0 0 16px rgba(255,200,0,0.8)) drop-shadow(0 4px 8px rgba(0,0,0,0.6))'
-                               : 'drop-shadow(0 0 16px rgba(150,80,255,0.8)) drop-shadow(0 4px 8px rgba(0,0,0,0.6))',
-                             lineHeight:1 }}>
-                    {won ? '👑' : '💎'}
-                  </span>
+                {/* ── Header artwork (swords + crown / defeat asset) ── */}
+                <div className="header-img-drop w-full flex justify-center"
+                  style={{ marginBottom: -28, zIndex: 30, position: 'relative' }}>
+                  <img
+                    src={won ? VICTORY_HEADER_IMG : DEFEAT_HEADER_IMG}
+                    alt={won ? 'Victory' : 'Defeat'}
+                    style={{
+                      width: 220,
+                      height: 'auto',
+                      objectFit: 'contain',
+                      filter: won
+                        ? 'drop-shadow(0 8px 24px rgba(255,200,0,0.5)) drop-shadow(0 4px 12px rgba(0,0,0,0.7))'
+                        : 'drop-shadow(0 8px 24px rgba(139,92,246,0.45)) drop-shadow(0 4px 12px rgba(0,0,0,0.7))',
+                    }}
+                  />
                 </div>
 
                 {/* ── Ribbon banner ── */}
-                <div className="r3d-drop relative w-full flex items-center justify-center py-3"
+                <div className="ribbon-slide relative w-full flex items-center justify-center py-3"
                   style={{
                     background: ribbonColor,
                     clipPath: 'polygon(3% 0%, 97% 0%, 100% 50%, 97% 100%, 3% 100%, 0% 50%)',
                     boxShadow: `0 8px 0 ${ribbonShadow}, 0 12px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.35)`,
-                    marginTop: -16, zIndex: 20,
+                    zIndex: 20,
                   }}>
                   <span className="font-black text-white text-3xl tracking-widest"
                     style={{ textShadow: `0 2px 0 ${ribbonShadow}, 0 4px 12px rgba(0,0,0,0.4)` }}>
