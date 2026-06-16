@@ -1,3 +1,4 @@
+import ASSETS from './config/assets';
 import { useState, useEffect } from 'react';
 import { login } from './api';
 import Lobby from './components/Lobby';
@@ -64,7 +65,7 @@ export default function App() {
   if (loading) return (
     <div className="flex flex-col items-center justify-center h-screen relative overflow-hidden"
       style={{
-        backgroundImage: 'url(https://i.ibb.co/VpLzxzgB/Screenshot-20260614-164506-Google.jpg)',
+        backgroundImage: `url(${ASSETS.ui.appBg})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
       }}>
