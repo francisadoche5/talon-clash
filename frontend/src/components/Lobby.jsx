@@ -3,14 +3,128 @@ import { fight, getPublicConfig, createInvoice } from '../api';
 import BattleArena from './BattleArena';
 import { getBirdUrl } from '../birdImages';
 
+// ── Energy Refill Modal ────────────────────────────────────────────────────────
+function EnergyModal({ player, onClose, onPurchased }) {
+  const energy    = player?.energy    || 0;
+  const maxEnergy = player?.max_energy || 400;
+  const regenRate = 0.17;
+
+  const REFILL_OPTIONS = [
+    { id: 'energy_50',  amount: 50,  price: 50  },
+    { id: 'energy_250', amount: 250, price: 250 },
+    { id: 'energy_750', amount: 750, price: 750 },
+  ];
+
+  // green / blue / purple tiers
+  const TIER_STYLES = [
+    { top: '#6abf47', mid: '#4aa024', bot: '#2d7010', shadow: '#1a4a00', border: '#7dd455' },
+    { top: '#5bb8ff', mid: '#2d7dd2', bot: '#1a5fa0', shadow: '#0d3d70', border: '#7fcfff' },
+    { top: '#a78bfa', mid: '#7c3aed', bot: '#5b21b6', shadow: '#3b0e8f', border: '#c4b5fd' },
+  ];
+
+  async function handleRefill(optionId, price) {
+    try {
+      const res = await createInvoice(player.telegram_id, optionId);
+      const link = res.data.link;
+      if (window.Telegram?.WebApp?.openInvoice) {
+        window.Telegram.WebApp.openInvoice(link, (status) => {
+          if (status === 'paid') { onPurchased(); onClose(); }
+        });
+      } else {
+        window.open(link, '_blank');
+        onClose();
+      }
+    } catch {
+      alert('Could not process payment. Please try again.');
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center"
+      style={{ backdropFilter: 'blur(5px)', background: 'rgba(0,0,0,0.65)' }}>
+
+      <div className="w-full max-w-sm rounded-t-[32px] overflow-hidden"
+        style={{
+          background: 'linear-gradient(160deg, #fdf6e0 0%, #ede1b4 100%)',
+          boxShadow: '0 -16px 60px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.8)',
+        }}>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 pt-5 pb-1">
+          <div className="w-8" />
+          <h2 className="font-black text-gray-800 text-xl tracking-wide">Energy</h2>
+          <button onClick={onClose}
+            className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-500 font-black text-lg leading-none">
+            ✕
+          </button>
+        </div>
+
+        {/* Energy status */}
+        <div className="flex flex-col items-center py-4 gap-1">
+          {/* Energy pill */}
+          <div className="flex items-center gap-2 px-5 py-2 rounded-full font-black text-lg text-white"
+            style={{
+              background: 'linear-gradient(145deg, #c9a840, #8a6810)',
+              boxShadow: '0 4px 0 #5a3800, 0 6px 16px rgba(0,0,0,0.3)',
+              border: '1.5px solid #e8c060',
+            }}>
+            <span style={{ fontSize: 22 }}>⚡</span>
+            <span>{energy}/{maxEnergy}</span>
+          </div>
+          <p className="text-amber-700 text-sm font-bold mt-1">
+            +{regenRate} <span style={{ fontSize: 13 }}>⚡</span> each 10 seconds
+          </p>
+          <p className="text-amber-600 font-black text-sm mt-2">Restore energy instantly</p>
+        </div>
+
+        {/* Refill options */}
+        <div className="flex gap-3 px-4 pb-8">
+          {REFILL_OPTIONS.map((opt, idx) => {
+            const s = TIER_STYLES[idx];
+            return (
+              <button key={opt.id}
+                onClick={() => handleRefill(opt.id, opt.price)}
+                className="flex-1 rounded-2xl overflow-hidden active:scale-95 transition-transform"
+                style={{ boxShadow: `0 4px 0 ${s.shadow}, 0 6px 20px rgba(0,0,0,0.3)` }}>
+                {/* Top price badge */}
+                <div className="flex items-center justify-center py-1.5 font-black text-white text-sm gap-1"
+                  style={{ background: `linear-gradient(180deg, ${s.top} 0%, ${s.mid} 100%)` }}>
+                  + <span style={{ fontSize: 13 }}>⊕</span>
+                </div>
+                {/* Icon area */}
+                <div className="flex flex-col items-center justify-center py-3 gap-2"
+                  style={{ background: `linear-gradient(180deg, ${s.mid} 0%, ${s.bot} 100%)` }}>
+                  <span style={{ fontSize: 36, filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.4))' }}>⚗️</span>
+                  {/* Amount badge */}
+                  <div className="px-3 py-1 rounded-lg font-black text-white text-sm flex items-center gap-1"
+                    style={{ background: 'rgba(0,0,0,0.4)', border: `1px solid ${s.border}40` }}>
+                    {opt.amount} <span style={{ fontSize: 11 }}>⚡</span>
+                  </div>
+                </div>
+                {/* REFILL label */}
+                <div className="py-2 font-black text-white text-sm text-center flex items-center justify-center gap-1"
+                  style={{ background: `linear-gradient(180deg, ${s.top} 0%, ${s.mid} 100%)` }}>
+                  {opt.price} ⭐
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Main Lobby ─────────────────────────────────────────────────────────────────
 export default function Lobby({ player, onRefresh }) {
   const [mode, setMode] = useState('normal');
   const [battling, setBattling] = useState(false);
-  const [battleResult, setBattleResult] = useState(null); // shows arena when set
+  const [battleResult, setBattleResult] = useState(null);
   const [showEpicInfo, setShowEpicInfo] = useState(false);
   const [showAutoBattle, setShowAutoBattle] = useState(false);
+  const [showEnergyModal, setShowEnergyModal] = useState(false);
   const [autoPrices, setAutoPrices] = useState({ days3: 199, days14: 499 });
-  const [lastBattleResult, setLastBattleResult] = useState(null); // summary after arena closes
+  const [lastBattleResult, setLastBattleResult] = useState(null);
 
   const energyCost = mode === 'epic' ? 200 : 25;
   const hasEnergy = (player?.energy || 0) >= energyCost;
@@ -38,12 +152,14 @@ export default function Lobby({ player, onRefresh }) {
   }
 
   async function handleBattle() {
-    if (!hasEnergy) return;
+    if (!hasEnergy) {
+      setShowEnergyModal(true);
+      return;
+    }
     setBattling(true);
     setLastBattleResult(null);
     try {
       const res = await fight(player.telegram_id, mode);
-      // Attach the current mode so the arena knows epic vs normal
       setBattleResult({ ...res.data, mode });
       onRefresh();
     } catch (err) {
@@ -54,7 +170,6 @@ export default function Lobby({ player, onRefresh }) {
   }
 
   function handleArenaClose() {
-    // Move result to the summary card, close the arena
     setLastBattleResult(battleResult);
     setBattleResult(null);
   }
@@ -78,7 +193,7 @@ export default function Lobby({ player, onRefresh }) {
 
   return (
     <>
-      {/* ── Animated Battle Arena overlay ─────────────────────────── */}
+      {/* Battle Arena overlay */}
       {battleResult && !battleResult.error && (
         <BattleArena
           player={player}
@@ -87,7 +202,7 @@ export default function Lobby({ player, onRefresh }) {
         />
       )}
 
-      {/* ── Searching for opponent overlay ─────────────────────────── */}
+      {/* Searching overlay */}
       {battling && !battleResult && (
         <div className="fixed inset-0 z-50 flex items-end justify-center"
           style={{ backdropFilter: 'blur(6px)', background: 'rgba(0,0,0,0.65)' }}>
@@ -112,40 +227,37 @@ export default function Lobby({ player, onRefresh }) {
             .dot2 { animation: dotPulse 1.4s 0.22s infinite; }
             .dot3 { animation: dotPulse 1.4s 0.44s infinite; }
           `}</style>
-
-          {/* Bottom sheet */}
           <div className="w-full rounded-t-[32px] flex flex-col items-center gap-7 pt-8 pb-14"
             style={{
               background: 'linear-gradient(160deg, #fdf6e3 0%, #f0e0b0 100%)',
-              boxShadow: '0 -12px 60px rgba(0,0,0,0.5), 0 -4px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.8)',
-              border: '1px solid rgba(255,255,255,0.5)',
+              boxShadow: '0 -12px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.8)',
             }}>
-
-            {/* Title */}
-            <p className="text-2xl font-black tracking-wide"
-              style={{ color: '#c0392b', textShadow: '0 2px 4px rgba(0,0,0,0.15)' }}>
+            <p className="text-2xl font-black tracking-wide" style={{ color: '#c0392b' }}>
               Searching for opponent
             </p>
-
-            {/* 3D spinning coin */}
             <div className="coin-3d w-28 h-28 rounded-full flex items-center justify-center"
               style={{
                 background: 'radial-gradient(circle at 32% 28%, #fff1a0, #f5a623 45%, #8b5e00 100%)',
-                boxShadow: '0 0 24px #f5a62355, 0 12px 30px #0008, inset 0 2px 0 rgba(255,255,255,0.35)',
                 border: '3px solid #c87d10',
               }}>
               <span style={{ fontSize: 52, filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))' }}>🪶</span>
             </div>
-
-            {/* Animated dots */}
             <div className="flex gap-2 items-center">
               {['dot1','dot2','dot3'].map(d => (
-                <div key={d} className={`${d} w-3 h-3 rounded-full`}
-                  style={{ background: '#c0392b' }} />
+                <div key={d} className={`${d} w-3 h-3 rounded-full`} style={{ background: '#c0392b' }} />
               ))}
             </div>
           </div>
         </div>
+      )}
+
+      {/* Energy Modal */}
+      {showEnergyModal && (
+        <EnergyModal
+          player={player}
+          onClose={() => setShowEnergyModal(false)}
+          onPurchased={onRefresh}
+        />
       )}
 
       <div className="p-4 flex flex-col gap-4">
@@ -189,6 +301,26 @@ export default function Lobby({ player, onRefresh }) {
           <div className="text-amber-300 text-xs">+500🪶</div>
         </div>
 
+        {/* Energy bar — tappable to open modal */}
+        <button onClick={() => setShowEnergyModal(true)}
+          className="w-full bg-amber-900 rounded-xl p-3 flex items-center gap-3 active:scale-95 transition-transform">
+          <span className="text-2xl">⚡</span>
+          <div className="flex-1">
+            <div className="flex items-center justify-between mb-1">
+              <div className="text-amber-200 text-sm font-bold">Energy</div>
+              <div className="text-amber-300 text-xs font-bold">{player?.energy || 0} / {player?.max_energy || 400}</div>
+            </div>
+            <div className="w-full bg-amber-950 rounded-full h-2 overflow-hidden">
+              <div className="h-full rounded-full transition-all"
+                style={{
+                  width: `${Math.min(100, ((player?.energy || 0) / (player?.max_energy || 400)) * 100)}%`,
+                  background: 'linear-gradient(90deg, #fbbf24, #f59e0b)',
+                }} />
+            </div>
+          </div>
+          <span className="text-amber-500 text-xs">+</span>
+        </button>
+
         {/* Mode Selector */}
         <div className={`rounded-2xl p-4 flex items-center justify-between ${mode === 'epic' ? 'bg-purple-900 border border-purple-500' : 'bg-amber-800'}`}>
           <button onClick={handleModeToggle} className="text-amber-300 text-sm font-bold">
@@ -206,19 +338,25 @@ export default function Lobby({ player, onRefresh }) {
         {/* Battle Button */}
         <button
           onClick={handleBattle}
-          disabled={battling || !hasEnergy}
+          disabled={battling}
           className={`w-full py-4 rounded-2xl font-black text-xl transition-all ${
-            hasEnergy && !battling
+            !battling
               ? mode === 'epic'
                 ? 'bg-purple-600 hover:bg-purple-500 active:scale-95 text-white'
-                : 'bg-amber-500 hover:bg-amber-400 active:scale-95 text-amber-900'
+                : hasEnergy
+                  ? 'bg-amber-500 hover:bg-amber-400 active:scale-95 text-amber-900'
+                  : 'bg-red-800 hover:bg-red-700 active:scale-95 text-white'
               : 'bg-gray-700 text-gray-500 cursor-not-allowed'
           }`}
         >
-          {battling ? '⚔️ Finding opponent...' : hasEnergy ? `⚔️ FIGHT (${energyCost}⚡)` : '⚡ Not enough energy'}
+          {battling
+            ? '⚔️ Finding opponent...'
+            : hasEnergy
+              ? `⚔️ FIGHT (${energyCost}⚡)`
+              : `⚡ No Energy — Tap to Refill`}
         </button>
 
-        {/* Post-battle summary (shown after arena closes) */}
+        {/* Post-battle summary */}
         {lastBattleResult && !lastBattleResult.error && (
           <div className={`rounded-2xl p-4 border-2 ${lastBattleResult.playerWon ? 'bg-green-950 border-green-500' : 'bg-red-950 border-red-500'}`}>
             <div className="text-center text-2xl font-black mb-2">
@@ -230,12 +368,12 @@ export default function Lobby({ player, onRefresh }) {
             <div className="grid grid-cols-4 gap-2 text-center">
               <div><div className="text-blue-400 text-xs">EXP</div><div className="text-white font-bold">+{lastBattleResult.rewards?.xp}</div></div>
               <div><div className="text-yellow-400 text-xs">Glory</div><div className="text-white font-bold">+{lastBattleResult.rewards?.glory}</div></div>
-              <div><div className="text-green-400 text-xs">🪶</div><div className="text-white font-bold">+{lastBattleResult.rewards?.feathers}</div></div>
+              <div><div className="text-green-400 text-xs">🌿</div><div className="text-white font-bold">+{lastBattleResult.rewards?.feathers}</div></div>
               <div><div className="text-orange-400 text-xs">Food</div><div className="text-white font-bold">+{lastBattleResult.rewards?.food}</div></div>
             </div>
-            {lastBattleResult.rewards?.bonus && (
+            {lastBattleResult.rewards?.crowns && (
               <div className="mt-2 text-center text-yellow-300 text-sm">
-                🎁 Bonus: {lastBattleResult.rewards.bonus.type} x{lastBattleResult.rewards.bonus.amount}
+                👑 Crowns: +{lastBattleResult.rewards.crowns}
               </div>
             )}
             {lastBattleResult.levelUp && (
@@ -269,7 +407,7 @@ export default function Lobby({ player, onRefresh }) {
                   <div className="font-bold mb-1">Defeat Rewards:</div>
                   <div>• EXP x2 Bonus</div>
                   <div>• Glory x2 Bonus</div>
-                  <div>• 🪶 x150</div>
+                  <div>• 🌿 x150</div>
                   <div>• Food x100</div>
                 </div>
               </div>
@@ -285,35 +423,25 @@ export default function Lobby({ player, onRefresh }) {
         {showAutoBattle && (
           <div className="fixed inset-0 bg-black bg-opacity-70 flex items-end justify-center z-50">
             <div className="w-full max-w-sm rounded-t-3xl overflow-hidden" style={{ background: '#e8d5b7' }}>
-
               <div className="flex items-center justify-between px-5 pt-5 pb-2">
                 <h2 className="text-xl font-black text-amber-900">Auto Battle</h2>
                 <button onClick={() => setShowAutoBattle(false)}
                   className="text-red-500 text-2xl font-black leading-none">✕</button>
               </div>
-
               <div className="mx-5 mb-3">
                 <div className="rounded-xl py-2 text-center font-black text-base text-amber-100"
                   style={{ background: '#7a5230' }}>
                   {player?.auto_battle_active ? '✅ Active' : 'Inactive'}
                 </div>
               </div>
-
               <div className="mx-5 mb-3 rounded-2xl overflow-hidden" style={{ height: 160, background: '#c4a882' }}>
-                <div className="w-full h-full flex items-center justify-center text-7xl">
-                  ⚔️🦅⚔️
-                </div>
+                <div className="w-full h-full flex items-center justify-center text-7xl">⚔️🦅⚔️</div>
               </div>
-
               <div className="mx-5 mb-4 rounded-2xl p-4" style={{ background: '#d4b896', border: '2px solid #b8956a' }}>
                 <p className="text-amber-900 font-bold text-sm text-center leading-relaxed">
-                  Unlock AutoBattle to speed up your progress! Complete multiple fights in just a few seconds.
-                </p>
-                <p className="text-amber-800 text-sm text-center mt-2">
-                  ⏳ AutoBattle remains active for the purchased duration.
+                  Unlock AutoBattle to speed up your progress!
                 </p>
               </div>
-
               <div className="flex gap-3 mx-5 mb-3">
                 <div className="flex-1 flex flex-col items-center">
                   <div className="z-10 mb-[-10px] px-3 py-1 rounded-full font-black text-sm text-white flex items-center gap-1"
@@ -338,7 +466,6 @@ export default function Lobby({ player, onRefresh }) {
                   </button>
                 </div>
               </div>
-
               <div className="mx-5 mb-6">
                 <button onClick={() => setShowAutoBattle(false)}
                   className="w-full py-4 rounded-2xl font-black text-amber-900 text-base"
