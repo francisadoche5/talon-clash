@@ -248,7 +248,7 @@ export default function Market({ player, onRefresh }) {
                       {chest.label} <span className="text-amber-600 font-normal">({chest.stock})</span>
                     </div>
                     {/* Chest icon box */}
-                    <div className="w-24 h-24 relative mb-2">
+                    <div className="w-full relative mb-2" style={{aspectRatio:'1/1', maxWidth: 160}}>
                       <img src={chest.img} alt={chest.label}
                         className="w-full h-full object-contain drop-shadow-lg" />
                       <div className="absolute -bottom-2 -right-2 bg-amber-800 text-white text-xs font-black rounded-full px-2 py-0.5">
