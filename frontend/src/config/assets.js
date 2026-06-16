@@ -28,7 +28,7 @@ const ASSETS = {
     chestCommon:   `${CDN}/assets/ui/file_00000000e5fc71f4933e1d844856cc37.png`,
     chestUncommon: `${CDN}/assets/ui/file_00000000338471f498849bccea66f7df.png`,
     chestRare:     `${CDN}/assets/ui/file_000000002fb871f4a915225a1259bad9.png`,
-    chestEpic:     `${CDN}/assets/ui/file_00000000a8c871f49a283a43f2bc0982.png`,
+    chestEpic:     `${CDN}/assets/ui/chest-epic.png`,
   },
   sprites: {
     // Sprite sheets
