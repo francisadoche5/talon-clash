@@ -1,6 +1,6 @@
 import ASSETS from '../config/assets';
-import { useState, useEffect } from 'react';
-import { getStoreItems, buyItem, openChest } from '../api';
+import { useState } from 'react';
+import { createInvoice } from '../api';
 
 const CATEGORIES = ['special_offers', 'chests', 'feathers', 'boosters', 'epic_boosters', 'hammers'];
 const CATEGORY_LABELS = {
@@ -12,57 +12,44 @@ const CATEGORY_LABELS = {
   hammers: '🔨 Hammers',
 };
 
-// Chest visuals
 const CHEST_DATA = [
-  { key: 'common',   img: ASSETS.ui.chestCommon, bg: 'bg-stone-600', label: 'Common',   price: 49,   qty: 1, stock: '5/5' },
-  { key: 'uncommon', img: ASSETS.ui.chestUncommon, bg: 'bg-green-600', label: 'Uncommon', price: 149,  qty: 1, stock: '3/3' },
-  { key: 'rare',     img: ASSETS.ui.chestRare, bg: 'bg-blue-600',  label: 'Rare',     price: 1449, qty: 1, stock: '2/2' },
-  { key: 'epic',     img: ASSETS.ui.chestEpic, bg: 'bg-purple-700', label: 'Epic',     price: 7499, qty: 1, stock: '1/1', badge: '50% OFF' },
+  { key: 'chest_common',   product: 'chest_common',   img: ASSETS.ui.chestCommon,   label: 'Common',   price: 49,   qty: 1, stock: '5/5' },
+  { key: 'chest_uncommon', product: 'chest_uncommon', img: ASSETS.ui.chestUncommon, label: 'Uncommon', price: 149,  qty: 1, stock: '3/3' },
+  { key: 'chest_rare',     product: 'chest_rare',     img: ASSETS.ui.chestRare,     label: 'Rare',     price: 1449, qty: 1, stock: '2/2' },
+  { key: 'chest_epic',     product: 'chest_epic',     img: ASSETS.ui.chestEpic,     label: 'Epic',     price: 7499, qty: 1, stock: '1/1', badge: '50% OFF' },
 ];
 
-const CHEST_EMOJIS = { common: '📦', uncommon: '🗃️', rare: '🔒', epic: '👑' };
-const CHEST_COLORS = {
-  common:   { card: 'bg-stone-100',  icon: 'bg-stone-300',   btn: 'from-blue-400 to-blue-600' },
-  uncommon: { card: 'bg-green-50',   icon: 'bg-green-200',   btn: 'from-blue-400 to-blue-600' },
-  rare:     { card: 'bg-blue-50',    icon: 'bg-blue-200',    btn: 'from-blue-400 to-blue-600' },
-  epic:     { card: 'bg-purple-50',  icon: 'bg-purple-300',  btn: 'from-blue-400 to-blue-600' },
-};
-
-// Feathers packs
 const DUST_PACKS = [
   { id: 'd1', qty: 500,    price: 0,    watchAd: true,  cooldown: '17h 33m', stock: '0/8' },
-  { id: 'd2', qty: 1000,   price: 149,  badge: '50% OFF', stock: '3/3' },
-  { id: 'd3', qty: 2500,   price: 749,  stock: '1/1' },
-  { id: 'd4', qty: 8500,   price: 1999, stock: '1/1' },
-  { id: 'd5', qty: 17000,  price: 4999, badge: 'HOT DEAL', stock: '1/1' },
-  { id: 'd6', qty: 50500,  price: 6999, badge: '50% OFF', stock: '1/1' },
+  { id: 'd2', product: 'feathers_1000',  qty: 1000,   price: 149,  badge: '50% OFF', stock: '3/3' },
+  { id: 'd3', product: 'feathers_2500',  qty: 2500,   price: 749,  stock: '1/1' },
+  { id: 'd4', product: 'feathers_8500',  qty: 8500,   price: 1999, stock: '1/1' },
+  { id: 'd5', product: 'feathers_17000', qty: 17000,  price: 4999, badge: 'HOT DEAL', stock: '1/1' },
+  { id: 'd6', product: 'feathers_50500', qty: 50500,  price: 6999, badge: '50% OFF', stock: '1/1' },
 ];
 
-// Booster packs
 const BOOSTER_PACKS = [
-  { id: 'b1', qty: 1,  price: 100,  label: 'GET X1' },
-  { id: 'b2', qty: 3,  price: 250,  label: 'GET X3' },
-  { id: 'b3', qty: 5,  price: 400,  label: 'GET X5' },
+  { id: 'b1', product: 'booster_x1', qty: 1,  price: 100,  label: 'GET X1' },
+  { id: 'b2', product: 'booster_x3', qty: 3,  price: 250,  label: 'GET X3' },
+  { id: 'b3', product: 'booster_x5', qty: 5,  price: 400,  label: 'GET X5' },
 ];
 
 const EPIC_BOOSTER_PACKS = [
-  { id: 'eb1', qty: 1,  price: 250,  label: 'GET X1' },
-  { id: 'eb2', qty: 3,  price: 675,  label: 'GET X3' },
-  { id: 'eb3', qty: 5,  price: 1125, label: 'GET X5' },
+  { id: 'eb1', product: 'epic_booster_x1', qty: 1,  price: 250,  label: 'GET X1' },
+  { id: 'eb2', product: 'epic_booster_x3', qty: 3,  price: 675,  label: 'GET X3' },
+  { id: 'eb3', product: 'epic_booster_x5', qty: 5,  price: 1125, label: 'GET X5' },
 ];
 
-// Hammer packs
 const HAMMER_PACKS = [
-  { id: 'h1', qty: 5,  price: 2700, label: 'GET X5' },
-  { id: 'h2', qty: 10, price: 4600, label: 'GET X10' },
-  { id: 'h3', qty: 15, price: 5500, label: 'GET X15' },
+  { id: 'h1', product: 'hammers_x5',  qty: 5,  price: 2700, label: 'GET X5' },
+  { id: 'h2', product: 'hammers_x10', qty: 10, price: 4600, label: 'GET X10' },
+  { id: 'h3', product: 'hammers_x15', qty: 15, price: 5500, label: 'GET X15' },
 ];
 
-// Special offers
 const SPECIAL_OFFERS = [
-  { id: 'so1', name: 'Overcharge Pack', stock: '100/100', qty: 40, emoji: '💥', price: 5900, badge: 'HOT DEAL', desc: 'Epic Booster x40' },
-  { id: 'so2', name: 'Electra Pack',    stock: '100/100', qty: 60, emoji: '⚡', price: 3500, badge: 'HOT DEAL', desc: 'Booster x60' },
-  { id: 'so3', name: 'Energy Tesla',    stock: '100/100', multi: true, price: 2000, badge: 'HOT DEAL', desc: 'Feathers x5,000 + Booster x30' },
+  { id: 'so1', product: 'special_overcharge', name: 'Overcharge Pack', stock: '100/100', qty: 40, emoji: '💥', price: 5900, badge: 'HOT DEAL', desc: 'Epic Booster x40' },
+  { id: 'so2', product: 'special_electra',    name: 'Electra Pack',    stock: '100/100', qty: 60, emoji: '⚡', price: 3500, badge: 'HOT DEAL', desc: 'Booster x60' },
+  { id: 'so3', product: 'special_tesla',      name: 'Energy Tesla',    stock: '100/100', multi: true, price: 2000, badge: 'HOT DEAL', desc: 'Feathers x5,000 + Booster x30' },
 ];
 
 function Badge({ text }) {
@@ -77,69 +64,68 @@ function Badge({ text }) {
   );
 }
 
-function StarPrice({ amount, brown }) {
+// Telegram Stars buy button
+function StarsBuyButton({ label, price, onClick, fullWidth = true, large = false }) {
   return (
-    <div className={`flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-full font-black text-sm shadow ${
-      brown ? 'bg-amber-800 text-white' : 'bg-gradient-to-b from-blue-400 to-blue-600 text-white'
-    }`}>
-      <span>{amount.toLocaleString()}</span>
+    <button onClick={onClick}
+      className={`${fullWidth ? 'w-full' : ''} flex items-center justify-center gap-2 font-black text-white rounded-xl active:scale-95 transition-transform shadow ${large ? 'py-3 text-xl' : 'py-2.5 text-base'}`}
+      style={{
+        background: 'linear-gradient(180deg, #5bb8ff 0%, #2a7fd4 100%)',
+        boxShadow: '0 3px 0 #1a5fa0',
+      }}>
+      <span>{label || price.toLocaleString()}</span>
       <span className="text-yellow-300">⭐</span>
-    </div>
+    </button>
   );
 }
 
 export default function Market({ player, onRefresh }) {
   const [activeCategory, setActiveCategory] = useState('special_offers');
   const [message, setMessage] = useState(null);
-  const [loading, setLoading] = useState(false);
 
   function showMsg(type, text) {
     setMessage({ type, text });
     setTimeout(() => setMessage(null), 3000);
   }
 
-  async function handleChest(chestKey) {
+  async function handleStarsPurchase(productId) {
     try {
-      const res = await openChest(player.telegram_id, chestKey);
-      showMsg('success', `🎉 Got: ${res.data.item?.name} (${res.data.item?.rarity})!`);
-      onRefresh();
+      const res = await createInvoice(player.telegram_id, productId);
+      const link = res.data.link;
+      if (window.Telegram?.WebApp?.openInvoice) {
+        window.Telegram.WebApp.openInvoice(link, (status) => {
+          if (status === 'paid') {
+            showMsg('success', '✅ Purchase successful!');
+            onRefresh();
+          } else if (status === 'cancelled') {
+            showMsg('error', 'Purchase cancelled.');
+          }
+        });
+      } else {
+        window.open(link, '_blank');
+      }
     } catch (err) {
-      showMsg('error', err.response?.data?.error || 'Purchase failed');
-    }
-  }
-
-  async function handleBuy(itemId) {
-    try {
-      await buyItem(player.telegram_id, itemId);
-      showMsg('success', 'Purchase successful!');
-      onRefresh();
-    } catch (err) {
-      showMsg('error', err.response?.data?.error || 'Purchase failed');
+      showMsg('error', err.response?.data?.error || 'Purchase failed. Try again.');
     }
   }
 
   return (
     <div className="flex flex-col h-full bg-amber-950">
 
-      {/* Wood-grain header bar */}
+      {/* Header */}
       <div className="relative"
         style={{ background: 'linear-gradient(180deg, #8B5E3C 0%, #6B4423 50%, #5C3A1E 100%)', borderBottom: '3px solid #3D2510' }}>
-
-        {/* Awning stripes at very top */}
         <div className="h-3 flex overflow-hidden">
           {Array.from({ length: 20 }).map((_, i) => (
             <div key={i} className={`flex-1 ${i % 2 === 0 ? 'bg-red-600' : 'bg-white'}`} />
           ))}
         </div>
-
         <div className="px-4 pt-2 pb-1 text-center">
           <div className="text-yellow-300 font-black text-2xl tracking-widest drop-shadow"
             style={{ textShadow: '2px 2px 0 #7c4a00' }}>
             STORE
           </div>
         </div>
-
-        {/* Currency row */}
         <div className="flex justify-center gap-3 pb-2 px-4">
           <div className="bg-amber-900 bg-opacity-70 rounded-full px-3 py-1 flex items-center gap-1.5">
             <span className="text-sm">🪶</span>
@@ -156,7 +142,7 @@ export default function Market({ player, onRefresh }) {
         </div>
       </div>
 
-      {/* Category tabs — scrollable */}
+      {/* Category tabs */}
       <div className="flex overflow-x-auto bg-amber-900 px-3 py-2 gap-2 no-scrollbar"
         style={{ scrollbarWidth: 'none' }}>
         {CATEGORIES.map(cat => (
@@ -171,7 +157,7 @@ export default function Market({ player, onRefresh }) {
         ))}
       </div>
 
-      {/* Message toast */}
+      {/* Toast */}
       {message && (
         <div className={`mx-4 mt-2 p-2 rounded-xl text-center text-sm font-bold ${
           message.type === 'success' ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'
@@ -179,6 +165,12 @@ export default function Market({ player, onRefresh }) {
           {message.text}
         </div>
       )}
+
+      {/* Telegram Stars notice */}
+      <div className="mx-4 mt-2 px-3 py-1.5 rounded-xl bg-blue-900 bg-opacity-60 flex items-center gap-2">
+        <span className="text-yellow-300 text-sm">⭐</span>
+        <span className="text-blue-200 text-xs font-bold">All purchases use Telegram Stars</span>
+      </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto" style={{ background: '#2d1a0e' }}>
@@ -215,14 +207,9 @@ export default function Market({ player, onRefresh }) {
                         </div>
                       </div>
                     )}
-                    {/* Bird mascot */}
                     <div className="flex-1 flex justify-end text-5xl select-none">🦅</div>
                   </div>
-                  <button onClick={() => handleBuy(offer.id)}
-                    className="w-full py-3 rounded-2xl font-black text-xl text-white shadow-lg active:scale-95 transition-transform"
-                    style={{ background: 'linear-gradient(180deg, #5bb8ff 0%, #2a7fd4 100%)', boxShadow: '0 4px 0 #1a5fa0' }}>
-                    {offer.price.toLocaleString()} ⭐
-                  </button>
+                  <StarsBuyButton price={offer.price} onClick={() => handleStarsPurchase(offer.product)} large />
                 </div>
               </div>
             ))}
@@ -247,19 +234,16 @@ export default function Market({ player, onRefresh }) {
                     <div className="text-amber-900 font-black text-sm mb-2">
                       {chest.label} <span className="text-amber-600 font-normal">({chest.stock})</span>
                     </div>
-                    {/* Chest icon box */}
-                    <div className="w-full relative mb-2" style={{aspectRatio:'1/1', maxWidth: 160}}>
+                    <div className="w-24 h-24 relative mb-2">
                       <img src={chest.img} alt={chest.label}
                         className="w-full h-full object-contain drop-shadow-lg" />
                       <div className="absolute -bottom-2 -right-2 bg-amber-800 text-white text-xs font-black rounded-full px-2 py-0.5">
                         x{chest.qty}
                       </div>
                     </div>
-                    <button onClick={() => handleChest(chest.key)}
-                      className="w-full mt-3 py-2.5 rounded-xl font-black text-lg text-white shadow active:scale-95 transition-transform"
-                      style={{ background: 'linear-gradient(180deg, #5bb8ff 0%, #2a7fd4 100%)', boxShadow: '0 3px 0 #1a5fa0' }}>
-                      {chest.price} ⭐
-                    </button>
+                    <div className="w-full mt-3">
+                      <StarsBuyButton price={chest.price} onClick={() => handleStarsPurchase(chest.product)} />
+                    </div>
                   </div>
                 </div>
               ))}
@@ -267,7 +251,7 @@ export default function Market({ player, onRefresh }) {
           </div>
         )}
 
-        {/* ── DUST ── */}
+        {/* ── FEATHERS ── */}
         {activeCategory === 'feathers' && (
           <div className="p-4">
             <div className="text-center text-amber-300 font-black text-lg tracking-wide mb-4">Feathers</div>
@@ -301,11 +285,9 @@ export default function Market({ player, onRefresh }) {
                         </button>
                       </div>
                     ) : (
-                      <button onClick={() => handleBuy(pack.id)}
-                        className="w-full mt-3 py-2.5 rounded-xl font-black text-lg text-white shadow active:scale-95 transition-transform"
-                        style={{ background: 'linear-gradient(180deg, #5bb8ff 0%, #2a7fd4 100%)', boxShadow: '0 3px 0 #1a5fa0' }}>
-                        {pack.price} ⭐
-                      </button>
+                      <div className="w-full mt-3">
+                        <StarsBuyButton price={pack.price} onClick={() => handleStarsPurchase(pack.product)} />
+                      </div>
                     )}
                   </div>
                 </div>
@@ -321,7 +303,6 @@ export default function Market({ player, onRefresh }) {
             {BOOSTER_PACKS.map(pack => (
               <div key={pack.id} className="rounded-2xl overflow-hidden flex items-center gap-4 px-4 py-3"
                 style={{ background: 'linear-gradient(135deg, #f5e6a3 0%, #e8d070 50%, #f5e6a3 100%)', border: '2px solid #c8a030', boxShadow: '0 2px 0 #7c6010, inset 0 1px 0 rgba(255,255,255,0.5)' }}>
-                {/* Glow icon */}
                 <div className="relative w-16 h-16 flex-shrink-0">
                   <div className="absolute inset-0 rounded-full bg-yellow-300 opacity-30 blur-md" />
                   <div className="relative z-10 w-16 h-16 flex items-center justify-center text-4xl">⚗️</div>
@@ -332,11 +313,7 @@ export default function Market({ player, onRefresh }) {
                       {pack.price} <span className="text-yellow-300">⭐</span>
                     </div>
                   </div>
-                  <button onClick={() => handleBuy(pack.id)}
-                    className="w-full py-2.5 rounded-xl font-black text-base text-white shadow active:scale-95 transition-transform"
-                    style={{ background: 'linear-gradient(180deg, #5bb8ff 0%, #2a7fd4 100%)', boxShadow: '0 3px 0 #1a5fa0' }}>
-                    {pack.label}
-                  </button>
+                  <StarsBuyButton label={pack.label} price={pack.price} onClick={() => handleStarsPurchase(pack.product)} />
                 </div>
               </div>
             ))}
@@ -360,11 +337,7 @@ export default function Market({ player, onRefresh }) {
                       {pack.price} <span className="text-yellow-300">⭐</span>
                     </div>
                   </div>
-                  <button onClick={() => handleBuy(pack.id)}
-                    className="w-full py-2.5 rounded-xl font-black text-base text-white shadow active:scale-95 transition-transform"
-                    style={{ background: 'linear-gradient(180deg, #5bb8ff 0%, #2a7fd4 100%)', boxShadow: '0 3px 0 #1a5fa0' }}>
-                    {pack.label}
-                  </button>
+                  <StarsBuyButton label={pack.label} price={pack.price} onClick={() => handleStarsPurchase(pack.product)} />
                 </div>
               </div>
             ))}
@@ -388,11 +361,7 @@ export default function Market({ player, onRefresh }) {
                       {pack.price.toLocaleString()} <span className="text-yellow-300">⭐</span>
                     </div>
                   </div>
-                  <button onClick={() => handleBuy(pack.id)}
-                    className="w-full py-2.5 rounded-xl font-black text-base text-white shadow active:scale-95 transition-transform"
-                    style={{ background: 'linear-gradient(180deg, #5bb8ff 0%, #2a7fd4 100%)', boxShadow: '0 3px 0 #1a5fa0' }}>
-                    {pack.label}
-                  </button>
+                  <StarsBuyButton label={pack.label} price={pack.price} onClick={() => handleStarsPurchase(pack.product)} />
                 </div>
               </div>
             ))}
