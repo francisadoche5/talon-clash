@@ -1,3 +1,4 @@
+import ASSETS from '../config/assets';
 import { useState, useEffect } from 'react';
 import { getStoreItems, buyItem, openChest } from '../api';
 
@@ -13,10 +14,10 @@ const CATEGORY_LABELS = {
 
 // Chest visuals
 const CHEST_DATA = [
-  { key: 'common',   img: 'https://i.ibb.co/RkKjTT7X/file-000000001e0872439bc3f96641a60877.png', bg: 'bg-stone-600', label: 'Common',   price: 49,   qty: 1, stock: '5/5' },
-  { key: 'uncommon', img: 'https://i.ibb.co/d4F9bZQ9/file-00000000ae3c71f48faa59584a3695d6.png', bg: 'bg-green-600', label: 'Uncommon', price: 149,  qty: 1, stock: '3/3' },
-  { key: 'rare',     img: 'https://i.ibb.co/chC7yXqB/file-000000003d847243a48435ed1ae325ee.png', bg: 'bg-blue-600',  label: 'Rare',     price: 1449, qty: 1, stock: '2/2' },
-  { key: 'epic',     img: 'https://i.ibb.co/twMrKdg2/file-00000000bd8c71f4a416c8ee128deed5.png', bg: 'bg-purple-700', label: 'Epic',     price: 7499, qty: 1, stock: '1/1', badge: '50% OFF' },
+  { key: 'common',   img: ASSETS.ui.chestCommon, bg: 'bg-stone-600', label: 'Common',   price: 49,   qty: 1, stock: '5/5' },
+  { key: 'uncommon', img: ASSETS.ui.chestUncommon, bg: 'bg-green-600', label: 'Uncommon', price: 149,  qty: 1, stock: '3/3' },
+  { key: 'rare',     img: ASSETS.ui.chestRare, bg: 'bg-blue-600',  label: 'Rare',     price: 1449, qty: 1, stock: '2/2' },
+  { key: 'epic',     img: ASSETS.ui.chestEpic, bg: 'bg-purple-700', label: 'Epic',     price: 7499, qty: 1, stock: '1/1', badge: '50% OFF' },
 ];
 
 const CHEST_EMOJIS = { common: '📦', uncommon: '🗃️', rare: '🔒', epic: '👑' };
