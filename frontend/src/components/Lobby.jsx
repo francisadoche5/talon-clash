@@ -90,31 +90,59 @@ export default function Lobby({ player, onRefresh }) {
       {/* ── Searching for opponent overlay ─────────────────────────── */}
       {battling && !battleResult && (
         <div className="fixed inset-0 z-50 flex items-end justify-center"
-          style={{ background: 'rgba(0,0,0,0.55)' }}>
+          style={{ backdropFilter: 'blur(6px)', background: 'rgba(0,0,0,0.65)' }}>
           <style>{`
-            @keyframes coinSpin {
-              0%   { transform: rotateY(0deg) scale(1); }
-              50%  { transform: rotateY(180deg) scale(1.08); }
-              100% { transform: rotateY(360deg) scale(1); }
+            @keyframes coin3d {
+              0%   { transform: rotateY(0deg);   }
+              45%  { transform: rotateY(170deg);  }
+              50%  { transform: rotateY(180deg);  }
+              95%  { transform: rotateY(350deg);  }
+              100% { transform: rotateY(360deg);  }
             }
-            @keyframes searchPulse {
-              0%,100% { opacity:1; } 50% { opacity:0.5; }
+            @keyframes coinGlow {
+              0%,100% { box-shadow: 0 0 24px #f5a62355, 0 12px 30px #0008, inset 0 2px 0 rgba(255,255,255,0.35); }
+              50%      { box-shadow: 0 0 48px #f5a623bb, 0 12px 30px #0008, inset 0 2px 0 rgba(255,255,255,0.35); }
             }
-            .coin-spin { animation: coinSpin 1.4s ease-in-out infinite; }
-            .search-pulse { animation: searchPulse 1.4s ease-in-out infinite; }
+            @keyframes dotPulse {
+              0%,80%,100% { opacity:0.2; transform:scale(0.8); }
+              40%          { opacity:1;   transform:scale(1.1); }
+            }
+            .coin-3d  { animation: coin3d 1.6s ease-in-out infinite, coinGlow 1.6s ease-in-out infinite; }
+            .dot1 { animation: dotPulse 1.4s 0s    infinite; }
+            .dot2 { animation: dotPulse 1.4s 0.22s infinite; }
+            .dot3 { animation: dotPulse 1.4s 0.44s infinite; }
           `}</style>
-          <div className="w-full rounded-t-3xl p-8 flex flex-col items-center gap-6"
-            style={{ background: '#f5efe0', paddingBottom: 48 }}>
-            <p className="text-2xl font-black search-pulse" style={{ color: '#c0392b' }}>
-              Searching for opponent...
+
+          {/* Bottom sheet */}
+          <div className="w-full rounded-t-[32px] flex flex-col items-center gap-7 pt-8 pb-14"
+            style={{
+              background: 'linear-gradient(160deg, #fdf6e3 0%, #f0e0b0 100%)',
+              boxShadow: '0 -12px 60px rgba(0,0,0,0.5), 0 -4px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.8)',
+              border: '1px solid rgba(255,255,255,0.5)',
+            }}>
+
+            {/* Title */}
+            <p className="text-2xl font-black tracking-wide"
+              style={{ color: '#c0392b', textShadow: '0 2px 4px rgba(0,0,0,0.15)' }}>
+              Searching for opponent
             </p>
-            {/* Spinning coin */}
-            <div className="coin-spin w-28 h-28 rounded-full flex items-center justify-center shadow-2xl"
+
+            {/* 3D spinning coin */}
+            <div className="coin-3d w-28 h-28 rounded-full flex items-center justify-center"
               style={{
-                background: 'radial-gradient(circle at 35% 35%, #ffe066, #f5a623 55%, #b8730a)',
-                boxShadow: '0 0 32px #f5a62388, 0 8px 24px #0006',
+                background: 'radial-gradient(circle at 32% 28%, #fff1a0, #f5a623 45%, #8b5e00 100%)',
+                boxShadow: '0 0 24px #f5a62355, 0 12px 30px #0008, inset 0 2px 0 rgba(255,255,255,0.35)',
+                border: '3px solid #c87d10',
               }}>
-              <span style={{ fontSize: 52 }}>🪶</span>
+              <span style={{ fontSize: 52, filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))' }}>🪶</span>
+            </div>
+
+            {/* Animated dots */}
+            <div className="flex gap-2 items-center">
+              {['dot1','dot2','dot3'].map(d => (
+                <div key={d} className={`${d} w-3 h-3 rounded-full`}
+                  style={{ background: '#c0392b' }} />
+              ))}
             </div>
           </div>
         </div>
