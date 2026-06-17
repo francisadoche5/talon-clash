@@ -433,7 +433,7 @@ export default function BattleArena({ player, result, onClose }) {
                 style={{
                   /* Push image up above the card top.
                      Adjust this number if you want more/less of the image above the ribbon. */
-                  top: -165,
+                  top: -185,
                   zIndex: 40,
                 }}>
                 <img
