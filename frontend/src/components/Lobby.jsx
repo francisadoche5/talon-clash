@@ -264,7 +264,7 @@ export default function Lobby({ player, onRefresh }) {
             <p className="text-2xl font-black tracking-wide" style={{ color: '#c0392b' }}>Searching for opponent</p>
             <div className="coin-3d w-28 h-28 rounded-full flex items-center justify-center"
               style={{ background: 'radial-gradient(circle at 32% 28%,#fff1a0,#f5a623 45%,#8b5e00 100%)', border: '3px solid #c87d10' }}>
-              <span style={{ fontSize: 52 }}><img src={ASSETS.icons.feathers} alt="feathers" style={{width:14,height:14,display:"inline",verticalAlign:"middle"}} /></span>
+              <span style={{ fontSize: 52 }}><img src={ASSETS.icons.feathers} alt="feathers" style={{width:56,height:56,display:"block",objectFit:"contain"}} /></span>
             </div>
             <div className="flex gap-2 items-center">
               {['dot1','dot2','dot3'].map(d => (
