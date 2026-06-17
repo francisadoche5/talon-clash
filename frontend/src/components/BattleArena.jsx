@@ -433,7 +433,7 @@ export default function BattleArena({ player, result, onClose }) {
                 style={{
                   /* Push image up above the card top.
                      Adjust this number if you want more/less of the image above the ribbon. */
-                  top: -110,
+                  top: -165,
                   zIndex: 40,
                 }}>
                 <img
@@ -457,7 +457,7 @@ export default function BattleArena({ player, result, onClose }) {
                 boxShadow: '0 -8px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.7)',
                 border: '1px solid rgba(255,255,255,0.35)',
                 /* paddingTop leaves room for the image that overlaps above */
-                paddingTop: 90,
+                paddingTop: 44,
               }}>
 
                 {/* Victory / Defeat ribbon — at the very top of the card */}
