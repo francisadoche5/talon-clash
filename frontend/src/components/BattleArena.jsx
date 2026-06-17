@@ -170,13 +170,13 @@ function RewardTile({ label, icon, value, delay = 0 }) {
   return (
     <div className="reward-pop flex flex-col items-center gap-1" style={{ animationDelay:`${delay}s` }}>
       <p className="text-xs font-bold text-gray-500">{label}</p>
-      <div className="w-[80px] h-[80px] rounded-[18px] flex items-center justify-center"
+      <div className="w-[96px] h-[96px] rounded-[18px] flex items-center justify-center"
         style={{ background:'linear-gradient(145deg,#f5e8b0 0%,#c9a840 100%)',
           boxShadow:'0 5px 0 #8a6810, 0 8px 18px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.55)',
           border:'1.5px solid #d4a830' }}>
         {typeof icon === 'string' && icon.startsWith('http')
-          ? <img src={icon} alt={label} style={{ width:54, height:54, objectFit:'contain', filter:'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }} />
-          : <span style={{ fontSize:40, filter:'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}>{icon}</span>}
+          ? <img src={icon} alt={label} style={{ width:68, height:68, objectFit:'contain', filter:'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }} />
+          : <span style={{ fontSize:52, filter:'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}>{icon}</span>}
       </div>
       <p className="text-sm font-black text-gray-700">+{value}</p>
     </div>
