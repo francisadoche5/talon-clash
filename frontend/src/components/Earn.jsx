@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import ASSETS from '../config/assets';
 import { getQuests, claimQuest } from '../api';
 
 export default function Earn({ player, onRefresh }) {
@@ -111,8 +112,8 @@ export default function Earn({ player, onRefresh }) {
           <span className="text-3xl">📺</span>
           <div className="flex-1">
             <div className="text-white font-bold">AdQuests</div>
-            <div className="text-orange-300 text-xs">Watch ads and earn 🪶 as reward!</div>
-            <div className="text-orange-400 text-xs">+400🪶 per ad • 30 ads per day</div>
+            <div className="text-orange-300 text-xs">Watch ads and earn feathers as reward!</div>
+            <div className="text-orange-400 text-xs">+400 feathers per ad • 30 ads per day</div>
           </div>
           <button className="bg-purple-600 text-white text-xs px-3 py-2 rounded-xl font-bold">
             WATCH
@@ -129,7 +130,7 @@ export default function Earn({ player, onRefresh }) {
               <span className="text-3xl">👥</span>
               <div>
                 <div className="text-white font-bold">Invite Friends</div>
-                <div className="text-blue-300 text-xs">Earn 🪶 for every friend you invite</div>
+                <div className="text-blue-300 text-xs">Earn feathers for every friend you invite</div>
               </div>
             </div>
 
@@ -178,7 +179,7 @@ export default function Earn({ player, onRefresh }) {
                         {friend.evolution_name || 'Fledgling'} • Power: {(friend.power || 0).toLocaleString()}
                       </div>
                     </div>
-                    <div className="text-amber-300 text-xs font-bold">+🪶</div>
+                    <div className="text-amber-300 text-xs font-bold"><img src={ASSETS.icons.feathers} alt="feathers" style={{width:14,height:14,display:"inline",verticalAlign:"middle"}} /><//div>
                   </div>
                 ))}
               </div>
@@ -199,8 +200,8 @@ export default function Earn({ player, onRefresh }) {
               return (
                 <div key={quest.id} className="bg-amber-900 rounded-2xl p-4">
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="w-12 h-12 bg-green-900 rounded-xl flex items-center justify-center text-2xl">
-                      🪶
+                    <div className="w-12 h-12 bg-green-900 rounded-xl flex items-center justify-center">
+                      <img src={ASSETS.icons.feathers} alt="feathers" style={{width:28,height:28,objectFit:'contain'}} />
                     </div>
                     <div className="flex-1">
                       <div className="text-white font-bold text-sm">{quest.title}</div>
