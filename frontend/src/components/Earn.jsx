@@ -179,7 +179,7 @@ export default function Earn({ player, onRefresh }) {
                         {friend.evolution_name || 'Fledgling'} • Power: {(friend.power || 0).toLocaleString()}
                       </div>
                     </div>
-                    <div className="text-amber-300 text-xs font-bold"><img src={ASSETS.icons.feathers} alt="feathers" style={{width:14,height:14,display:"inline",verticalAlign:"middle"}} /><//div>
+                    <div className="text-amber-300 text-xs font-bold"><img src={ASSETS.icons.feathers} alt="feathers" style={{width:14,height:14,display:"inline",verticalAlign:"middle"}} /></div>
                   </div>
                 ))}
               </div>
