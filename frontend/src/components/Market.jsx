@@ -1,374 +1,407 @@
-import ASSETS from '../config/assets';
-import { useState } from 'react';
-import { createInvoice } from '../api';
+import { useState, useEffect } from 'react';
+import { fight, getPublicConfig, createInvoice } from '../api';
+import BattleArena from './BattleArena';
+import { getBirdUrl } from '../birdImages';
+import axios from 'axios';
 
-const CATEGORIES = ['special_offers', 'chests', 'feathers', 'boosters', 'epic_boosters', 'hammers'];
-const CATEGORY_LABELS = {
-  special_offers: '🔥 Special',
-  chests: '📦 Chests',
-  feathers: 'Feathers',
-  boosters: '⚗️ Boosters',
-  epic_boosters: '💥 Epic',
-  hammers: '🔨 Hammers',
-};
+const API_BASE = import.meta.env.VITE_BACKEND_URL || 'https://talon-clash.onrender.com';
 
-const CHEST_DATA = [
-  { key: 'chest_common',   product: 'chest_common',   img: ASSETS.ui.chestCommon,   label: 'Common',   price: 49,   qty: 1, stock: '5/5' },
-  { key: 'chest_uncommon', product: 'chest_uncommon', img: ASSETS.ui.chestUncommon, label: 'Uncommon', price: 149,  qty: 1, stock: '3/3' },
-  { key: 'chest_rare',     product: 'chest_rare',     img: ASSETS.ui.chestRare,     label: 'Rare',     price: 1449, qty: 1, stock: '2/2' },
-  { key: 'chest_epic',     product: 'chest_epic',     img: ASSETS.ui.chestEpic,     label: 'Epic',     price: 7499, qty: 1, stock: '1/1', badge: '50% OFF' },
-];
-
-const DUST_PACKS = [
-  { id: 'd1', qty: 500,    price: 0,    watchAd: true,  cooldown: '17h 33m', stock: '0/8' },
-  { id: 'd2', product: 'feathers_1000',  qty: 1000,   price: 149,  badge: '50% OFF', stock: '3/3' },
-  { id: 'd3', product: 'feathers_2500',  qty: 2500,   price: 749,  stock: '1/1' },
-  { id: 'd4', product: 'feathers_8500',  qty: 8500,   price: 1999, stock: '1/1' },
-  { id: 'd5', product: 'feathers_17000', qty: 17000,  price: 4999, badge: 'HOT DEAL', stock: '1/1' },
-  { id: 'd6', product: 'feathers_50500', qty: 50500,  price: 6999, badge: '50% OFF', stock: '1/1' },
-];
-
-const BOOSTER_PACKS = [
-  { id: 'b1', product: 'booster_x1', qty: 1,  price: 100,  label: 'GET X1' },
-  { id: 'b2', product: 'booster_x3', qty: 3,  price: 250,  label: 'GET X3' },
-  { id: 'b3', product: 'booster_x5', qty: 5,  price: 400,  label: 'GET X5' },
-];
-
-const EPIC_BOOSTER_PACKS = [
-  { id: 'eb1', product: 'epic_booster_x1', qty: 1,  price: 250,  label: 'GET X1' },
-  { id: 'eb2', product: 'epic_booster_x3', qty: 3,  price: 675,  label: 'GET X3' },
-  { id: 'eb3', product: 'epic_booster_x5', qty: 5,  price: 1125, label: 'GET X5' },
-];
-
-const HAMMER_PACKS = [
-  { id: 'h1', product: 'hammers_x5',  qty: 5,  price: 2700, label: 'GET X5' },
-  { id: 'h2', product: 'hammers_x10', qty: 10, price: 4600, label: 'GET X10' },
-  { id: 'h3', product: 'hammers_x15', qty: 15, price: 5500, label: 'GET X15' },
-];
-
-const SPECIAL_OFFERS = [
-  { id: 'so1', product: 'special_overcharge', name: 'Overcharge Pack', stock: '100/100', qty: 40, emoji: '💥', price: 5900, badge: 'HOT DEAL', desc: 'Epic Booster x40' },
-  { id: 'so2', product: 'special_electra',    name: 'Electra Pack',    stock: '100/100', qty: 60, emoji: '⚡', price: 3500, badge: 'HOT DEAL', desc: 'Booster x60' },
-  { id: 'so3', product: 'special_tesla',      name: 'Energy Tesla',    stock: '100/100', multi: true, price: 2000, badge: 'HOT DEAL', desc: 'Feathers x5,000 + Booster x30' },
-];
-
-function Badge({ text }) {
-  if (!text) return null;
-  return (
-    <div className="absolute -top-1 -right-1 z-10">
-      <div className="bg-red-600 text-white text-xs font-black px-3 py-1 rounded-sm shadow-md"
-        style={{ clipPath: 'polygon(0 0, 100% 0, 100% 100%, 8px 100%)' }}>
-        {text}
-      </div>
-    </div>
-  );
+// Grant 50 energy after a watched ad
+async function claimAdEnergy(telegramId) {
+  const res = await axios.post(`${API_BASE}/api/energy/ad-claim`, { telegram_id: telegramId });
+  return res.data;
 }
 
-// Telegram Stars buy button
-function StarsBuyButton({ label, price, onClick, fullWidth = true, large = false }) {
-  return (
-    <button onClick={onClick}
-      className={`${fullWidth ? 'w-full' : ''} flex items-center justify-center gap-2 font-black text-white rounded-xl active:scale-95 transition-transform shadow ${large ? 'py-3 text-xl' : 'py-2.5 text-base'}`}
-      style={{
-        background: 'linear-gradient(180deg, #5bb8ff 0%, #2a7fd4 100%)',
-        boxShadow: '0 3px 0 #1a5fa0',
-      }}>
-      <span>{label || price.toLocaleString()}</span>
-      <span className="text-yellow-300">⭐</span>
-    </button>
-  );
-}
+// ── Energy Modal ───────────────────────────────────────────────────────────────
+function EnergyModal({ player, onClose, onPurchased }) {
+  const energy    = Math.floor(player?.energy    || 0);
+  const maxEnergy = player?.max_energy || 400;
 
-export default function Market({ player, onRefresh }) {
-  const [activeCategory, setActiveCategory] = useState('special_offers');
-  const [message, setMessage] = useState(null);
+  // How many ads the user has watched this session (max 10 per day from backend)
+  const adsWatched  = player?.ads_watched_today  || 0;
+  const adsLimit    = 10;
+  const adsLeft     = Math.max(0, adsLimit - adsWatched);
+  const [watching,  setWatching]  = useState(false);
+  const [adMsg,     setAdMsg]     = useState(null);
 
-  function showMsg(type, text) {
-    setMessage({ type, text });
-    setTimeout(() => setMessage(null), 3000);
+  const STAR_OPTIONS = [
+    { id: 'energy_250', amount: 250, price: 250, top: '#5bb8ff', mid: '#2d7dd2', bot: '#1a5fa0', shadow: '#0d3d70', border: '#7fcfff' },
+    { id: 'energy_750', amount: 750, price: 750, top: '#a78bfa', mid: '#7c3aed', bot: '#5b21b6', shadow: '#3b0e8f', border: '#c4b5fd' },
+  ];
+
+  async function handleWatchAd() {
+    if (adsLeft <= 0) return;
+    setWatching(true);
+    setAdMsg(null);
+    try {
+      // Show Telegram rewarded ad if available
+      if (window.Telegram?.WebApp?.showAd) {
+        await new Promise((resolve, reject) => {
+          window.Telegram.WebApp.showAd({ type: 'rewarded' }, (result) => {
+            if (result?.status === 'watched') resolve();
+            else reject(new Error('Ad not completed'));
+          });
+        });
+      }
+      // Grant energy on backend
+      await claimAdEnergy(player.telegram_id);
+      setAdMsg({ type: 'success', text: '+50 ⚡ Energy added!' });
+      onPurchased();
+    } catch (err) {
+      setAdMsg({ type: 'error', text: 'Ad not completed. Try again.' });
+    } finally {
+      setWatching(false);
+    }
   }
 
-  async function handleStarsPurchase(productId) {
+  async function handleStarRefill(optionId) {
     try {
-      const res = await createInvoice(player.telegram_id, productId);
+      const res  = await createInvoice(player.telegram_id, optionId);
       const link = res.data.link;
       if (window.Telegram?.WebApp?.openInvoice) {
         window.Telegram.WebApp.openInvoice(link, (status) => {
-          if (status === 'paid') {
-            showMsg('success', '✅ Purchase successful!');
-            onRefresh();
-          } else if (status === 'cancelled') {
-            showMsg('error', 'Purchase cancelled.');
-          }
+          if (status === 'paid') { onPurchased(); onClose(); }
         });
       } else {
         window.open(link, '_blank');
+        onClose();
       }
-    } catch (err) {
-      showMsg('error', err.response?.data?.error || 'Purchase failed. Try again.');
+    } catch {
+      alert('Could not process payment. Please try again.');
     }
   }
 
   return (
-    <div className="flex flex-col h-full bg-amber-950">
+    <div className="fixed inset-0 z-50 flex items-end justify-center"
+      style={{ backdropFilter: 'blur(5px)', background: 'rgba(0,0,0,0.65)' }}>
+      <div className="w-full max-w-sm rounded-t-[32px] overflow-hidden"
+        style={{ background: 'linear-gradient(160deg,#fdf6e0 0%,#ede1b4 100%)',
+          boxShadow: '0 -16px 60px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.8)' }}>
 
-      {/* Header */}
-      <div className="relative"
-        style={{ background: 'linear-gradient(180deg, #8B5E3C 0%, #6B4423 50%, #5C3A1E 100%)', borderBottom: '3px solid #3D2510' }}>
-        <div className="h-3 flex overflow-hidden">
-          {Array.from({ length: 20 }).map((_, i) => (
-            <div key={i} className={`flex-1 ${i % 2 === 0 ? 'bg-red-600' : 'bg-white'}`} />
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 pt-5 pb-1">
+          <div className="w-8" />
+          <h2 className="font-black text-gray-800 text-xl tracking-wide">Energy</h2>
+          <button onClick={onClose}
+            className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-500 font-black text-lg">✕</button>
+        </div>
+
+        {/* Energy pill */}
+        <div className="flex flex-col items-center py-4 gap-1">
+          <div className="flex items-center gap-2 px-5 py-2 rounded-full font-black text-lg text-white"
+            style={{ background: 'linear-gradient(145deg,#c9a840,#8a6810)',
+              boxShadow: '0 4px 0 #5a3800, 0 6px 16px rgba(0,0,0,0.3)', border: '1.5px solid #e8c060' }}>
+            <span style={{ fontSize: 22 }}>⚡</span>
+            <span>{energy}/{maxEnergy}</span>
+          </div>
+          <p className="text-amber-700 text-sm font-bold mt-1">+0.17 ⚡ each 10 seconds</p>
+          <p className="text-amber-600 font-black text-sm mt-1">Restore energy instantly</p>
+        </div>
+
+        {/* Ad message */}
+        {adMsg && (
+          <div className={`mx-4 mb-2 py-2 px-3 rounded-xl text-center text-sm font-bold ${adMsg.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
+            {adMsg.text}
+          </div>
+        )}
+
+        {/* Options row */}
+        <div className="flex gap-3 px-4 pb-8">
+
+          {/* ── Option 1: FREE — Watch Ad ── */}
+          <button
+            onClick={handleWatchAd}
+            disabled={watching || adsLeft <= 0}
+            className="flex-1 rounded-2xl overflow-hidden active:scale-95 transition-transform disabled:opacity-60"
+            style={{ boxShadow: '0 4px 0 #1a4a00, 0 6px 20px rgba(0,0,0,0.3)' }}>
+
+            {/* FREE badge */}
+            <div className="flex items-center justify-center py-1.5 font-black text-white text-xs gap-1"
+              style={{ background: 'linear-gradient(180deg,#6abf47 0%,#4aa024 100%)' }}>
+              FREE
+            </div>
+
+            {/* Icon area */}
+            <div className="flex flex-col items-center justify-center py-3 gap-2"
+              style={{ background: 'linear-gradient(180deg,#4aa024 0%,#2d7010 100%)' }}>
+              <span style={{ fontSize: 34 }}>📺</span>
+              <div className="px-2 py-1 rounded-lg font-black text-white text-xs flex items-center gap-1"
+                style={{ background: 'rgba(0,0,0,0.4)' }}>
+                +50 ⚡
+              </div>
+            </div>
+
+            {/* Bottom — ads counter / Watch Ad */}
+            <div className="py-2 font-black text-white text-xs text-center flex flex-col items-center"
+              style={{ background: 'linear-gradient(180deg,#6abf47 0%,#4aa024 100%)' }}>
+              {watching ? (
+                <span>Loading…</span>
+              ) : adsLeft <= 0 ? (
+                <span>Limit reached</span>
+              ) : (
+                <>
+                  <span>Watch Ad</span>
+                  <span className="opacity-80 text-[10px]">{adsLeft}/{adsLimit} left today</span>
+                </>
+              )}
+            </div>
+          </button>
+
+          {/* ── Options 2 & 3: Star purchases ── */}
+          {STAR_OPTIONS.map((opt) => (
+            <button key={opt.id}
+              onClick={() => handleStarRefill(opt.id)}
+              className="flex-1 rounded-2xl overflow-hidden active:scale-95 transition-transform"
+              style={{ boxShadow: `0 4px 0 ${opt.shadow}, 0 6px 20px rgba(0,0,0,0.3)` }}>
+
+              <div className="flex items-center justify-center py-1.5 font-black text-white text-xs"
+                style={{ background: `linear-gradient(180deg,${opt.top} 0%,${opt.mid} 100%)` }}>
+                +⊕
+              </div>
+
+              <div className="flex flex-col items-center justify-center py-3 gap-2"
+                style={{ background: `linear-gradient(180deg,${opt.mid} 0%,${opt.bot} 100%)` }}>
+                <span style={{ fontSize: 34 }}>⚗️</span>
+                <div className="px-2 py-1 rounded-lg font-black text-white text-xs flex items-center gap-1"
+                  style={{ background: 'rgba(0,0,0,0.4)', border: `1px solid ${opt.border}40` }}>
+                  {opt.amount} ⚡
+                </div>
+              </div>
+
+              <div className="py-2 font-black text-white text-sm text-center"
+                style={{ background: `linear-gradient(180deg,${opt.top} 0%,${opt.mid} 100%)` }}>
+                {opt.price} ⭐
+              </div>
+            </button>
           ))}
         </div>
-        <div className="px-4 pt-2 pb-1 text-center">
-          <div className="text-yellow-300 font-black text-2xl tracking-widest drop-shadow"
-            style={{ textShadow: '2px 2px 0 #7c4a00' }}>
-            STORE
-          </div>
-        </div>
-        <div className="flex justify-center gap-3 pb-2 px-4">
-          <div className="bg-amber-900 bg-opacity-70 rounded-full px-3 py-1 flex items-center gap-1.5">
-            <img src={ASSETS.icons.feathers} alt="feathers" style={{width:18,height:18,display:"inline",verticalAlign:"middle"}} />
-            <span className="text-amber-200 text-xs font-bold">{(player?.feathers || 0).toLocaleString()}</span>
-          </div>
-          <div className="bg-amber-900 bg-opacity-70 rounded-full px-3 py-1 flex items-center gap-1.5">
-            <span className="text-sm">⭐</span>
-            <span className="text-amber-200 text-xs font-bold">{(player?.seeds || 0).toLocaleString()}</span>
-          </div>
-          <div className="bg-amber-900 bg-opacity-70 rounded-full px-3 py-1 flex items-center gap-1.5">
-            <span className="text-sm">🔨</span>
-            <span className="text-amber-200 text-xs font-bold">{player?.hammers || 0}</span>
-          </div>
-        </div>
       </div>
+    </div>
+  );
+}
 
-      {/* Category tabs */}
-      <div className="flex overflow-x-auto bg-amber-900 px-3 py-2 gap-2 no-scrollbar"
-        style={{ scrollbarWidth: 'none' }}>
-        {CATEGORIES.map(cat => (
-          <button key={cat} onClick={() => setActiveCategory(cat)}
-            className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-bold flex-shrink-0 transition-all ${
-              activeCategory === cat
-                ? 'bg-amber-500 text-amber-950 shadow-inner'
-                : 'bg-amber-800 text-amber-300'
-            }`}>
-            {CATEGORY_LABELS[cat]}
-          </button>
-        ))}
-      </div>
+// ── Main Lobby ─────────────────────────────────────────────────────────────────
+export default function Lobby({ player, onRefresh }) {
+  const [mode,            setMode]            = useState('normal');
+  const [battling,        setBattling]        = useState(false);
+  const [battleResult,    setBattleResult]    = useState(null);
+  const [showEpicInfo,    setShowEpicInfo]    = useState(false);
+  const [showAutoBattle,  setShowAutoBattle]  = useState(false);
+  const [showEnergyModal, setShowEnergyModal] = useState(false);
+  const [autoPrices,      setAutoPrices]      = useState({ days3: 199, days14: 499 });
+  const [lastBattleResult, setLastBattleResult] = useState(null);
 
-      {/* Toast */}
-      {message && (
-        <div className={`mx-4 mt-2 p-2 rounded-xl text-center text-sm font-bold ${
-          message.type === 'success' ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'
-        }`}>
-          {message.text}
+  const energyCost = mode === 'epic' ? 200 : 25;
+  const hasEnergy  = (player?.energy || 0) >= energyCost;
+
+  useEffect(() => {
+    getPublicConfig()
+      .then(res => {
+        const cfg = res.data?.config || [];
+        const get = (key, fallback) => { const f = cfg.find(c => c.key === key); return f ? parseInt(f.value)||fallback : fallback; };
+        setAutoPrices({ days3: get('auto_battle_3days_stars', 199), days14: get('auto_battle_14days_stars', 499) });
+      }).catch(() => {});
+  }, []);
+
+  async function handleBattle() {
+    if (!hasEnergy) { setShowEnergyModal(true); return; }
+    setBattling(true);
+    setLastBattleResult(null);
+    try {
+      const res = await fight(player.telegram_id, mode);
+      setBattleResult({ ...res.data, mode });
+      onRefresh();
+    } catch (err) {
+      setLastBattleResult({ error: err.response?.data?.error || 'Battle failed' });
+    } finally {
+      setBattling(false);
+    }
+  }
+
+  function handleArenaClose() {
+    setLastBattleResult(battleResult);
+    setBattleResult(null);
+  }
+
+  async function handleAutoPurchase(days) {
+    try {
+      const product = days === 3 ? 'auto_battle_3d' : 'auto_battle_14d';
+      const res  = await createInvoice(player.telegram_id, product);
+      const link = res.data.link;
+      if (window.Telegram?.WebApp?.openInvoice) {
+        window.Telegram.WebApp.openInvoice(link, (status) => {
+          if (status === 'paid') { setShowAutoBattle(false); onRefresh(); }
+        });
+      } else {
+        window.open(link, '_blank');
+      }
+    } catch {
+      alert('Could not create invoice. Please try again.');
+    }
+  }
+
+  return (
+    <>
+      {battleResult && !battleResult.error && (
+        <BattleArena player={player} result={battleResult} onClose={handleArenaClose} />
+      )}
+
+      {/* Searching overlay */}
+      {battling && !battleResult && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center"
+          style={{ backdropFilter: 'blur(6px)', background: 'rgba(0,0,0,0.65)' }}>
+          <style>{`
+            @keyframes coin3d { 0%{transform:rotateY(0deg)} 45%{transform:rotateY(170deg)} 50%{transform:rotateY(180deg)} 95%{transform:rotateY(350deg)} 100%{transform:rotateY(360deg)} }
+            @keyframes dotPulse { 0%,80%,100%{opacity:0.2;transform:scale(0.8)} 40%{opacity:1;transform:scale(1.1)} }
+            .coin-3d { animation: coin3d 1.6s ease-in-out infinite; }
+            .dot1 { animation: dotPulse 1.4s 0s    infinite; }
+            .dot2 { animation: dotPulse 1.4s 0.22s infinite; }
+            .dot3 { animation: dotPulse 1.4s 0.44s infinite; }
+          `}</style>
+          <div className="w-full rounded-t-[32px] flex flex-col items-center gap-7 pt-8 pb-14"
+            style={{ background: 'linear-gradient(160deg,#fdf6e3 0%,#f0e0b0 100%)', boxShadow: '0 -12px 60px rgba(0,0,0,0.5)' }}>
+            <p className="text-2xl font-black tracking-wide" style={{ color: '#c0392b' }}>Searching for opponent</p>
+            <div className="coin-3d w-28 h-28 rounded-full flex items-center justify-center"
+              style={{ background: 'radial-gradient(circle at 32% 28%,#fff1a0,#f5a623 45%,#8b5e00 100%)', border: '3px solid #c87d10' }}>
+              <span style={{ fontSize: 52 }}><img src={ASSETS.icons.feathers} alt="feathers" style={{width:14,height:14,display:"inline",verticalAlign:"middle"}} /></span>
+            </div>
+            <div className="flex gap-2 items-center">
+              {['dot1','dot2','dot3'].map(d => (
+                <div key={d} className={`${d} w-3 h-3 rounded-full`} style={{ background: '#c0392b' }} />
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Telegram Stars notice */}
-      <div className="mx-4 mt-2 px-3 py-1.5 rounded-xl bg-blue-900 bg-opacity-60 flex items-center gap-2">
-        <span className="text-yellow-300 text-sm">⭐</span>
-        <span className="text-blue-200 text-xs font-bold">All purchases use Telegram Stars</span>
-      </div>
+      {showEnergyModal && (
+        <EnergyModal player={player} onClose={() => setShowEnergyModal(false)} onPurchased={onRefresh} />
+      )}
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto" style={{ background: '#2d1a0e' }}>
+      <div className="p-4 flex flex-col gap-4">
 
-        {/* ── SPECIAL OFFERS ── */}
-        {activeCategory === 'special_offers' && (
-          <div className="p-4 flex flex-col gap-4">
-            <div className="text-center text-amber-300 font-black text-lg tracking-wide">Special offers</div>
-            {SPECIAL_OFFERS.map(offer => (
-              <div key={offer.id} className="relative rounded-2xl overflow-hidden"
-                style={{ background: 'linear-gradient(135deg, #f5deb3 0%, #e8c99a 100%)', border: '2px solid #c8a96e' }}>
-                {offer.badge && (
-                  <div className="absolute top-0 right-0 bg-red-600 text-white font-black text-sm px-4 py-1 z-10"
-                    style={{ clipPath: 'polygon(10px 0, 100% 0, 100% 100%, 0 100%)' }}>
-                    {offer.badge}
-                  </div>
-                )}
-                <div className="p-4">
-                  <div className="text-amber-900 font-black text-base mb-3">
-                    {offer.name} <span className="font-normal text-amber-700 text-sm">({offer.stock})</span>
-                  </div>
-                  <div className="flex items-end gap-3 mb-4">
-                    <div className="w-20 h-20 rounded-2xl bg-amber-200 border-2 border-amber-400 flex items-center justify-center text-4xl shadow-inner relative">
-                      {offer.emoji}
-                      <div className="absolute -bottom-2 -right-2 bg-amber-800 text-white text-xs font-black rounded-full px-2 py-0.5">
-                        x{offer.qty}
-                      </div>
-                    </div>
-                    {offer.multi && (
-                      <div className="w-16 h-16 rounded-2xl bg-amber-200 border-2 border-amber-400 flex items-center justify-center text-3xl shadow-inner relative">
-                        ⚗️
-                        <div className="absolute -bottom-2 -right-2 bg-amber-800 text-white text-xs font-black rounded-full px-2 py-0.5">
-                          x30
-                        </div>
-                      </div>
-                    )}
-                    <div className="flex-1 flex justify-end text-5xl select-none">🦅</div>
-                  </div>
-                  <StarsBuyButton price={offer.price} onClick={() => handleStarsPurchase(offer.product)} large />
-                </div>
-              </div>
-            ))}
+        {/* Bird Display */}
+        <div className="bg-gradient-to-b from-blue-900 to-blue-950 rounded-2xl p-6 text-center relative overflow-hidden" style={{ minHeight: 200 }}>
+          <div className="absolute inset-0 opacity-20" style={{ background: 'radial-gradient(circle,#4a90d9 0%,transparent 70%)' }} />
+          <div className="flex justify-center mb-2 relative z-10">
+            <img src={getBirdUrl(player?.evolution_tier || 1)} alt={player?.evolution_name || 'Bird'}
+              className="w-24 h-24 object-contain drop-shadow-2xl"
+              style={{ filter: 'drop-shadow(0 0 16px rgba(251,191,36,0.5))' }} />
           </div>
-        )}
+          <div className="text-amber-300 font-bold text-lg relative z-10">{player?.evolution_name}</div>
+          <div className="text-amber-400 text-sm relative z-10">Power: {player?.power?.toLocaleString()}</div>
+          <div className="flex justify-center gap-6 mt-3 relative z-10">
+            <div className="text-center"><div className="text-red-400 text-xs">HP</div><div className="text-white text-sm font-bold">{100 + (player?.level||1)*50}</div></div>
+            <div className="text-center"><div className="text-orange-400 text-xs">ATK</div><div className="text-white text-sm font-bold">{10 + (player?.level||1)*5}</div></div>
+            <div className="text-center"><div className="text-blue-400 text-xs">DEF</div><div className="text-white text-sm font-bold">{5 + (player?.level||1)*2}</div></div>
+          </div>
+        </div>
 
-        {/* ── CHESTS ── */}
-        {activeCategory === 'chests' && (
-          <div className="p-4">
-            <div className="text-center text-amber-300 font-black text-lg tracking-wide mb-4">Chests</div>
-            <div className="grid grid-cols-2 gap-3">
-              {CHEST_DATA.map(chest => (
-                <div key={chest.key} className="relative rounded-2xl overflow-hidden"
-                  style={{ background: 'linear-gradient(135deg, #f0d9b5 0%, #e0c49a 100%)', border: '2px solid #c8a96e' }}>
-                  {chest.badge && (
-                    <div className="absolute top-0 right-0 bg-red-600 text-white font-black text-xs px-3 py-1 z-10"
-                      style={{ clipPath: 'polygon(8px 0, 100% 0, 100% 100%, 0 100%)' }}>
-                      {chest.badge}
-                    </div>
-                  )}
-                  <div className="p-3 flex flex-col items-center">
-                    <div className="text-amber-900 font-black text-sm mb-2">
-                      {chest.label} <span className="text-amber-600 font-normal">({chest.stock})</span>
-                    </div>
-                    <div className="w-24 h-24 relative mb-2">
-                      <img src={chest.img} alt={chest.label}
-                        className="w-full h-full object-contain drop-shadow-lg" />
-                      <div className="absolute -bottom-2 -right-2 bg-amber-800 text-white text-xs font-black rounded-full px-2 py-0.5">
-                        x{chest.qty}
-                      </div>
-                    </div>
-                    <div className="w-full mt-3">
-                      <StarsBuyButton price={chest.price} onClick={() => handleStarsPurchase(chest.product)} />
-                    </div>
-                  </div>
-                </div>
-              ))}
+        {/* Daily Quest */}
+        <div className="bg-amber-900 rounded-xl p-3 flex items-center gap-3">
+          <span className="text-2xl">📋</span>
+          <div className="flex-1">
+            <div className="text-amber-200 text-sm font-bold">Daily Quests</div>
+            <div className="text-amber-400 text-xs">{player?.battles_played || 0} battles played today</div>
+          </div>
+          <div className="text-amber-300 text-xs">+500<img src={ASSETS.icons.feathers} alt="feathers" style={{width:14,height:14,display:"inline",verticalAlign:"middle"}} /></div>
+        </div>
+
+        {/* Energy bar — tappable */}
+        <button onClick={() => setShowEnergyModal(true)}
+          className="w-full bg-amber-900 rounded-xl p-3 flex items-center gap-3 active:scale-95 transition-transform">
+          <span className="text-2xl">⚡</span>
+          <div className="flex-1">
+            <div className="flex items-center justify-between mb-1">
+              <div className="text-amber-200 text-sm font-bold">Energy</div>
+              <div className="text-amber-300 text-xs font-bold">{Math.floor(player?.energy||0)} / {player?.max_energy||400}</div>
+            </div>
+            <div className="w-full bg-amber-950 rounded-full h-2 overflow-hidden">
+              <div className="h-full rounded-full transition-all"
+                style={{ width:`${Math.min(100,((player?.energy||0)/(player?.max_energy||400))*100)}%`,
+                  background: 'linear-gradient(90deg,#fbbf24,#f59e0b)' }} />
+            </div>
+          </div>
+          <span className="text-amber-500 text-xs">+</span>
+        </button>
+
+        {/* Mode Selector */}
+        <div className={`rounded-2xl p-4 flex items-center justify-between ${mode==='epic'?'bg-purple-900 border border-purple-500':'bg-amber-800'}`}>
+          <button onClick={() => { const n = mode==='epic'?'normal':'epic'; setMode(n); if(n==='epic') setShowEpicInfo(true); }}
+            className="text-amber-300 text-sm font-bold">MODE 🔄</button>
+          <div className="text-center">
+            <div className="text-white font-black text-xl">{mode==='epic'?'EPIC':'BATTLE'}</div>
+            <div className={`text-xs ${mode==='epic'?'text-red-400':'text-yellow-300'}`}>{energyCost} ⚡</div>
+          </div>
+          <button onClick={() => setShowAutoBattle(true)} className="text-amber-300 text-sm font-bold">AUTO ⚙️</button>
+        </div>
+
+        {/* Battle Button */}
+        <button onClick={handleBattle} disabled={battling}
+          className={`w-full py-4 rounded-2xl font-black text-xl transition-all ${
+            !battling
+              ? mode==='epic'
+                ? 'bg-purple-600 hover:bg-purple-500 active:scale-95 text-white'
+                : hasEnergy
+                  ? 'bg-amber-500 hover:bg-amber-400 active:scale-95 text-amber-900'
+                  : 'bg-red-800 hover:bg-red-700 active:scale-95 text-white'
+              : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}>
+          {battling ? '⚔️ Finding opponent...' : `⚔️ FIGHT (${energyCost}⚡)`}
+        </button>
+
+
+
+        {/* Epic Info Modal */}
+        {showEpicInfo && (
+          <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
+            <div className="bg-amber-50 text-amber-900 rounded-2xl p-6 max-w-sm w-full">
+              <h2 className="text-xl font-black text-center mb-4">Welcome to Epic Mode!</h2>
+              <p className="text-sm mb-3 text-center">Stronger rivals, greater risks, and even greater prizes!</p>
+              <div className="grid grid-cols-2 gap-4 text-xs mb-4">
+                <div><div className="font-bold mb-1">Victory:</div><div>• EXP x2</div><div>• Glory x2</div><div>• Food x250</div></div>
+                <div><div className="font-bold mb-1">Defeat:</div><div>• EXP x2</div><div>• Glory x2</div><div>• <img src={ASSETS.icons.feathers} alt="feathers" style={{width:14,height:14,display:"inline",verticalAlign:"middle"}} /> x150</div><div>• Food x100</div></div>
+              </div>
+              <button onClick={() => setShowEpicInfo(false)} className="w-full bg-green-500 text-white py-3 rounded-xl font-bold">CLOSE</button>
             </div>
           </div>
         )}
 
-        {/* ── FEATHERS ── */}
-        {activeCategory === 'feathers' && (
-          <div className="p-4">
-            <div className="text-center text-amber-300 font-black text-lg tracking-wide mb-4">Feathers</div>
-            <div className="grid grid-cols-2 gap-3">
-              {DUST_PACKS.map(pack => (
-                <div key={pack.id} className="relative rounded-2xl overflow-hidden"
-                  style={{ background: 'linear-gradient(135deg, #f0d9b5 0%, #e0c49a 100%)', border: '2px solid #c8a96e' }}>
-                  {pack.badge && (
-                    <div className="absolute top-0 right-0 bg-red-600 text-white font-black text-xs px-3 py-1 z-10"
-                      style={{ clipPath: 'polygon(8px 0, 100% 0, 100% 100%, 0 100%)' }}>
-                      {pack.badge}
-                    </div>
-                  )}
-                  <div className="p-3 flex flex-col items-center">
-                    <div className="text-amber-900 font-black text-xs mb-2">
-                      Feathers <span className="text-amber-600">({pack.stock})</span>
-                    </div>
-                    <div className="w-18 h-18 rounded-xl bg-amber-200 border-2 border-amber-400 flex items-center justify-center text-4xl shadow-inner mb-1 relative p-2">
-                      <img src={ASSETS.icons.feathers} alt="feathers" style={{width:14,height:14,display:"inline",verticalAlign:"middle"}} />
-                      <div className="absolute -bottom-2 -right-2 bg-amber-800 text-white text-xs font-black rounded-full px-2 py-0.5">
-                        x{pack.qty.toLocaleString()}
-                      </div>
-                    </div>
-                    {pack.watchAd ? (
-                      <div className="w-full mt-3">
-                        <div className="bg-amber-700 text-amber-200 text-xs text-center py-1 rounded-t-lg font-bold flex items-center justify-center gap-1">
-                          ⏱ {pack.cooldown}
-                        </div>
-                        <button className="w-full py-2 rounded-b-xl font-black text-sm text-white bg-amber-800 flex items-center justify-center gap-2 active:scale-95 transition-transform">
-                          ▶ Watch Ad
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="w-full mt-3">
-                        <StarsBuyButton price={pack.price} onClick={() => handleStarsPurchase(pack.product)} />
-                      </div>
-                    )}
+        {/* Auto Battle Modal */}
+        {showAutoBattle && (
+          <div className="fixed inset-0 bg-black bg-opacity-70 flex items-end justify-center z-50">
+            <div className="w-full max-w-sm rounded-t-3xl overflow-hidden" style={{ background: '#e8d5b7' }}>
+              <div className="flex items-center justify-between px-5 pt-5 pb-2">
+                <h2 className="text-xl font-black text-amber-900">Auto Battle</h2>
+                <button onClick={() => setShowAutoBattle(false)} className="text-red-500 text-2xl font-black">✕</button>
+              </div>
+              <div className="mx-5 mb-3"><div className="rounded-xl py-2 text-center font-black text-base text-amber-100" style={{ background: '#7a5230' }}>{player?.auto_battle_active?'✅ Active':'Inactive'}</div></div>
+              <div className="mx-5 mb-3 rounded-2xl overflow-hidden" style={{ height: 160, background: '#c4a882' }}>
+                <div className="w-full h-full flex items-center justify-center text-7xl">⚔️🦅⚔️</div>
+              </div>
+              <div className="mx-5 mb-4 rounded-2xl p-4" style={{ background: '#d4b896', border: '2px solid #b8956a' }}>
+                <p className="text-amber-900 font-bold text-sm text-center">Unlock AutoBattle to speed up your progress!</p>
+              </div>
+              <div className="flex gap-3 mx-5 mb-3">
+                {[{days:3,price:autoPrices.days3},{days:14,price:autoPrices.days14}].map(o => (
+                  <div key={o.days} className="flex-1 flex flex-col items-center">
+                    <div className="z-10 mb-[-10px] px-3 py-1 rounded-full font-black text-sm text-white" style={{ background:'#3a3a3a' }}>{o.price} ⭐</div>
+                    <button onClick={() => handleAutoPurchase(o.days)}
+                      className="w-full pt-4 pb-3 rounded-2xl font-black text-white text-lg"
+                      style={{ background: 'linear-gradient(180deg,#5bb8ff 0%,#2d7dd2 100%)', border: '3px solid #1a5fa0' }}>
+                      {o.days} DAYS
+                    </button>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
+              <div className="mx-5 mb-6">
+                <button onClick={() => setShowAutoBattle(false)}
+                  className="w-full py-4 rounded-2xl font-black text-amber-900 text-base"
+                  style={{ background: '#e8d5b7', border: '2px solid #b8956a' }}>TO LOBBY</button>
+              </div>
             </div>
           </div>
         )}
-
-        {/* ── BOOSTERS ── */}
-        {activeCategory === 'boosters' && (
-          <div className="p-4 flex flex-col gap-3">
-            <div className="text-center text-amber-300 font-black text-lg tracking-wide mb-2">Boosters</div>
-            {BOOSTER_PACKS.map(pack => (
-              <div key={pack.id} className="rounded-2xl overflow-hidden flex items-center gap-4 px-4 py-3"
-                style={{ background: 'linear-gradient(135deg, #f5e6a3 0%, #e8d070 50%, #f5e6a3 100%)', border: '2px solid #c8a030', boxShadow: '0 2px 0 #7c6010, inset 0 1px 0 rgba(255,255,255,0.5)' }}>
-                <div className="relative w-16 h-16 flex-shrink-0">
-                  <div className="absolute inset-0 rounded-full bg-yellow-300 opacity-30 blur-md" />
-                  <div className="relative z-10 w-16 h-16 flex items-center justify-center text-4xl">⚗️</div>
-                </div>
-                <div className="flex-1 flex flex-col gap-2">
-                  <div className="flex justify-end">
-                    <div className="bg-amber-800 text-white text-sm font-black px-4 py-1 rounded-full flex items-center gap-1">
-                      {pack.price} <span className="text-yellow-300">⭐</span>
-                    </div>
-                  </div>
-                  <StarsBuyButton label={pack.label} price={pack.price} onClick={() => handleStarsPurchase(pack.product)} />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* ── EPIC BOOSTERS ── */}
-        {activeCategory === 'epic_boosters' && (
-          <div className="p-4 flex flex-col gap-3">
-            <div className="text-center text-amber-300 font-black text-lg tracking-wide mb-2">Epic Boosters</div>
-            {EPIC_BOOSTER_PACKS.map(pack => (
-              <div key={pack.id} className="rounded-2xl overflow-hidden flex items-center gap-4 px-4 py-3"
-                style={{ background: 'linear-gradient(135deg, #f5e6a3 0%, #e8d070 50%, #f5e6a3 100%)', border: '2px solid #c8a030', boxShadow: '0 2px 0 #7c6010, inset 0 1px 0 rgba(255,255,255,0.5)' }}>
-                <div className="relative w-16 h-16 flex-shrink-0">
-                  <div className="absolute inset-0 rounded-full bg-purple-400 opacity-30 blur-md" />
-                  <div className="relative z-10 w-16 h-16 flex items-center justify-center text-4xl">💥</div>
-                </div>
-                <div className="flex-1 flex flex-col gap-2">
-                  <div className="flex justify-end">
-                    <div className="bg-amber-800 text-white text-sm font-black px-4 py-1 rounded-full flex items-center gap-1">
-                      {pack.price} <span className="text-yellow-300">⭐</span>
-                    </div>
-                  </div>
-                  <StarsBuyButton label={pack.label} price={pack.price} onClick={() => handleStarsPurchase(pack.product)} />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* ── HAMMERS ── */}
-        {activeCategory === 'hammers' && (
-          <div className="p-4 flex flex-col gap-3">
-            <div className="text-center text-amber-300 font-black text-lg tracking-wide mb-2">Hammers</div>
-            {HAMMER_PACKS.map(pack => (
-              <div key={pack.id} className="rounded-2xl overflow-hidden flex items-center gap-4 px-4 py-3"
-                style={{ background: 'linear-gradient(135deg, #f5e6a3 0%, #e8d070 50%, #f5e6a3 100%)', border: '2px solid #c8a030', boxShadow: '0 2px 0 #7c6010, inset 0 1px 0 rgba(255,255,255,0.5)' }}>
-                <div className="relative w-16 h-16 flex-shrink-0">
-                  <div className="absolute inset-0 rounded-full bg-orange-400 opacity-30 blur-md" />
-                  <div className="relative z-10 w-16 h-16 flex items-center justify-center text-4xl">🔨</div>
-                </div>
-                <div className="flex-1 flex flex-col gap-2">
-                  <div className="flex justify-end">
-                    <div className="bg-amber-800 text-white text-sm font-black px-4 py-1 rounded-full flex items-center gap-1">
-                      {pack.price.toLocaleString()} <span className="text-yellow-300">⭐</span>
-                    </div>
-                  </div>
-                  <StarsBuyButton label={pack.label} price={pack.price} onClick={() => handleStarsPurchase(pack.product)} />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
       </div>
-    </div>
+    </>
   );
 }
