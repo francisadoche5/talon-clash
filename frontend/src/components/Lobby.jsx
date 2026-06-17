@@ -3,6 +3,7 @@ import { fight, getPublicConfig, createInvoice } from '../api';
 import BattleArena from './BattleArena';
 import { getBirdUrl } from '../birdImages';
 import axios from 'axios';
+import ASSETS from '../config/assets';
 
 const API_BASE = import.meta.env.VITE_BACKEND_URL || 'https://talon-clash.onrender.com';
 
@@ -263,7 +264,7 @@ export default function Lobby({ player, onRefresh }) {
             <p className="text-2xl font-black tracking-wide" style={{ color: '#c0392b' }}>Searching for opponent</p>
             <div className="coin-3d w-28 h-28 rounded-full flex items-center justify-center"
               style={{ background: 'radial-gradient(circle at 32% 28%,#fff1a0,#f5a623 45%,#8b5e00 100%)', border: '3px solid #c87d10' }}>
-              <span style={{ fontSize: 52 }}>🪶</span>
+              <span style={{ fontSize: 52 }}><img src={ASSETS.icons.feathers} alt="feathers" style={{width:14,height:14,display:"inline",verticalAlign:"middle"}} /></span>
             </div>
             <div className="flex gap-2 items-center">
               {['dot1','dot2','dot3'].map(d => (
@@ -304,7 +305,7 @@ export default function Lobby({ player, onRefresh }) {
             <div className="text-amber-200 text-sm font-bold">Daily Quests</div>
             <div className="text-amber-400 text-xs">{player?.battles_played || 0} battles played today</div>
           </div>
-          <div className="text-amber-300 text-xs">+500🪶</div>
+          <div className="text-amber-300 text-xs">+500<img src={ASSETS.icons.feathers} alt="feathers" style={{width:14,height:14,display:"inline",verticalAlign:"middle"}} /></div>
         </div>
 
         {/* Energy bar — tappable */}
@@ -359,7 +360,7 @@ export default function Lobby({ player, onRefresh }) {
               <p className="text-sm mb-3 text-center">Stronger rivals, greater risks, and even greater prizes!</p>
               <div className="grid grid-cols-2 gap-4 text-xs mb-4">
                 <div><div className="font-bold mb-1">Victory:</div><div>• EXP x2</div><div>• Glory x2</div><div>• Food x250</div></div>
-                <div><div className="font-bold mb-1">Defeat:</div><div>• EXP x2</div><div>• Glory x2</div><div>• 🪶 x150</div><div>• Food x100</div></div>
+                <div><div className="font-bold mb-1">Defeat:</div><div>• EXP x2</div><div>• Glory x2</div><div>• <img src={ASSETS.icons.feathers} alt="feathers" style={{width:14,height:14,display:"inline",verticalAlign:"middle"}} /> x150</div><div>• Food x100</div></div>
               </div>
               <button onClick={() => setShowEpicInfo(false)} className="w-full bg-green-500 text-white py-3 rounded-xl font-bold">CLOSE</button>
             </div>
