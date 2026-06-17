@@ -175,7 +175,7 @@ export default function Market({ player, onRefresh }) {
                     {offer.name} <span className="font-normal text-amber-700 text-sm">({offer.stock})</span>
                   </div>
                   <div className="flex items-end gap-3 mb-4">
-                    <div className="w-20 h-20 rounded-2xl bg-amber-200 border-2 border-amber-400 flex items-center justify-center text-4xl shadow-inner relative">
+                    <div className="w-24 h-24 rounded-2xl bg-amber-200 border-2 border-amber-400 flex items-center justify-center text-5xl shadow-inner relative">
                       {offer.emoji}
                       <div className="absolute -bottom-2 -right-2 bg-amber-800 text-white text-xs font-black rounded-full px-2 py-0.5">x{offer.qty}</div>
                     </div>
@@ -212,7 +212,7 @@ export default function Market({ player, onRefresh }) {
                     <div className="text-amber-900 font-black text-sm mb-2">
                       {chest.label} <span className="text-amber-600 font-normal">({chest.stock})</span>
                     </div>
-                    <div className="w-24 h-24 relative mb-2">
+                    <div className="w-32 h-32 relative mb-2">
                       <img src={chest.img} alt={chest.label} className="w-full h-full object-contain drop-shadow-lg" />
                     </div>
                     <div className="w-full mt-1">
@@ -245,8 +245,8 @@ export default function Market({ player, onRefresh }) {
                     <div className="text-amber-900 font-black text-xs mb-2">
                       Feathers <span className="text-amber-600">({pack.stock})</span>
                     </div>
-                    <div className="w-16 h-16 rounded-xl bg-amber-200 border-2 border-amber-400 flex items-center justify-center shadow-inner mb-2 relative p-2">
-                      <FI size={36} />
+                    <div className="w-24 h-24 rounded-xl bg-amber-200 border-2 border-amber-400 flex items-center justify-center shadow-inner mb-2 relative p-2">
+                      <FI size={56} />
                       <div className="absolute -bottom-2 -right-2 bg-amber-800 text-white text-xs font-black rounded-full px-2 py-0.5">
                         x{pack.qty.toLocaleString()}
                       </div>
