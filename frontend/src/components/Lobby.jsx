@@ -346,27 +346,10 @@ export default function Lobby({ player, onRefresh }) {
                   ? 'bg-amber-500 hover:bg-amber-400 active:scale-95 text-amber-900'
                   : 'bg-red-800 hover:bg-red-700 active:scale-95 text-white'
               : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}>
-          {battling ? '⚔️ Finding opponent...' : hasEnergy ? `⚔️ FIGHT (${energyCost}⚡)` : `⚡ No Energy — Tap to Refill`}
+          {battling ? '⚔️ Finding opponent...' : `⚔️ FIGHT (${energyCost}⚡)`}
         </button>
 
-        {/* Last battle summary */}
-        {lastBattleResult && !lastBattleResult.error && (
-          <div className={`rounded-2xl p-4 border-2 ${lastBattleResult.playerWon?'bg-green-950 border-green-500':'bg-red-950 border-red-500'}`}>
-            <div className="text-center text-2xl font-black mb-2">{lastBattleResult.playerWon?'🏆 VICTORY!':'💀 DEFEAT'}</div>
-            <div className="text-center text-sm text-gray-300 mb-3">vs {lastBattleResult.opponent?.display_name}</div>
-            <div className="grid grid-cols-3 gap-2 text-center">
-              <div><div className="text-blue-400 text-xs">EXP</div><div className="text-white font-bold">+{lastBattleResult.rewards?.xp}</div></div>
-              <div><div className="text-yellow-400 text-xs">Glory</div><div className="text-white font-bold">+{lastBattleResult.rewards?.glory}</div></div>
-              <div><div className="text-green-400 text-xs">🪶</div><div className="text-white font-bold">+{lastBattleResult.rewards?.feathers}</div></div>
-            </div>
-            {lastBattleResult.levelUp && (
-              <div className="mt-2 text-center text-yellow-300 font-bold animate-bounce">🎉 LEVEL UP! Now Level {lastBattleResult.newLevel}</div>
-            )}
-          </div>
-        )}
-        {lastBattleResult?.error && (
-          <div className="bg-red-950 border border-red-500 rounded-xl p-3 text-center text-red-300">{lastBattleResult.error}</div>
-        )}
+
 
         {/* Epic Info Modal */}
         {showEpicInfo && (
