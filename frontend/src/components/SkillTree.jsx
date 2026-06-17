@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import ASSETS from '../config/assets';
 import { getSkills, upgradeSkill } from '../api';
 
 const SKILL_INFO = {
@@ -39,7 +40,7 @@ export default function SkillTree({ player, onRefresh }) {
       <div className="flex items-center justify-between mb-4">
         <div className="text-amber-200 font-bold">Skill Tree</div>
         <div className="bg-amber-800 px-3 py-1 rounded-full text-amber-300 text-sm">
-          🪶 {player?.skill_points || 0} points
+          <img src={ASSETS.icons.feathers} alt="feathers" style={{width:16,height:16,display:"inline",verticalAlign:"middle"}} /> {player?.skill_points || 0} points
         </div>
       </div>
 
