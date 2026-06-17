@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getClans, getMyClan, createClan, joinClan, leaveClan, getPublicConfig, createInvoice } from '../api';
+import ASSETS from '../config/assets';
 import { EAGLE_ICON_URL } from '../birdImages';
 
 // Extra API calls for apply/approval system
@@ -171,7 +172,7 @@ export default function Clans({ player, onRefresh }) {
 
   const costLabel = clanCurrency === 'stars'
     ? `${clanCost.stars} ⭐`
-    : `${clanCost.feathers} 🪶`;
+    : `${clanCost.feathers} feathers`;
 
   return (
     <div className="p-4">
@@ -447,7 +448,7 @@ export default function Clans({ player, onRefresh }) {
             <div className={`flex items-center justify-center gap-2 mb-4 py-2 rounded-xl text-sm font-bold ${
               clanCurrency === 'stars' ? 'bg-blue-900 text-blue-200' : 'bg-amber-800 text-amber-200'
             }`}>
-              {clanCurrency === 'stars' ? '⭐ Pay with Telegram Stars' : '🪶 Pay with Feathers'}
+              {clanCurrency === 'stars' ? '⭐ Pay with Telegram Stars' : 'Pay with Feathers'}
             </div>
 
             <div className="flex gap-2">
