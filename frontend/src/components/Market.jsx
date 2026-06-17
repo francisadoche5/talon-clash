@@ -6,7 +6,7 @@ const CATEGORIES = ['special_offers', 'chests', 'feathers', 'boosters', 'epic_bo
 const CATEGORY_LABELS = {
   special_offers: '🔥 Special',
   chests: '📦 Chests',
-  feathers: '🪶 Feathers',
+  feathers: 'Feathers',
   boosters: '⚗️ Boosters',
   epic_boosters: '💥 Epic',
   hammers: '🔨 Hammers',
@@ -128,7 +128,7 @@ export default function Market({ player, onRefresh }) {
         </div>
         <div className="flex justify-center gap-3 pb-2 px-4">
           <div className="bg-amber-900 bg-opacity-70 rounded-full px-3 py-1 flex items-center gap-1.5">
-            <span className="text-sm">🪶</span>
+            <img src={ASSETS.icons.feathers} alt="feathers" style={{width:18,height:18,display:"inline",verticalAlign:"middle"}} />
             <span className="text-amber-200 text-xs font-bold">{(player?.feathers || 0).toLocaleString()}</span>
           </div>
           <div className="bg-amber-900 bg-opacity-70 rounded-full px-3 py-1 flex items-center gap-1.5">
@@ -270,7 +270,7 @@ export default function Market({ player, onRefresh }) {
                       Feathers <span className="text-amber-600">({pack.stock})</span>
                     </div>
                     <div className="w-18 h-18 rounded-xl bg-amber-200 border-2 border-amber-400 flex items-center justify-center text-4xl shadow-inner mb-1 relative p-2">
-                      🪶
+                      <img src={ASSETS.icons.feathers} alt="feathers" style={{width:14,height:14,display:"inline",verticalAlign:"middle"}} />
                       <div className="absolute -bottom-2 -right-2 bg-amber-800 text-white text-xs font-black rounded-full px-2 py-0.5">
                         x{pack.qty.toLocaleString()}
                       </div>
