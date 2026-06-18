@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getInventory, equipItem, burnItem, forgeItem } from '../api';
+import { getBirdUrl } from '../birdImages';
 
 const RARITY_COLORS = {
   common: 'border-gray-500 bg-gray-900',
@@ -76,6 +77,18 @@ export default function Inventory({ player, onRefresh }) {
 
   return (
     <div className="p-4">
+      {/* Bird portrait */}
+      <div style={{ display:'flex', justifyContent:'center', marginBottom:8 }}>
+        <img
+          src={getBirdUrl(player?.evolution_tier || 1)}
+          alt={player?.evolution_name || 'Bird'}
+          style={{
+            width: 110, height: 110, objectFit:'contain',
+            filter:'drop-shadow(0 0 18px rgba(251,191,36,0.6))',
+          }}
+        />
+      </div>
+
       {/* Stats Bar */}
       <div className="bg-amber-900 rounded-xl p-3 flex justify-around mb-4 text-center">
         <div>
