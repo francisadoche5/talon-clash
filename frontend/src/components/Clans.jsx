@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { getClans, getMyClan, createClan, joinClan, leaveClan, getPublicConfig, createInvoice } from '../api';
+import { getClans, getMyClan, createClan, joinClan, leaveClan, getPublicConfig } from '../api';
+import { payWithStars } from '../starsPayment';
 import ASSETS from '../config/assets';
 import { EAGLE_ICON_URL } from '../birdImages';
 
@@ -78,26 +79,19 @@ export default function Clans({ player, onRefresh }) {
     if (!clanName.trim()) return;
     try {
       if (clanCurrency === 'stars') {
-        try {
-          const res = await createInvoice(player.telegram_id, 'clan_create');
-          const link = res.data.link;
-          if (window.Telegram?.WebApp?.openInvoice) {
-            window.Telegram.WebApp.openInvoice(link, async (status) => {
-              if (status === 'paid') {
-                await createClan(player.telegram_id, clanName, '🦅', newJoinType);
-                setShowCreate(false);
-                setClanName('');
-                await loadData();
-                onRefresh();
-                showMsg('success', 'Clan created!');
-              }
-            });
-          } else {
-            window.open(link, '_blank');
-          }
-        } catch {
-          showMsg('error', 'Could not create invoice. Try again.');
-        }
+        payWithStars({
+          player,
+          product: 'clan_create',
+          onSuccess: async () => {
+            await createClan(player.telegram_id, clanName, '🦅', newJoinType);
+            setShowCreate(false);
+            setClanName('');
+            await loadData();
+            onRefresh();
+            showMsg('success', 'Clan created!');
+          },
+          onError: (msg) => showMsg('error', msg || 'Could not process payment. Try again.'),
+        });
         return;
       }
       await createClan(player.telegram_id, clanName, '🦅', newJoinType);
