@@ -157,8 +157,8 @@ export default function App() {
   return (
     <div className="flex flex-col h-screen bg-amber-950 max-w-md mx-auto relative overflow-hidden">
 
-      {/* Premium Header */}
-      <div style={{
+      {/* Premium Header — lobby only */}
+      {activeTab === 'lobby' && <div style={{
         background: 'linear-gradient(180deg,#5c2e00 0%,#3d1a00 100%)',
         borderBottom: '1.5px solid #b8742a',
         boxShadow: '0 3px 16px rgba(0,0,0,0.55)',
@@ -218,10 +218,10 @@ export default function App() {
             </span>
           </div>
         </div>
-      </div>
+      </div>}
 
-      {/* Premium Evolution Banner */}
-      <div style={{
+      {/* Premium Evolution Banner — lobby only */}
+      {activeTab === 'lobby' && <div style={{
         background: 'linear-gradient(90deg,#3d1a00 0%,#6b3300 40%,#6b3300 60%,#3d1a00 100%)',
         borderBottom: '1px solid #a06020',
         padding: '5px 16px',
@@ -241,7 +241,7 @@ export default function App() {
           textShadow:'0 0 10px rgba(245,200,66,0.5)', letterSpacing: 0.5 }}>
           {player?.evolution_name} • Power: {player?.power?.toLocaleString()}
         </span>
-      </div>
+      </div>}
 
       {/* Main content */}
       <div className="flex-1 min-h-0" style={{ overflow: activeTab === 'lobby' ? 'hidden' : 'auto' }}>
