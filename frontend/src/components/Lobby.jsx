@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { fight, getPublicConfig, createInvoice, getQuests, claimQuest } from '../api';
 import BattleArena from './BattleArena';
 import { getBirdUrl } from '../birdImages';
@@ -288,10 +288,13 @@ export default function Lobby({ player, onRefresh }) {
 
   useEffect(() => { loadQuests(); }, [player?.telegram_id]);
 
-  // Auto-cycle the lobby preview through each active quest
+  // Auto-cycle the lobby preview through each active quest (paused briefly after a manual swipe)
   useEffect(() => {
     if (quests.length <= 1) return;
-    const t = setInterval(() => setQuestCycleIndex(i => (i + 1) % quests.length), 3500);
+    const t = setInterval(() => {
+      if (Date.now() - lastSwipeAtRef.current < 4000) return;
+      setQuestCycleIndex(i => (i + 1) % quests.length);
+    }, 3500);
     return () => clearInterval(t);
   }, [quests.length]);
 
@@ -310,6 +313,32 @@ export default function Lobby({ player, onRefresh }) {
     } finally {
       setClaimingId(null);
     }
+  }
+
+  // ── Swipe support for the quest preview card ──
+  const touchStartRef   = useRef(null);
+  const swipeHandledRef = useRef(false);
+  const lastSwipeAtRef  = useRef(0);
+
+  function handleQuestTouchStart(e) {
+    touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    swipeHandledRef.current = false;
+  }
+  function handleQuestTouchMove(e) {
+    if (!touchStartRef.current || swipeHandledRef.current || quests.length <= 1) return;
+    const dx = e.touches[0].clientX - touchStartRef.current.x;
+    const dy = e.touches[0].clientY - touchStartRef.current.y;
+    if (Math.abs(dx) > 35 && Math.abs(dx) > Math.abs(dy)) {
+      swipeHandledRef.current = true;
+      lastSwipeAtRef.current  = Date.now();
+      const len = quests.length;
+      setQuestCycleIndex(i => (dx < 0 ? (i + 1) % len : (i - 1 + len) % len));
+    }
+  }
+  function handleQuestClick() {
+    // Swallow the click that follows a swipe gesture so it doesn't also open the modal
+    if (swipeHandledRef.current) { swipeHandledRef.current = false; return; }
+    setShowQuestsModal(true);
   }
 
   useEffect(() => {
@@ -420,65 +449,53 @@ export default function Lobby({ player, onRefresh }) {
           </div>
         </div>
 
-        {/* Daily Quests — shortcut into the full quest list */}
-        <button onClick={() => setShowQuestsModal(true)}
-          className="w-full bg-amber-900 rounded-xl p-3 flex flex-col gap-2 active:scale-95 transition-transform">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">📋</span>
-            <div className="flex-1 text-left">
-              <div className="flex items-center justify-between mb-1">
-                <div className="text-amber-200 text-sm font-bold">Daily Quests</div>
+        {/* Daily Quests — shortcut into the full quest list (tap to open, swipe to preview) */}
+        <button
+          onClick={handleQuestClick}
+          onTouchStart={handleQuestTouchStart}
+          onTouchMove={handleQuestTouchMove}
+          className="w-full bg-amber-900 rounded-xl px-3 py-2 flex flex-col gap-1 active:scale-95 transition-transform select-none">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">📋</span>
+            <div className="flex-1 text-left min-w-0">
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-amber-200 text-xs font-bold truncate">Daily Quests</div>
                 {quests[questCycleIndex] && (
-                  <div className="text-amber-300 text-xs font-black flex items-center gap-1">
+                  <div className="text-amber-300 text-[11px] font-black flex items-center gap-0.5 flex-shrink-0">
                     +{quests[questCycleIndex].reward_amount}
-                    <RewardIcon type={quests[questCycleIndex].reward_type} size={14} />
+                    <RewardIcon type={quests[questCycleIndex].reward_type} size={12} />
                   </div>
                 )}
               </div>
               {quests[questCycleIndex] ? (
                 <>
-                  <div className="text-amber-400 text-xs mb-1">{quests[questCycleIndex].title}</div>
-                  <div className="w-full bg-amber-950 rounded-full h-2 overflow-hidden">
-                    <div className="h-full rounded-full transition-all" style={{
-                      width: `${Math.min(100, (quests[questCycleIndex].progress / quests[questCycleIndex].requirement_amount) * 100)}%`,
-                      background: 'linear-gradient(90deg,#fbbf24,#f59e0b)' }} />
-                  </div>
-                  <div className="text-amber-500 text-[10px] mt-1">
-                    {Math.min(quests[questCycleIndex].progress, quests[questCycleIndex].requirement_amount)}/{quests[questCycleIndex].requirement_amount}
+                  <div className="text-amber-400 text-[11px] truncate">{quests[questCycleIndex].title}</div>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <div className="flex-1 bg-amber-950 rounded-full h-1.5 overflow-hidden">
+                      <div className="h-full rounded-full transition-all" style={{
+                        width: `${Math.min(100, (quests[questCycleIndex].progress / quests[questCycleIndex].requirement_amount) * 100)}%`,
+                        background: 'linear-gradient(90deg,#fbbf24,#f59e0b)' }} />
+                    </div>
+                    <span className="text-amber-500 text-[10px] flex-shrink-0">
+                      {Math.min(quests[questCycleIndex].progress, quests[questCycleIndex].requirement_amount)}/{quests[questCycleIndex].requirement_amount}
+                    </span>
                   </div>
                 </>
               ) : (
-                <div className="text-amber-400 text-xs">{quests.length === 0 ? 'Tap to view quests' : 'Loading…'}</div>
+                <div className="text-amber-400 text-[11px]">{quests.length === 0 ? 'Tap to view quests' : 'Loading…'}</div>
               )}
             </div>
           </div>
           {quests.length > 1 && (
-            <div className="flex justify-center gap-1.5">
+            <div className="flex justify-center gap-1">
               {quests.map((q, i) => (
-                <div key={q.id} className="w-1.5 h-1.5 rounded-full"
+                <div key={q.id} className="w-1 h-1 rounded-full"
                   style={{ background: i === questCycleIndex ? '#fbbf24' : 'rgba(251,191,36,0.35)' }} />
               ))}
             </div>
           )}
         </button>
 
-        {/* Energy bar — tappable */}
-        <button onClick={() => setShowEnergyModal(true)}
-          className="w-full bg-amber-900 rounded-xl p-3 flex items-center gap-3 active:scale-95 transition-transform">
-          <span className="text-2xl"><EI size={28} /></span>
-          <div className="flex-1">
-            <div className="flex items-center justify-between mb-1">
-              <div className="text-amber-200 text-sm font-bold">Energy</div>
-              <div className="text-amber-300 text-xs font-bold">{Math.floor(player?.energy||0)} / {player?.max_energy||400}</div>
-            </div>
-            <div className="w-full bg-amber-950 rounded-full h-2 overflow-hidden">
-              <div className="h-full rounded-full transition-all"
-                style={{ width:`${Math.min(100,((player?.energy||0)/(player?.max_energy||400))*100)}%`,
-                  background: 'linear-gradient(90deg,#fbbf24,#f59e0b)' }} />
-            </div>
-          </div>
-          <span className="text-amber-500 text-xs">+</span>
-        </button>
 
         {/* Mode Selector */}
         <div className={`rounded-2xl p-4 flex items-center justify-between ${mode==='epic'?'bg-purple-900 border border-purple-500':'bg-amber-800'}`}>
