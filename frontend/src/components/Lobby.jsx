@@ -656,6 +656,7 @@ export default function Lobby({ player, onRefresh }) {
         {/* ── Battle Control — animated premium ── */}
         <div style={{
           borderRadius:20, overflow:'hidden', display:'flex', alignItems:'stretch',
+          minHeight: 80,
           animation: battling ? 'none'
             : mode==='epic' ? 'epicGlow 2.2s ease-in-out infinite, battlePulse 2.2s ease-in-out infinite'
             : hasEnergy    ? 'battleGlow 2s ease-in-out infinite, battlePulse 2s ease-in-out infinite'
@@ -691,7 +692,7 @@ export default function Lobby({ player, onRefresh }) {
           <button onClick={handleBattle} disabled={battling}
             style={{
               flex:1, display:'flex', flexDirection:'column', alignItems:'center',
-              justifyContent:'center', padding:'14px 8px', gap:2,
+              justifyContent:'center', padding:'18px 8px', gap:2,
               background:'transparent', position:'relative', overflow:'hidden',
               cursor: battling ? 'not-allowed' : 'pointer',
             }}
