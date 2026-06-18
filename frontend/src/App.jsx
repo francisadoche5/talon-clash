@@ -244,7 +244,7 @@ export default function App() {
       </div>
 
       {/* Main content */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 min-h-0" style={{ overflow: activeTab === 'lobby' ? 'hidden' : 'auto' }}>
         {activeTab === 'lobby'     && <Lobby     player={player} onRefresh={refreshPlayer} />}
         {activeTab === 'market'    && <Market    player={player} onRefresh={refreshPlayer} />}
         {activeTab === 'inventory' && <Inventory player={player} onRefresh={refreshPlayer} />}
