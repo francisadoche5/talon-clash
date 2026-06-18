@@ -387,19 +387,22 @@ export default function Lobby({ player, onRefresh }) {
 
   useEffect(() => { loadQuests(); }, [player?.telegram_id]);
 
+  // Only show unclaimed quests in the lobby preview card
+  const activeQuests = quests.filter(q => !q.is_claimed);
+
   // Auto-cycle the lobby preview through each active quest (paused briefly after a manual swipe)
   useEffect(() => {
-    if (quests.length <= 1) return;
+    if (activeQuests.length <= 1) return;
     const t = setInterval(() => {
       if (Date.now() - lastSwipeAtRef.current < 4000) return;
-      setQuestCycleIndex(i => (i + 1) % quests.length);
+      setQuestCycleIndex(i => (i + 1) % activeQuests.length);
     }, 3500);
     return () => clearInterval(t);
-  }, [quests.length]);
+  }, [activeQuests.length]);
 
   useEffect(() => {
-    setQuestCycleIndex(i => (quests.length ? i % quests.length : 0));
-  }, [quests.length]);
+    setQuestCycleIndex(i => (activeQuests.length ? i % activeQuests.length : 0));
+  }, [activeQuests.length]);
 
   async function handleClaimQuest(questId) {
     setClaimingId(questId);
@@ -424,13 +427,13 @@ export default function Lobby({ player, onRefresh }) {
     swipeHandledRef.current = false;
   }
   function handleQuestTouchMove(e) {
-    if (!touchStartRef.current || swipeHandledRef.current || quests.length <= 1) return;
+    if (!touchStartRef.current || swipeHandledRef.current || activeQuests.length <= 1) return;
     const dx = e.touches[0].clientX - touchStartRef.current.x;
     const dy = e.touches[0].clientY - touchStartRef.current.y;
     if (Math.abs(dx) > 35 && Math.abs(dx) > Math.abs(dy)) {
       swipeHandledRef.current = true;
       lastSwipeAtRef.current  = Date.now();
-      const len = quests.length;
+      const len = activeQuests.length;
       setQuestCycleIndex(i => (dx < 0 ? (i + 1) % len : (i - 1 + len) % len));
     }
   }
@@ -533,39 +536,42 @@ export default function Lobby({ player, onRefresh }) {
         <CharacteristicsModal player={player} onClose={() => setShowCharacteristics(false)} />
       )}
 
+
       <div
-        className="relative min-h-full"
         style={{
+          position: 'relative',
+          height: '100%',
           backgroundImage: `url(${lobbyBg})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center top',
-          backgroundAttachment: 'local',
+          display: 'flex',
+          flexDirection: 'column',
         }}
       >
-        {/* Dark overlay so UI text stays readable over any background */}
+        {/* Dark overlay */}
         <div className="absolute inset-0 pointer-events-none" style={{ background: 'rgba(0,0,0,0.38)' }} />
 
-        <div className="relative z-10 p-4 flex flex-col gap-4">
+        <div style={{ position:'relative', zIndex:10, flex:1, display:'flex', flexDirection:'column', padding:'10px 14px 12px', gap:10, minHeight:0 }}>
 
-        {/* Bird Display — floating image only, no card */}
-        <div className="flex flex-col items-center gap-3 pt-2 pb-1">
+        {/* Bird Display — power badge + floating image, grows to fill available space */}
+        <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:10, minHeight:0 }}>
 
-          {/* Power badge — tap to open Characteristics */}
+          {/* Power badge */}
           <button
             onClick={() => setShowCharacteristics(true)}
             className="flex items-center gap-2 px-4 py-1.5 rounded-full font-bold text-white active:scale-95 transition-transform"
-            style={{ background: 'rgba(0,0,0,0.45)', border: '1px solid rgba(255,255,255,0.2)', backdropFilter: 'blur(6px)', fontSize: 14 }}>
+            style={{ background: 'rgba(0,0,0,0.45)', border: '1px solid rgba(255,255,255,0.2)', backdropFilter: 'blur(6px)', fontSize: 14, flexShrink:0 }}>
             <span>👊</span>
             <span>Power: {(player?.power || 0).toLocaleString()}</span>
             <span style={{ fontSize: 11, opacity: 0.8 }}>▾</span>
           </button>
 
-          {/* Bird image only — large, floating */}
+          {/* Bird image — fills remaining flex space up to a max */}
           <img
             src={getBirdUrl(player?.evolution_tier || 1)}
             alt={player?.evolution_name || 'Bird'}
-            className="object-contain drop-shadow-2xl"
-            style={{ width: 180, height: 180, filter: 'drop-shadow(0 0 28px rgba(251,191,36,0.65))' }}
+            style={{ maxWidth: 200, maxHeight: 200, width:'55vw', height:'55vw', objectFit:'contain',
+              filter: 'drop-shadow(0 0 28px rgba(251,191,36,0.65))', flexShrink:0 }}
           />
         </div>
 
@@ -602,38 +608,40 @@ export default function Lobby({ player, onRefresh }) {
             <div style={{ flex:1, minWidth:0, textAlign:'left' }}>
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8 }}>
                 <div style={{ color:'#f5c842', fontSize:12, fontWeight:800, letterSpacing:0.3 }}>Daily Quests</div>
-                {quests[questCycleIndex] && (
+                {activeQuests[questCycleIndex] && (
                   <div style={{ color:'#86efac', fontSize:11, fontWeight:800, display:'flex', alignItems:'center', gap:3, flexShrink:0 }}>
-                    +{quests[questCycleIndex].reward_amount}
-                    <RewardIcon type={quests[questCycleIndex].reward_type} size={12} />
+                    +{activeQuests[questCycleIndex].reward_amount}
+                    <RewardIcon type={activeQuests[questCycleIndex].reward_type} size={12} />
                   </div>
                 )}
               </div>
-              {quests[questCycleIndex] ? (
+              {activeQuests[questCycleIndex] ? (
                 <>
-                  <div style={{ color:'rgba(255,200,100,0.7)', fontSize:11, marginTop:1 }}>{quests[questCycleIndex].title}</div>
+                  <div style={{ color:'rgba(255,200,100,0.7)', fontSize:11, marginTop:1 }}>{activeQuests[questCycleIndex].title}</div>
                   <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:4 }}>
                     <div style={{ flex:1, background:'rgba(0,0,0,0.4)', borderRadius:6, height:6, overflow:'hidden' }}>
                       <div style={{
                         height:'100%', borderRadius:6, transition:'width 0.4s ease',
-                        width:`${Math.min(100,(quests[questCycleIndex].progress/quests[questCycleIndex].requirement_amount)*100)}%`,
+                        width:`${Math.min(100,(activeQuests[questCycleIndex].progress/activeQuests[questCycleIndex].requirement_amount)*100)}%`,
                         background:'linear-gradient(90deg,#f5c842,#fb923c)',
                         boxShadow:'0 0 6px rgba(245,200,66,0.6)',
                       }}/>
                     </div>
                     <span style={{ color:'rgba(255,200,80,0.6)', fontSize:10, flexShrink:0 }}>
-                      {Math.min(quests[questCycleIndex].progress,quests[questCycleIndex].requirement_amount)}/{quests[questCycleIndex].requirement_amount}
+                      {Math.min(activeQuests[questCycleIndex].progress,activeQuests[questCycleIndex].requirement_amount)}/{activeQuests[questCycleIndex].requirement_amount}
                     </span>
                   </div>
                 </>
               ) : (
-                <div style={{ color:'rgba(255,180,60,0.6)', fontSize:11, marginTop:1 }}>{quests.length===0?'Tap to view quests':'Loading…'}</div>
+                <div style={{ color:'rgba(255,180,60,0.6)', fontSize:11, marginTop:1 }}>
+                  {activeQuests.length === 0 ? (quests.length === 0 ? 'Tap to view quests' : '🎉 All quests complete!') : 'Loading…'}
+                </div>
               )}
             </div>
           </div>
-          {quests.length > 1 && (
+          {activeQuests.length > 1 && (
             <div style={{ display:'flex', justifyContent:'center', gap:4 }}>
-              {quests.map((q,i) => (
+              {activeQuests.map((q,i) => (
                 <div key={q.id} style={{
                   width:5,height:5,borderRadius:'50%',
                   background: i===questCycleIndex ? '#f5c842' : 'rgba(245,200,66,0.25)',
