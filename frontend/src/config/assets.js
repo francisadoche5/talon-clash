@@ -34,6 +34,14 @@ const ASSETS = {
     chestUncommon: `${CDN}/assets/ui/chest-uncommon.webp`,
     chestRare:     `${CDN}/assets/ui/chest-rare.webp`,
     chestEpic:     `${CDN}/assets/ui/chest-epic.webp`,
+    lobbyBgDay:  [
+      `${CDN}/assets/ui/Lobby%20bg%20day%201.webp`,
+      `${CDN}/assets/ui/Lobby%20bg%20day%202.webp`,
+    ],
+    lobbyBgNight: [
+      `${CDN}/assets/ui/Lobby%20bg%20night%201.webp`,
+      `${CDN}/assets/ui/Lobby%20bg%20night%202.webp`,
+    ],
   },
   sprites: {
     // Sprite sheets
