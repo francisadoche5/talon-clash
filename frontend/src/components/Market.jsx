@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { createInvoice } from '../api';
+import { payWithStars } from '../starsPayment';
 import ASSETS from '../config/assets';
 
 const FeatherIcon = ({ size = 16 }) => (
@@ -23,9 +23,10 @@ const EpicBoosterIcon = ({ size = 52 }) => (
     style={{ width: size, height: size, display: 'inline', verticalAlign: 'middle', objectFit: 'contain' }} />
 );
 
-const CATEGORIES = ['special_offers', 'chests', 'feathers', 'boosters', 'epic_boosters', 'hammers'];
+const CATEGORIES = ['special_offers', 'star_credits', 'chests', 'feathers', 'boosters', 'epic_boosters', 'hammers'];
 const CATEGORY_LABELS = {
   special_offers: '🔥 Special',
+  star_credits:   '⭐ Star Credits',
   chests:         '📦 Chests',
   feathers:       'Feathers',
   boosters:       'Boosters',
@@ -67,6 +68,13 @@ const HAMMER_PACKS = [
   { id: 'h3', product: 'hammers_x15', qty: 15, price: 5500, label: 'GET X15' },
 ];
 
+const STAR_CREDIT_PACKS = [
+  { id: 'sc1', product: 'star_credits_100',  qty: 100,   price: 100,  label: 'GET 100' },
+  { id: 'sc2', product: 'star_credits_500',  qty: 500,   price: 500,  label: 'GET 500' },
+  { id: 'sc3', product: 'star_credits_1500', qty: 1500,  price: 1500, label: 'GET 1,500' },
+  { id: 'sc4', product: 'star_credits_5000', qty: 5000,  price: 5000, label: 'GET 5,000', badge: 'BEST VALUE' },
+];
+
 const SPECIAL_OFFERS = [
   { id: 'so1', product: 'special_overcharge', name: 'Overcharge Pack', stock: '100/100', qty: 40,  icon: 'epicBooster', price: 5900, badge: 'HOT DEAL', desc: 'Epic Booster x40' },
   { id: 'so2', product: 'special_electra',    name: 'Electra Pack',    stock: '100/100', qty: 60,  icon: 'energy',      price: 3500, badge: 'HOT DEAL', desc: 'Booster x60' },
@@ -93,21 +101,19 @@ export default function Market({ player, onRefresh }) {
     setTimeout(() => setMessage(null), 3000);
   }
 
-  async function handleStarsPurchase(productId) {
-    try {
-      const res  = await createInvoice(player.telegram_id, productId);
-      const link = res.data.link;
-      if (window.Telegram?.WebApp?.openInvoice) {
-        window.Telegram.WebApp.openInvoice(link, (status) => {
-          if (status === 'paid') { showMsg('success', '✅ Purchase successful!'); onRefresh(); }
-          else if (status === 'cancelled') showMsg('error', 'Purchase cancelled.');
-        });
-      } else {
-        window.open(link, '_blank');
-      }
-    } catch (err) {
-      showMsg('error', err.response?.data?.error || 'Purchase failed. Try again.');
-    }
+  function handleStarsPurchase(productId) {
+    payWithStars({
+      player,
+      product: productId,
+      onSuccess: (data) => {
+        showMsg('success', data.method === 'virtual_stars'
+          ? '✅ Purchased with Star Credits!'
+          : '✅ Purchase successful!');
+        onRefresh();
+      },
+      onCancelled: () => showMsg('error', 'Purchase cancelled.'),
+      onError: (msg) => showMsg('error', msg),
+    });
   }
 
   return (
@@ -133,7 +139,7 @@ export default function Market({ player, onRefresh }) {
           </div>
           <div className="bg-amber-900 bg-opacity-70 rounded-full px-3 py-1 flex items-center gap-1.5">
             <span className="text-sm">⭐</span>
-            <span className="text-amber-200 text-xs font-bold">{(player?.feathers || 0).toLocaleString()}</span>
+            <span className="text-amber-200 text-xs font-bold">{(player?.stars || 0).toLocaleString()}</span>
           </div>
           <div className="bg-amber-900 bg-opacity-70 rounded-full px-3 py-1 flex items-center gap-1.5">
             <HammerIcon size={18} />
@@ -167,7 +173,7 @@ export default function Market({ player, onRefresh }) {
       {/* Stars notice */}
       <div className="mx-4 mt-2 px-3 py-1.5 rounded-xl bg-blue-900 bg-opacity-60 flex items-center gap-2">
         <span className="text-yellow-300 text-sm">⭐</span>
-        <span className="text-blue-200 text-xs font-bold">All purchases use Telegram Stars</span>
+        <span className="text-blue-200 text-xs font-bold">Pays with Star Credits first, Telegram Stars if you're short</span>
       </div>
 
       {/* ── Content ── */}
@@ -205,6 +211,34 @@ export default function Market({ player, onRefresh }) {
                     <div className="flex-1 flex justify-end text-5xl select-none">🦅</div>
                   </div>
                   <StarsBuyButton price={offer.price} onClick={() => handleStarsPurchase(offer.product)} large />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* STAR CREDITS — top up the virtual wallet with real Telegram Stars */}
+        {activeCategory === 'star_credits' && (
+          <div className="p-4 flex flex-col gap-3">
+            <div className="text-center text-amber-300 font-black text-lg tracking-wide mb-1">Star Credits</div>
+            <div className="text-center text-amber-500 text-xs mb-2 px-2">
+              Top up your wallet once, then spend Star Credits in the store without a payment popup every time.
+            </div>
+            {STAR_CREDIT_PACKS.map(pack => (
+              <div key={pack.id} className="relative rounded-2xl flex items-center gap-4 px-4 py-3"
+                style={{ background: 'linear-gradient(135deg,#f5e6a3 0%,#e8d070 50%,#f5e6a3 100%)', border: '2px solid #c8a030', boxShadow: '0 2px 0 #7c6010, inset 0 1px 0 rgba(255,255,255,0.5)' }}>
+                {pack.badge && (
+                  <div className="absolute top-0 right-0 bg-red-600 text-white font-black text-xs px-3 py-1 z-10"
+                    style={{ clipPath: 'polygon(8px 0,100% 0,100% 100%,0 100%)' }}>
+                    {pack.badge}
+                  </div>
+                )}
+                <div className="relative w-16 h-16 flex-shrink-0 flex items-center justify-center text-4xl">⭐</div>
+                <div className="flex-1 flex flex-col gap-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-amber-900 font-black text-sm">{pack.qty.toLocaleString()} Star Credits</span>
+                  </div>
+                  <StarsBuyButton label={pack.label} price={pack.price} onClick={() => handleStarsPurchase(pack.product)} />
                 </div>
               </div>
             ))}
