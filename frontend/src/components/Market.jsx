@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { createInvoice } from '../api';
 import ASSETS from '../config/assets';
 
-const PI = ({ size = 16 }) => (
-  <img src={ASSETS.icons.points} alt="points"
+const FeatherIcon = ({ size = 16 }) => (
+  <img src={ASSETS.icons.feathers} alt="feathers"
     style={{ width: size, height: size, display: 'inline', verticalAlign: 'middle', objectFit: 'contain' }} />
 );
 const EnergyIcon = ({ size = 20 }) => (
@@ -27,7 +27,7 @@ const CATEGORIES = ['special_offers', 'chests', 'feathers', 'boosters', 'epic_bo
 const CATEGORY_LABELS = {
   special_offers: '🔥 Special',
   chests:         '📦 Chests',
-  feathers:       'Points',
+  feathers:       'Feathers',
   boosters:       'Boosters',
   epic_boosters:  'Epic',
   hammers:        'Hammers',
@@ -70,7 +70,7 @@ const HAMMER_PACKS = [
 const SPECIAL_OFFERS = [
   { id: 'so1', product: 'special_overcharge', name: 'Overcharge Pack', stock: '100/100', qty: 40,  icon: 'epicBooster', price: 5900, badge: 'HOT DEAL', desc: 'Epic Booster x40' },
   { id: 'so2', product: 'special_electra',    name: 'Electra Pack',    stock: '100/100', qty: 60,  icon: 'energy',      price: 3500, badge: 'HOT DEAL', desc: 'Booster x60' },
-  { id: 'so3', product: 'special_tesla',      name: 'Energy Tesla',    stock: '100/100', multi: true, price: 2000, badge: 'HOT DEAL', desc: 'Feathers x5,000 + Booster x30' },
+  { id: 'so3', product: 'special_tesla',      name: 'Energy Tesla',    stock: '100/100', multi: true, icon: 'epicBooster', price: 2000, badge: 'HOT DEAL', desc: 'Feathers x5,000 + Booster x30' },
 ];
 
 function StarsBuyButton({ label, price, onClick, large = false }) {
@@ -128,7 +128,7 @@ export default function Market({ player, onRefresh }) {
         </div>
         <div className="flex justify-center gap-3 pb-2 px-4">
           <div className="bg-amber-900 bg-opacity-70 rounded-full px-3 py-1 flex items-center gap-1.5">
-            <PI size={15} />
+            <FeatherIcon size={15} />
             <span className="text-amber-200 text-xs font-bold">{(player?.feathers || 0).toLocaleString()}</span>
           </div>
           <div className="bg-amber-900 bg-opacity-70 rounded-full px-3 py-1 flex items-center gap-1.5">
@@ -151,7 +151,7 @@ export default function Market({ player, onRefresh }) {
               activeCategory === cat ? 'bg-amber-500 text-amber-950' : 'bg-amber-800 text-amber-300'
             }`}>
             {cat === 'feathers'
-              ? <><PI size={13} /> Points</>
+              ? <><FeatherIcon size={13} /> Feathers</>
               : CATEGORY_LABELS[cat]}
           </button>
         ))}
@@ -246,7 +246,7 @@ export default function Market({ player, onRefresh }) {
         {activeCategory === 'feathers' && (
           <div className="p-4">
             <div className="text-center text-amber-300 font-black text-lg tracking-wide mb-4 flex items-center justify-center gap-2">
-              <PI size={20} /> Points
+              <FeatherIcon size={20} /> Feathers
             </div>
             <div className="grid grid-cols-2 gap-3">
               {FEATHER_PACKS.map(pack => (
@@ -260,10 +260,10 @@ export default function Market({ player, onRefresh }) {
                   )}
                   <div className="p-3 flex flex-col items-center">
                     <div className="text-amber-900 font-black text-xs mb-2">
-                      Points <span className="text-amber-600">({pack.stock})</span>
+                      Feathers <span className="text-amber-600">({pack.stock})</span>
                     </div>
                     <div className="w-28 h-28 rounded-xl bg-amber-200 border-2 border-amber-400 flex items-center justify-center shadow-inner mb-2 relative p-1">
-                      <PI size={68} />
+                      <FeatherIcon size={68} />
                       <div className="absolute -bottom-2 -right-2 bg-amber-800 text-white text-xs font-black rounded-full px-2 py-0.5">
                         x{pack.qty.toLocaleString()}
                       </div>
