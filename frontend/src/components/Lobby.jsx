@@ -9,8 +9,8 @@ const EI = ({ size = 22 }) => (
   <img src={ASSETS.icons.energy} alt="energy"
     style={{ width: size, height: size, display: 'inline', verticalAlign: 'middle', objectFit: 'contain' }} />
 );
-const PointsIcon = ({ size = 16 }) => (
-  <img src={ASSETS.icons.points} alt="points"
+const FeatherIcon = ({ size = 16 }) => (
+  <img src={ASSETS.icons.feathers} alt="feathers"
     style={{ width: size, height: size, display: 'inline', verticalAlign: 'middle', objectFit: 'contain' }} />
 );
 
@@ -35,8 +35,8 @@ function EnergyModal({ player, onClose, onPurchased }) {
   const [adMsg,     setAdMsg]     = useState(null);
 
   const STAR_OPTIONS = [
-    { id: 'energy_250', amount: 250, price: 250, top: '#5bb8ff', mid: '#2d7dd2', bot: '#1a5fa0', shadow: '#0d3d70', border: '#7fcfff' },
-    { id: 'energy_750', amount: 750, price: 750, top: '#a78bfa', mid: '#7c3aed', bot: '#5b21b6', shadow: '#3b0e8f', border: '#c4b5fd' },
+    { id: 'energy_250', amount: 250, price: 250, icon: ASSETS.icons.energy,      top: '#5bb8ff', mid: '#2d7dd2', bot: '#1a5fa0', shadow: '#0d3d70', border: '#7fcfff' },
+    { id: 'energy_750', amount: 750, price: 750, icon: ASSETS.icons.epicBooster, top: '#a78bfa', mid: '#7c3aed', bot: '#5b21b6', shadow: '#3b0e8f', border: '#c4b5fd' },
   ];
 
   async function handleWatchAd() {
@@ -134,7 +134,7 @@ function EnergyModal({ player, onClose, onPurchased }) {
             {/* Icon area */}
             <div className="flex flex-col items-center justify-center py-3 gap-2"
               style={{ background: 'linear-gradient(180deg,#4aa024 0%,#2d7010 100%)' }}>
-              <span style={{ fontSize: 34 }}>📺</span>
+              <img src={ASSETS.icons.booster} alt="booster" style={{width:34,height:34,objectFit:'contain'}} />
               <div className="px-2 py-1 rounded-lg font-black text-white text-xs flex items-center gap-1"
                 style={{ background: 'rgba(0,0,0,0.4)' }}>
                 +50 <EI size={16} />
@@ -171,7 +171,7 @@ function EnergyModal({ player, onClose, onPurchased }) {
 
               <div className="flex flex-col items-center justify-center py-3 gap-2"
                 style={{ background: `linear-gradient(180deg,${opt.mid} 0%,${opt.bot} 100%)` }}>
-                <span style={{ fontSize: 34 }}>⚗️</span>
+                <img src={opt.icon} alt="" style={{width:34,height:34,objectFit:'contain'}} />
                 <div className="px-2 py-1 rounded-lg font-black text-white text-xs flex items-center gap-1"
                   style={{ background: 'rgba(0,0,0,0.4)', border: `1px solid ${opt.border}40` }}>
                   {opt.amount} <EI size={16} />
@@ -273,7 +273,7 @@ export default function Lobby({ player, onRefresh }) {
             <p className="text-2xl font-black tracking-wide" style={{ color: '#c0392b' }}>Searching for opponent</p>
             <div className="coin-3d w-28 h-28 rounded-full flex items-center justify-center"
               style={{ background: 'radial-gradient(circle at 32% 28%,#fff1a0,#f5a623 45%,#8b5e00 100%)', border: '3px solid #c87d10' }}>
-              <span style={{ fontSize: 52 }}><img src={ASSETS.icons.points} alt="points" style={{width:90,height:90,display:"block",objectFit:"contain"}} /></span>
+              <span style={{ fontSize: 52 }}><img src={ASSETS.icons.feathers} alt="feathers" style={{width:90,height:90,display:"block",objectFit:"contain"}} /></span>
             </div>
             <div className="flex gap-2 items-center">
               {['dot1','dot2','dot3'].map(d => (
@@ -314,7 +314,7 @@ export default function Lobby({ player, onRefresh }) {
             <div className="text-amber-200 text-sm font-bold">Daily Quests</div>
             <div className="text-amber-400 text-xs">{player?.battles_played || 0} battles played today</div>
           </div>
-          <div className="text-amber-300 text-xs">+500<img src={ASSETS.icons.points} alt="points" style={{width:14,height:14,display:"inline",verticalAlign:"middle"}} /></div>
+          <div className="text-amber-300 text-xs">+500<img src={ASSETS.icons.feathers} alt="feathers" style={{width:14,height:14,display:"inline",verticalAlign:"middle"}} /></div>
         </div>
 
         {/* Energy bar — tappable */}
@@ -369,7 +369,7 @@ export default function Lobby({ player, onRefresh }) {
               <p className="text-sm mb-3 text-center">Stronger rivals, greater risks, and even greater prizes!</p>
               <div className="grid grid-cols-2 gap-4 text-xs mb-4">
                 <div><div className="font-bold mb-1">Victory:</div><div>• EXP x2</div><div>• Glory x2</div><div>• Food x250</div></div>
-                <div><div className="font-bold mb-1">Defeat:</div><div>• EXP x2</div><div>• Glory x2</div><div>• <img src={ASSETS.icons.points} alt="points" style={{width:14,height:14,display:"inline",verticalAlign:"middle"}} /> x150</div><div>• Food x100</div></div>
+                <div><div className="font-bold mb-1">Defeat:</div><div>• EXP x2</div><div>• Glory x2</div><div>• <img src={ASSETS.icons.feathers} alt="feathers" style={{width:14,height:14,display:"inline",verticalAlign:"middle"}} /> x150</div><div>• Food x100</div></div>
               </div>
               <button onClick={() => setShowEpicInfo(false)} className="w-full bg-green-500 text-white py-3 rounded-xl font-bold">CLOSE</button>
             </div>
