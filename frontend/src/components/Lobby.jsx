@@ -260,8 +260,19 @@ function QuestsModal({ quests, claimingId, onClaim, onClose }) {
   );
 }
 
+// ── Returns the correct lobby background based on current hour ─────────────────
+// Day:   06:00 – 19:59  →  lobbyBgDay images
+// Night: 20:00 – 05:59  →  lobbyBgNight images
+function getLobbyBackground() {
+  const hour = new Date().getHours();
+  const isDay = hour >= 6 && hour < 20;
+  const pool  = isDay ? ASSETS.ui.lobbyBgDay : ASSETS.ui.lobbyBgNight;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
 // ── Main Lobby ─────────────────────────────────────────────────────────────────
 export default function Lobby({ player, onRefresh }) {
+  const [lobbyBg,         setLobbyBg]         = useState(() => getLobbyBackground());
   const [mode,            setMode]            = useState('normal');
   const [battling,        setBattling]        = useState(false);
   const [battleResult,    setBattleResult]    = useState(null);
@@ -285,6 +296,12 @@ export default function Lobby({ player, onRefresh }) {
       setQuests(res.data?.quests || []);
     } catch {}
   }
+
+  // Re-evaluate background every minute so day↔night switches at the right time
+  useEffect(() => {
+    const id = setInterval(() => setLobbyBg(getLobbyBackground()), 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   useEffect(() => { loadQuests(); }, [player?.telegram_id]);
 
@@ -430,7 +447,19 @@ export default function Lobby({ player, onRefresh }) {
         <QuestsModal quests={quests} claimingId={claimingId} onClaim={handleClaimQuest} onClose={() => setShowQuestsModal(false)} />
       )}
 
-      <div className="p-4 flex flex-col gap-4">
+      <div
+        className="relative min-h-full"
+        style={{
+          backgroundImage: `url(${lobbyBg})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center top',
+          backgroundAttachment: 'local',
+        }}
+      >
+        {/* Dark overlay so UI text stays readable over any background */}
+        <div className="absolute inset-0 pointer-events-none" style={{ background: 'rgba(0,0,0,0.38)' }} />
+
+        <div className="relative z-10 p-4 flex flex-col gap-4">
 
         {/* Bird Display */}
         <div className="bg-gradient-to-b from-blue-900 to-blue-950 rounded-2xl p-6 text-center relative overflow-hidden" style={{ minHeight: 200 }}>
@@ -585,7 +614,8 @@ export default function Lobby({ player, onRefresh }) {
             </div>
           </div>
         )}
-      </div>
+      </div>   {/* end relative z-10 content */}
+      </div>   {/* end background wrapper */}
     </>
   );
 }
