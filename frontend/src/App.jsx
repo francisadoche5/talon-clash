@@ -210,13 +210,6 @@ export default function App() {
               {player?.feathers?.toLocaleString()}
             </span>
           </div>
-          {/* Food */}
-          <div style={{ display:'flex', alignItems:'center', gap:3 }}>
-            <span style={{ fontSize:14 }}>🌾</span>
-            <span style={{ color:'#fdba74', fontWeight:800, fontSize:11 }}>
-              {player?.food?.toLocaleString()}
-            </span>
-          </div>
         </div>
       </div>}
 
