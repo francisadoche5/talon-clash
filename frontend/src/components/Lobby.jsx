@@ -14,7 +14,7 @@ const FeatherIcon = ({ size = 16 }) => (
     style={{ width: size, height: size, display: 'inline', verticalAlign: 'middle', objectFit: 'contain' }} />
 );
 // Picks the right icon for a quest reward (feathers, glory, exp, energy...).
-// Falls back to a gift emoji for reward types without a dedicated icon (food, seeds).
+// Falls back to a gift emoji for reward types without a dedicated icon.
 const RewardIcon = ({ type, size = 14 }) => {
   const map = { feathers: ASSETS.icons.feathers, glory: ASSETS.icons.glory, exp: ASSETS.icons.exp, energy: ASSETS.icons.energy };
   const src = map[type];
@@ -579,9 +579,10 @@ export default function Lobby({ player, onRefresh }) {
                 try {
                   await devBoost(player.telegram_id, devSecret);
                   setDevMsg({ ok:true, text:'✅ All resources maxed out! Refreshing…' });
-                  setTimeout(() => { onRefresh(); setShowDevPanel(false); setDevSecret(''); setDevMsg(null); }, 1200);
-                } catch {
-                  setDevMsg({ ok:false, text:'❌ Wrong secret or server error.' });
+                  setTimeout(() => { onRefresh(); setShowDevPanel(false); setDevSecret(''); setDevMsg(null); }, 2000);
+                } catch(err) {
+                  const msg = err?.response?.data?.detail || err?.response?.data?.error || 'Wrong secret or server error.';
+                  setDevMsg({ ok:false, text:`❌ ${msg}` });
                 } finally { setDevLoading(false); }
               }}
               style={{
