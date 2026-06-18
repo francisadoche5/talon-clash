@@ -262,9 +262,9 @@ export default function Lobby({ player, onRefresh }) {
           <div className="w-full rounded-t-[32px] flex flex-col items-center gap-7 pt-8 pb-14"
             style={{ background: 'linear-gradient(160deg,#fdf6e3 0%,#f0e0b0 100%)', boxShadow: '0 -12px 60px rgba(0,0,0,0.5)' }}>
             <p className="text-2xl font-black tracking-wide" style={{ color: '#c0392b' }}>Searching for opponent</p>
-            <div className="coin-3d w-44 h-44 rounded-full flex items-center justify-center"
+            <div className="coin-3d w-28 h-28 rounded-full flex items-center justify-center"
               style={{ background: 'radial-gradient(circle at 32% 28%,#fff1a0,#f5a623 45%,#8b5e00 100%)', border: '3px solid #c87d10' }}>
-              <span style={{ fontSize: 52 }}><img src={ASSETS.icons.feathers} alt="feathers" style={{width:112,height:112,display:"block",objectFit:"contain"}} /></span>
+              <span style={{ fontSize: 52 }}><img src={ASSETS.icons.feathers} alt="feathers" style={{width:90,height:90,display:"block",objectFit:"contain"}} /></span>
             </div>
             <div className="flex gap-2 items-center">
               {['dot1','dot2','dot3'].map(d => (
