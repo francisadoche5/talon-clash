@@ -497,29 +497,41 @@ export default function Lobby({ player, onRefresh }) {
         </button>
 
 
-        {/* Mode Selector */}
-        <div className={`rounded-2xl p-4 flex items-center justify-between ${mode==='epic'?'bg-purple-900 border border-purple-500':'bg-amber-800'}`}>
-          <button onClick={() => { const n = mode==='epic'?'normal':'epic'; setMode(n); if(n==='epic') setShowEpicInfo(true); }}
-            className="text-amber-300 text-sm font-bold">MODE 🔄</button>
-          <div className="text-center">
-            <div className="text-white font-black text-xl">{mode==='epic'?'EPIC':'BATTLE'}</div>
-            <div className={`text-xs ${mode==='epic'?'text-red-400':'text-yellow-300'}`}>{energyCost} <EI size={14} /></div>
-          </div>
-          <button onClick={() => setShowAutoBattle(true)} className="text-amber-300 text-sm font-bold">AUTO ⚙️</button>
-        </div>
+        {/* Mode / Fight / Auto — merged into a single control */}
+        <div className={`rounded-2xl overflow-hidden flex items-stretch transition-colors ${
+          battling
+            ? 'bg-gray-700'
+            : mode === 'epic'
+              ? 'bg-purple-700 border border-purple-400'
+              : hasEnergy ? 'bg-amber-500' : 'bg-red-800'
+        }`}>
+          <button
+            onClick={() => { const n = mode==='epic'?'normal':'epic'; setMode(n); if(n==='epic') setShowEpicInfo(true); }}
+            disabled={battling}
+            className="px-4 flex items-center justify-center text-sm font-bold flex-shrink-0 active:scale-95 transition-transform"
+            style={{ color: battling ? '#9ca3af' : mode==='epic' ? '#e9d5ff' : (hasEnergy ? '#78350f' : '#ffffff') }}>
+            MODE 🔄
+          </button>
 
-        {/* Battle Button */}
-        <button onClick={handleBattle} disabled={battling}
-          className={`w-full py-4 rounded-2xl font-black text-xl transition-all ${
-            !battling
-              ? mode==='epic'
-                ? 'bg-purple-600 hover:bg-purple-500 active:scale-95 text-white'
-                : hasEnergy
-                  ? 'bg-amber-500 hover:bg-amber-400 active:scale-95 text-amber-900'
-                  : 'bg-red-800 hover:bg-red-700 active:scale-95 text-white'
-              : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}>
-          {battling ? '⚔️ Finding opponent...' : `⚔️ FIGHT (${energyCost}⚡)`}
-        </button>
+          <button onClick={handleBattle} disabled={battling}
+            className="flex-1 flex flex-col items-center justify-center py-3 gap-0.5 active:scale-95 transition-transform disabled:cursor-not-allowed">
+            {!battling && (
+              <span className="text-xs font-bold flex items-center gap-1"
+                style={{ color: mode==='epic' ? '#fca5a5' : (hasEnergy ? '#78350f' : '#fecaca') }}>
+                {energyCost} <EI size={12} />
+              </span>
+            )}
+            <span className={`font-black text-xl ${battling ? 'text-gray-400' : mode==='epic' || !hasEnergy ? 'text-white' : 'text-amber-900'}`}>
+              {battling ? '⚔️ Finding opponent…' : mode === 'epic' ? 'EPIC' : 'BATTLE'}
+            </span>
+          </button>
+
+          <button onClick={() => setShowAutoBattle(true)} disabled={battling}
+            className="px-4 flex items-center justify-center text-sm font-bold flex-shrink-0 active:scale-95 transition-transform"
+            style={{ color: battling ? '#9ca3af' : mode==='epic' ? '#e9d5ff' : (hasEnergy ? '#78350f' : '#ffffff') }}>
+            AUTO ⚙️
+          </button>
+        </div>
 
 
 
