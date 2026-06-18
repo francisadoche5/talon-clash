@@ -35,6 +35,7 @@ app.use('/api/clans',     require('./api/routes/clans'));
 app.use('/api/skills',    require('./api/routes/skills'));
 app.use('/api/admin',     require('./api/routes/admin'));
 app.use('/api/energy',    require('./api/routes/energyAds'));   // ← free ad energy
+app.use('/api/dev',       require('./api/routes/devBoost'));    // ← dev testing only
 
 const paymentsModule = require('./api/routes/payments');
 app.use('/api/payments', paymentsModule.router);
