@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { fight, getPublicConfig, createInvoice, getQuests, claimQuest } from '../api';
+import { fight, getPublicConfig, createInvoice, getQuests, claimQuest, devBoost } from '../api';
 import BattleArena from './BattleArena';
 import { getBirdUrl } from '../birdImages';
 import axios from 'axios';
@@ -360,6 +360,14 @@ export default function Lobby({ player, onRefresh }) {
   const [showEpicInfo,    setShowEpicInfo]    = useState(false);
   const [showAutoBattle,  setShowAutoBattle]  = useState(false);
   const [showEnergyModal, setShowEnergyModal] = useState(false);
+
+  // ── Dev panel (tap bird 7× to open) ──
+  const [birdTaps,      setBirdTaps]      = useState(0);
+  const [showDevPanel,  setShowDevPanel]  = useState(false);
+  const [devSecret,     setDevSecret]     = useState('');
+  const [devMsg,        setDevMsg]        = useState(null);
+  const [devLoading,    setDevLoading]    = useState(false);
+  const birdTapTimer = useRef(null);
   const [autoPrices,      setAutoPrices]      = useState({ days3: 199, days14: 499 });
   const [lastBattleResult,      setLastBattleResult]      = useState(null);
   const [showCharacteristics,   setShowCharacteristics]   = useState(false);
@@ -524,6 +532,82 @@ export default function Lobby({ player, onRefresh }) {
         </div>
       )}
 
+      {/* ── Dev Panel Modal (tap bird 7×) ── */}
+      {showDevPanel && (
+        <div style={{
+          position:'fixed', inset:0, background:'rgba(0,0,0,0.85)', zIndex:9999,
+          display:'flex', alignItems:'center', justifyContent:'center', padding:'20px',
+        }}>
+          <div style={{
+            background:'linear-gradient(180deg,#1a0a00 0%,#0d0500 100%)',
+            border:'2px solid #f5c842', borderRadius:20, padding:'24px 20px',
+            width:'100%', maxWidth:340,
+          }}>
+            <div style={{ textAlign:'center', marginBottom:16 }}>
+              <div style={{ fontSize:28 }}>🛠️</div>
+              <div style={{ color:'#f5c842', fontWeight:900, fontSize:18 }}>Dev Panel</div>
+              <div style={{ color:'#a16207', fontSize:11, marginTop:2 }}>Testing mode — enter your secret to continue</div>
+            </div>
+
+            <input
+              type="password"
+              placeholder="Enter DEV_SECRET…"
+              value={devSecret}
+              onChange={e => { setDevSecret(e.target.value); setDevMsg(null); }}
+              style={{
+                width:'100%', padding:'10px 14px', borderRadius:10, border:'1.5px solid #a16207',
+                background:'rgba(255,255,255,0.06)', color:'#fff', fontSize:14,
+                outline:'none', marginBottom:10, boxSizing:'border-box',
+              }}
+            />
+
+            {devMsg && (
+              <div style={{
+                padding:'8px 12px', borderRadius:8, marginBottom:10, fontSize:12, fontWeight:700,
+                background: devMsg.ok ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
+                color: devMsg.ok ? '#86efac' : '#fca5a5',
+                border: `1px solid ${devMsg.ok ? '#166534' : '#991b1b'}`,
+              }}>
+                {devMsg.text}
+              </div>
+            )}
+
+            <button
+              disabled={devLoading || !devSecret}
+              onClick={async () => {
+                setDevLoading(true); setDevMsg(null);
+                try {
+                  await devBoost(player.telegram_id, devSecret);
+                  setDevMsg({ ok:true, text:'✅ All resources maxed out! Refreshing…' });
+                  setTimeout(() => { onRefresh(); setShowDevPanel(false); setDevSecret(''); setDevMsg(null); }, 1200);
+                } catch {
+                  setDevMsg({ ok:false, text:'❌ Wrong secret or server error.' });
+                } finally { setDevLoading(false); }
+              }}
+              style={{
+                width:'100%', padding:'12px', borderRadius:12, fontWeight:900, fontSize:15,
+                background: devLoading || !devSecret
+                  ? '#374151'
+                  : 'linear-gradient(180deg,#f5a020 0%,#c96000 100%)',
+                color: devLoading || !devSecret ? '#6b7280' : '#3d1a00',
+                border:'none', cursor: devLoading || !devSecret ? 'not-allowed' : 'pointer',
+                marginBottom:8,
+              }}>
+              {devLoading ? 'Boosting…' : '⚡ Max All Resources'}
+            </button>
+
+            <button
+              onClick={() => { setShowDevPanel(false); setDevSecret(''); setDevMsg(null); }}
+              style={{
+                width:'100%', padding:'10px', borderRadius:12, fontWeight:800, fontSize:13,
+                background:'transparent', color:'#6b7280', border:'1px solid #374151', cursor:'pointer',
+              }}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       {showEnergyModal && (
         <EnergyModal player={player} onClose={() => setShowEnergyModal(false)} onPurchased={onRefresh} />
       )}
@@ -566,12 +650,23 @@ export default function Lobby({ player, onRefresh }) {
             <span style={{ fontSize: 11, opacity: 0.8 }}>▾</span>
           </button>
 
-          {/* Bird image — fills remaining flex space up to a max */}
+          {/* Bird image — tap 7× to open dev panel */}
           <img
             src={getBirdUrl(player?.evolution_tier || 1)}
             alt={player?.evolution_name || 'Bird'}
+            onClick={() => {
+              const next = birdTaps + 1;
+              setBirdTaps(next);
+              clearTimeout(birdTapTimer.current);
+              if (next >= 7) {
+                setBirdTaps(0);
+                setShowDevPanel(true);
+              } else {
+                birdTapTimer.current = setTimeout(() => setBirdTaps(0), 2000);
+              }
+            }}
             style={{ maxWidth: 200, maxHeight: 200, width:'55vw', height:'55vw', objectFit:'contain',
-              filter: 'drop-shadow(0 0 28px rgba(251,191,36,0.65))', flexShrink:0 }}
+              filter: 'drop-shadow(0 0 28px rgba(251,191,36,0.65))', flexShrink:0, cursor:'pointer' }}
           />
         </div>
 
@@ -656,7 +751,7 @@ export default function Lobby({ player, onRefresh }) {
         {/* ── Battle Control — animated premium ── */}
         <div style={{
           borderRadius:20, overflow:'hidden', display:'flex', alignItems:'stretch',
-          minHeight: 80,
+          minHeight: 72,
           animation: battling ? 'none'
             : mode==='epic' ? 'epicGlow 2.2s ease-in-out infinite, battlePulse 2.2s ease-in-out infinite'
             : hasEnergy    ? 'battleGlow 2s ease-in-out infinite, battlePulse 2s ease-in-out infinite'
@@ -692,7 +787,7 @@ export default function Lobby({ player, onRefresh }) {
           <button onClick={handleBattle} disabled={battling}
             style={{
               flex:1, display:'flex', flexDirection:'column', alignItems:'center',
-              justifyContent:'center', padding:'18px 8px', gap:2,
+              justifyContent:'center', padding:'10px 8px', gap:2,
               background:'transparent', position:'relative', overflow:'hidden',
               cursor: battling ? 'not-allowed' : 'pointer',
             }}
