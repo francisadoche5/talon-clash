@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { fight, getPublicConfig, createInvoice } from '../api';
+import { fight, getPublicConfig, createInvoice, getQuests, claimQuest } from '../api';
 import BattleArena from './BattleArena';
 import { getBirdUrl } from '../birdImages';
 import axios from 'axios';
@@ -13,6 +13,14 @@ const FeatherIcon = ({ size = 16 }) => (
   <img src={ASSETS.icons.feathers} alt="feathers"
     style={{ width: size, height: size, display: 'inline', verticalAlign: 'middle', objectFit: 'contain' }} />
 );
+// Picks the right icon for a quest reward (feathers, glory, exp, energy...).
+// Falls back to a gift emoji for reward types without a dedicated icon (food, seeds).
+const RewardIcon = ({ type, size = 14 }) => {
+  const map = { feathers: ASSETS.icons.feathers, glory: ASSETS.icons.glory, exp: ASSETS.icons.exp, energy: ASSETS.icons.energy };
+  const src = map[type];
+  if (src) return <img src={src} alt={type} style={{ width: size, height: size, display: 'inline', verticalAlign: 'middle', objectFit: 'contain' }} />;
+  return <span style={{ fontSize: size }}>🎁</span>;
+};
 
 const API_BASE = import.meta.env.VITE_BACKEND_URL || 'https://talon-clash.onrender.com';
 
@@ -190,6 +198,68 @@ function EnergyModal({ player, onClose, onPurchased }) {
   );
 }
 
+// ── Daily Quests Modal — full list with progress + claim ───────────────────────
+function QuestsModal({ quests, claimingId, onClaim, onClose }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center"
+      style={{ backdropFilter: 'blur(5px)', background: 'rgba(0,0,0,0.65)' }}>
+      <div className="w-full max-w-sm rounded-t-[32px] overflow-hidden flex flex-col" style={{ maxHeight: '80vh',
+        background: 'linear-gradient(160deg,#fdf6e0 0%,#ede1b4 100%)',
+        boxShadow: '0 -16px 60px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.8)' }}>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 pt-5 pb-3 flex-shrink-0">
+          <div className="w-8" />
+          <h2 className="font-black text-gray-800 text-xl tracking-wide">Daily Quests</h2>
+          <button onClick={onClose}
+            className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-500 font-black text-lg">✕</button>
+        </div>
+
+        {/* Quest list */}
+        <div className="flex-1 overflow-y-auto px-4 pb-6 flex flex-col gap-3">
+          {quests.length === 0 && (
+            <p className="text-amber-700 text-sm text-center py-8 font-bold">No active quests right now.</p>
+          )}
+          {quests.map(q => {
+            const pct   = Math.min(100, (q.progress / q.requirement_amount) * 100);
+            const ready = q.is_completed && !q.is_claimed;
+            return (
+              <div key={q.id} className="rounded-2xl p-3" style={{ background: '#e8d5b7', border: '2px solid #b8956a' }}>
+                <div className="flex items-center justify-between mb-1.5 gap-2">
+                  <div className="text-amber-900 font-bold text-sm">{q.title}</div>
+                  <div className="text-amber-700 text-xs font-black flex items-center gap-1 flex-shrink-0">
+                    +{q.reward_amount}<RewardIcon type={q.reward_type} size={14} />
+                  </div>
+                </div>
+                <div className="w-full bg-amber-100 rounded-full h-2 overflow-hidden mb-1.5">
+                  <div className="h-full rounded-full transition-all" style={{
+                    width: `${pct}%`,
+                    background: q.is_claimed ? '#9ca3af' : 'linear-gradient(90deg,#fbbf24,#f59e0b)'
+                  }} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-amber-600 text-[11px] font-bold">
+                    {Math.min(q.progress, q.requirement_amount)}/{q.requirement_amount}
+                  </span>
+                  <button
+                    disabled={!ready || claimingId === q.id}
+                    onClick={() => onClaim(q.id)}
+                    className={`px-3 py-1 rounded-lg text-xs font-black transition-transform ${
+                      q.is_claimed ? 'bg-gray-300 text-gray-500'
+                      : ready ? 'bg-green-500 text-white active:scale-95'
+                      : 'bg-amber-200 text-amber-500'}`}>
+                    {q.is_claimed ? 'Claimed' : claimingId === q.id ? '…' : ready ? 'Claim' : 'In Progress'}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main Lobby ─────────────────────────────────────────────────────────────────
 export default function Lobby({ player, onRefresh }) {
   const [mode,            setMode]            = useState('normal');
@@ -200,9 +270,47 @@ export default function Lobby({ player, onRefresh }) {
   const [showEnergyModal, setShowEnergyModal] = useState(false);
   const [autoPrices,      setAutoPrices]      = useState({ days3: 199, days14: 499 });
   const [lastBattleResult, setLastBattleResult] = useState(null);
+  const [quests,          setQuests]          = useState([]);
+  const [showQuestsModal, setShowQuestsModal] = useState(false);
+  const [questCycleIndex, setQuestCycleIndex] = useState(0);
+  const [claimingId,      setClaimingId]      = useState(null);
 
   const energyCost = mode === 'epic' ? 200 : 25;
   const hasEnergy  = (player?.energy || 0) >= energyCost;
+
+  async function loadQuests() {
+    if (!player?.telegram_id) return;
+    try {
+      const res = await getQuests(player.telegram_id);
+      setQuests(res.data?.quests || []);
+    } catch {}
+  }
+
+  useEffect(() => { loadQuests(); }, [player?.telegram_id]);
+
+  // Auto-cycle the lobby preview through each active quest
+  useEffect(() => {
+    if (quests.length <= 1) return;
+    const t = setInterval(() => setQuestCycleIndex(i => (i + 1) % quests.length), 3500);
+    return () => clearInterval(t);
+  }, [quests.length]);
+
+  useEffect(() => {
+    setQuestCycleIndex(i => (quests.length ? i % quests.length : 0));
+  }, [quests.length]);
+
+  async function handleClaimQuest(questId) {
+    setClaimingId(questId);
+    try {
+      await claimQuest(player.telegram_id, questId);
+      await loadQuests();
+      onRefresh();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Could not claim reward.');
+    } finally {
+      setClaimingId(null);
+    }
+  }
 
   useEffect(() => {
     getPublicConfig()
@@ -221,6 +329,7 @@ export default function Lobby({ player, onRefresh }) {
       const res = await fight(player.telegram_id, mode);
       setBattleResult({ ...res.data, mode });
       onRefresh();
+      loadQuests();
     } catch (err) {
       setLastBattleResult({ error: err.response?.data?.error || 'Battle failed' });
     } finally {
@@ -288,6 +397,10 @@ export default function Lobby({ player, onRefresh }) {
         <EnergyModal player={player} onClose={() => setShowEnergyModal(false)} onPurchased={onRefresh} />
       )}
 
+      {showQuestsModal && (
+        <QuestsModal quests={quests} claimingId={claimingId} onClaim={handleClaimQuest} onClose={() => setShowQuestsModal(false)} />
+      )}
+
       <div className="p-4 flex flex-col gap-4">
 
         {/* Bird Display */}
@@ -307,15 +420,47 @@ export default function Lobby({ player, onRefresh }) {
           </div>
         </div>
 
-        {/* Daily Quest */}
-        <div className="bg-amber-900 rounded-xl p-3 flex items-center gap-3">
-          <span className="text-2xl">📋</span>
-          <div className="flex-1">
-            <div className="text-amber-200 text-sm font-bold">Daily Quests</div>
-            <div className="text-amber-400 text-xs">{player?.battles_played || 0} battles played today</div>
+        {/* Daily Quests — shortcut into the full quest list */}
+        <button onClick={() => setShowQuestsModal(true)}
+          className="w-full bg-amber-900 rounded-xl p-3 flex flex-col gap-2 active:scale-95 transition-transform">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">📋</span>
+            <div className="flex-1 text-left">
+              <div className="flex items-center justify-between mb-1">
+                <div className="text-amber-200 text-sm font-bold">Daily Quests</div>
+                {quests[questCycleIndex] && (
+                  <div className="text-amber-300 text-xs font-black flex items-center gap-1">
+                    +{quests[questCycleIndex].reward_amount}
+                    <RewardIcon type={quests[questCycleIndex].reward_type} size={14} />
+                  </div>
+                )}
+              </div>
+              {quests[questCycleIndex] ? (
+                <>
+                  <div className="text-amber-400 text-xs mb-1">{quests[questCycleIndex].title}</div>
+                  <div className="w-full bg-amber-950 rounded-full h-2 overflow-hidden">
+                    <div className="h-full rounded-full transition-all" style={{
+                      width: `${Math.min(100, (quests[questCycleIndex].progress / quests[questCycleIndex].requirement_amount) * 100)}%`,
+                      background: 'linear-gradient(90deg,#fbbf24,#f59e0b)' }} />
+                  </div>
+                  <div className="text-amber-500 text-[10px] mt-1">
+                    {Math.min(quests[questCycleIndex].progress, quests[questCycleIndex].requirement_amount)}/{quests[questCycleIndex].requirement_amount}
+                  </div>
+                </>
+              ) : (
+                <div className="text-amber-400 text-xs">{quests.length === 0 ? 'Tap to view quests' : 'Loading…'}</div>
+              )}
+            </div>
           </div>
-          <div className="text-amber-300 text-xs">+500<img src={ASSETS.icons.feathers} alt="feathers" style={{width:14,height:14,display:"inline",verticalAlign:"middle"}} /></div>
-        </div>
+          {quests.length > 1 && (
+            <div className="flex justify-center gap-1.5">
+              {quests.map((q, i) => (
+                <div key={q.id} className="w-1.5 h-1.5 rounded-full"
+                  style={{ background: i === questCycleIndex ? '#fbbf24' : 'rgba(251,191,36,0.35)' }} />
+              ))}
+            </div>
+          )}
+        </button>
 
         {/* Energy bar — tappable */}
         <button onClick={() => setShowEnergyModal(true)}
