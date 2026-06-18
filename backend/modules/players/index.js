@@ -21,8 +21,6 @@ async function getOrCreatePlayer(telegramUser) {
         energy: 400,
         max_energy: 400,
         feathers: 500,
-        seeds: 0,
-        food: 0,
         glory: 0,
         hammers: 2,
         skill_points: 0,
