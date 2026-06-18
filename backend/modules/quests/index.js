@@ -135,7 +135,7 @@ async function claimQuestReward(telegramId, questId) {
 
   const { data: player } = await supabase
     .from('players')
-    .select('feathers, seeds, food')
+    .select('feathers')
     .eq('telegram_id', telegramId)
     .single();
 
