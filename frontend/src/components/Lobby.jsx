@@ -569,19 +569,41 @@ export default function Lobby({ player, onRefresh }) {
           />
         </div>
 
-        {/* Daily Quests — shortcut into the full quest list (tap to open, swipe to preview) */}
+        {/* Daily Quests — premium card */}
+        <style>{`
+          @keyframes questShine{0%{left:-60%}60%{left:160%}100%{left:160%}}
+          @keyframes battleGlow{0%,100%{box-shadow:0 4px 0 #7a3800,0 0 18px rgba(251,191,36,0.35),0 8px 24px rgba(0,0,0,0.4)}50%{box-shadow:0 4px 0 #7a3800,0 0 38px rgba(251,191,36,0.85),0 0 60px rgba(251,191,36,0.3),0 8px 24px rgba(0,0,0,0.4)}}
+          @keyframes epicGlow{0%,100%{box-shadow:0 4px 0 #4a00a0,0 0 18px rgba(167,139,250,0.4)}50%{box-shadow:0 4px 0 #4a00a0,0 0 40px rgba(167,139,250,0.9),0 0 60px rgba(167,139,250,0.35)}}
+          @keyframes battlePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.018)}}
+          @keyframes swordSpin{0%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}100%{transform:rotate(-8deg)}}
+          @keyframes battleShimmer{0%{left:-80%}60%{left:160%}100%{left:160%}}
+        `}</style>
         <button
           onClick={handleQuestClick}
           onTouchStart={handleQuestTouchStart}
           onTouchMove={handleQuestTouchMove}
-          className="w-full bg-amber-900 rounded-xl px-3 py-2 flex flex-col gap-1 active:scale-95 transition-transform select-none">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">📋</span>
-            <div className="flex-1 text-left min-w-0">
-              <div className="flex items-center justify-between gap-2">
-                <div className="text-amber-200 text-xs font-bold truncate">Daily Quests</div>
+          style={{
+            width:'100%', borderRadius:16,
+            background:'linear-gradient(145deg,#4a1f00,#2e1000)',
+            border:'1.5px solid #8a4a10',
+            boxShadow:'0 4px 14px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,200,80,0.12)',
+            padding:'10px 12px', position:'relative', overflow:'hidden',
+            display:'flex', flexDirection:'column', gap:4,
+          }}
+          className="active:scale-95 transition-transform select-none">
+          {/* Shine sweep */}
+          <div style={{
+            position:'absolute',top:0,left:'-60%',width:'35%',height:'100%',
+            background:'linear-gradient(90deg,transparent,rgba(255,210,80,0.15),transparent)',
+            animation:'questShine 5s ease-in-out infinite',pointerEvents:'none',
+          }}/>
+          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+            <span style={{ fontSize:22 }}>📋</span>
+            <div style={{ flex:1, minWidth:0, textAlign:'left' }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8 }}>
+                <div style={{ color:'#f5c842', fontSize:12, fontWeight:800, letterSpacing:0.3 }}>Daily Quests</div>
                 {quests[questCycleIndex] && (
-                  <div className="text-amber-300 text-[11px] font-black flex items-center gap-0.5 flex-shrink-0">
+                  <div style={{ color:'#86efac', fontSize:11, fontWeight:800, display:'flex', alignItems:'center', gap:3, flexShrink:0 }}>
                     +{quests[questCycleIndex].reward_amount}
                     <RewardIcon type={quests[questCycleIndex].reward_type} size={12} />
                   </div>
@@ -589,67 +611,127 @@ export default function Lobby({ player, onRefresh }) {
               </div>
               {quests[questCycleIndex] ? (
                 <>
-                  <div className="text-amber-400 text-[11px] truncate">{quests[questCycleIndex].title}</div>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <div className="flex-1 bg-amber-950 rounded-full h-1.5 overflow-hidden">
-                      <div className="h-full rounded-full transition-all" style={{
-                        width: `${Math.min(100, (quests[questCycleIndex].progress / quests[questCycleIndex].requirement_amount) * 100)}%`,
-                        background: 'linear-gradient(90deg,#fbbf24,#f59e0b)' }} />
+                  <div style={{ color:'rgba(255,200,100,0.7)', fontSize:11, marginTop:1 }}>{quests[questCycleIndex].title}</div>
+                  <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:4 }}>
+                    <div style={{ flex:1, background:'rgba(0,0,0,0.4)', borderRadius:6, height:6, overflow:'hidden' }}>
+                      <div style={{
+                        height:'100%', borderRadius:6, transition:'width 0.4s ease',
+                        width:`${Math.min(100,(quests[questCycleIndex].progress/quests[questCycleIndex].requirement_amount)*100)}%`,
+                        background:'linear-gradient(90deg,#f5c842,#fb923c)',
+                        boxShadow:'0 0 6px rgba(245,200,66,0.6)',
+                      }}/>
                     </div>
-                    <span className="text-amber-500 text-[10px] flex-shrink-0">
-                      {Math.min(quests[questCycleIndex].progress, quests[questCycleIndex].requirement_amount)}/{quests[questCycleIndex].requirement_amount}
+                    <span style={{ color:'rgba(255,200,80,0.6)', fontSize:10, flexShrink:0 }}>
+                      {Math.min(quests[questCycleIndex].progress,quests[questCycleIndex].requirement_amount)}/{quests[questCycleIndex].requirement_amount}
                     </span>
                   </div>
                 </>
               ) : (
-                <div className="text-amber-400 text-[11px]">{quests.length === 0 ? 'Tap to view quests' : 'Loading…'}</div>
+                <div style={{ color:'rgba(255,180,60,0.6)', fontSize:11, marginTop:1 }}>{quests.length===0?'Tap to view quests':'Loading…'}</div>
               )}
             </div>
           </div>
           {quests.length > 1 && (
-            <div className="flex justify-center gap-1">
-              {quests.map((q, i) => (
-                <div key={q.id} className="w-1 h-1 rounded-full"
-                  style={{ background: i === questCycleIndex ? '#fbbf24' : 'rgba(251,191,36,0.35)' }} />
+            <div style={{ display:'flex', justifyContent:'center', gap:4 }}>
+              {quests.map((q,i) => (
+                <div key={q.id} style={{
+                  width:5,height:5,borderRadius:'50%',
+                  background: i===questCycleIndex ? '#f5c842' : 'rgba(245,200,66,0.25)',
+                  transition:'background 0.3s',
+                }}/>
               ))}
             </div>
           )}
         </button>
 
 
-        {/* Mode / Fight / Auto — merged into a single control */}
-        <div className={`rounded-2xl overflow-hidden flex items-stretch transition-colors ${
-          battling
-            ? 'bg-gray-700'
-            : mode === 'epic'
-              ? 'bg-purple-700 border border-purple-400'
-              : hasEnergy ? 'bg-amber-500' : 'bg-red-800'
-        }`}>
+        {/* ── Battle Control — animated premium ── */}
+        <div style={{
+          borderRadius:20, overflow:'hidden', display:'flex', alignItems:'stretch',
+          animation: battling ? 'none'
+            : mode==='epic' ? 'epicGlow 2.2s ease-in-out infinite, battlePulse 2.2s ease-in-out infinite'
+            : hasEnergy    ? 'battleGlow 2s ease-in-out infinite, battlePulse 2s ease-in-out infinite'
+            : 'none',
+          background: battling ? '#374151'
+            : mode==='epic' ? 'linear-gradient(180deg,#7c3aed 0%,#5b21b6 100%)'
+            : hasEnergy    ? 'linear-gradient(180deg,#f5a020 0%,#c96000 100%)'
+            : 'linear-gradient(180deg,#991b1b 0%,#7f1d1d 100%)',
+          border: battling ? '1.5px solid #4b5563'
+            : mode==='epic' ? '1.5px solid #a78bfa'
+            : hasEnergy    ? '1.5px solid #f5c842'
+            : '1.5px solid #ef4444',
+          position:'relative',
+        }}>
+
+          {/* MODE button */}
           <button
-            onClick={() => { const n = mode==='epic'?'normal':'epic'; setMode(n); if(n==='epic') setShowEpicInfo(true); }}
+            onClick={() => { const n=mode==='epic'?'normal':'epic'; setMode(n); if(n==='epic') setShowEpicInfo(true); }}
             disabled={battling}
-            className="px-4 flex items-center justify-center text-sm font-bold flex-shrink-0 active:scale-95 transition-transform"
-            style={{ color: battling ? '#9ca3af' : mode==='epic' ? '#e9d5ff' : (hasEnergy ? '#78350f' : '#ffffff') }}>
-            MODE 🔄
+            style={{
+              padding:'0 18px', display:'flex', alignItems:'center', justifyContent:'center',
+              fontWeight:800, fontSize:12, flexShrink:0,
+              color: battling ? '#6b7280' : mode==='epic' ? '#e9d5ff' : hasEnergy ? '#3d1a00' : '#fff',
+              borderRight: `1px solid ${battling?'#4b5563':mode==='epic'?'rgba(167,139,250,0.3)':'rgba(0,0,0,0.25)'}`,
+              background:'transparent', letterSpacing:0.5,
+            }}
+            className="active:scale-95 transition-transform">
+            <span style={{ animation: battling ? 'none' : 'swordSpin 2s ease-in-out infinite', display:'inline-block' }}>🔄</span>
+            <span style={{ marginLeft:4 }}>MODE</span>
           </button>
 
+          {/* BATTLE / EPIC center button */}
           <button onClick={handleBattle} disabled={battling}
-            className="flex-1 flex flex-col items-center justify-center py-3 gap-0.5 active:scale-95 transition-transform disabled:cursor-not-allowed">
+            style={{
+              flex:1, display:'flex', flexDirection:'column', alignItems:'center',
+              justifyContent:'center', padding:'14px 8px', gap:2,
+              background:'transparent', position:'relative', overflow:'hidden',
+              cursor: battling ? 'not-allowed' : 'pointer',
+            }}
+            className="active:scale-95 transition-transform">
+
+            {/* Shimmer sweep over BATTLE */}
             {!battling && (
-              <span className="text-xs font-bold flex items-center gap-1"
-                style={{ color: mode==='epic' ? '#fca5a5' : (hasEnergy ? '#78350f' : '#fecaca') }}>
-                {energyCost} <EI size={12} />
+              <div style={{
+                position:'absolute',top:0,left:'-80%',width:'45%',height:'100%',
+                background:'linear-gradient(90deg,transparent,rgba(255,255,255,0.22),transparent)',
+                animation:'battleShimmer 2.8s ease-in-out infinite',
+                pointerEvents:'none',
+              }}/>
+            )}
+
+            {!battling && (
+              <span style={{
+                fontSize:11, fontWeight:800, display:'flex', alignItems:'center', gap:4,
+                color: mode==='epic' ? '#fca5a5' : hasEnergy ? '#3d1a00' : '#fecaca',
+                opacity:0.9,
+              }}>
+                {energyCost} <EI size={13} />
               </span>
             )}
-            <span className={`font-black text-xl ${battling ? 'text-gray-400' : mode==='epic' || !hasEnergy ? 'text-white' : 'text-amber-900'}`}>
-              {battling ? '⚔️ Finding opponent…' : mode === 'epic' ? 'EPIC' : 'BATTLE'}
+            <span style={{
+              fontWeight:900, fontSize:24, letterSpacing:1.5,
+              color: battling ? '#9ca3af' : '#fff',
+              textShadow: battling ? 'none'
+                : mode==='epic' ? '0 0 20px rgba(196,181,253,0.8), 0 2px 4px rgba(0,0,0,0.5)'
+                : hasEnergy    ? '0 0 20px rgba(255,200,60,0.9), 0 2px 4px rgba(0,0,0,0.5)'
+                : '0 2px 4px rgba(0,0,0,0.5)',
+            }}>
+              {battling ? '⚔️ Searching…' : mode==='epic' ? '✦ EPIC ✦' : '⚔ BATTLE'}
             </span>
           </button>
 
+          {/* AUTO button */}
           <button onClick={() => setShowAutoBattle(true)} disabled={battling}
-            className="px-4 flex items-center justify-center text-sm font-bold flex-shrink-0 active:scale-95 transition-transform"
-            style={{ color: battling ? '#9ca3af' : mode==='epic' ? '#e9d5ff' : (hasEnergy ? '#78350f' : '#ffffff') }}>
-            AUTO ⚙️
+            style={{
+              padding:'0 18px', display:'flex', alignItems:'center', justifyContent:'center',
+              fontWeight:800, fontSize:12, flexShrink:0,
+              color: battling ? '#6b7280' : mode==='epic' ? '#e9d5ff' : hasEnergy ? '#3d1a00' : '#fff',
+              borderLeft:`1px solid ${battling?'#4b5563':mode==='epic'?'rgba(167,139,250,0.3)':'rgba(0,0,0,0.25)'}`,
+              background:'transparent', letterSpacing:0.5,
+            }}
+            className="active:scale-95 transition-transform">
+            <span>AUTO</span>
+            <span style={{ marginLeft:4, fontSize:14 }}>⚙️</span>
           </button>
         </div>
 
