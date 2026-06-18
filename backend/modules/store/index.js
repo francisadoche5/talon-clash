@@ -72,7 +72,7 @@ async function buyStoreItem(telegramId, itemId) {
 
   const { data: player } = await supabase
     .from('players')
-    .select('feathers, seeds, hammers, energy, max_energy')
+    .select('feathers, hammers, energy, max_energy')
     .eq('telegram_id', telegramId)
     .single();
 
