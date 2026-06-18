@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { fight, getPublicConfig, createInvoice, getQuests, claimQuest, devBoost } from '../api';
+import { fight, getPublicConfig, getQuests, claimQuest, devBoost } from '../api';
+import { payWithStars } from '../starsPayment';
 import BattleArena from './BattleArena';
 import { getBirdUrl } from '../birdImages';
 import axios from 'axios';
@@ -72,21 +73,13 @@ function EnergyModal({ player, onClose, onPurchased }) {
     }
   }
 
-  async function handleStarRefill(optionId) {
-    try {
-      const res  = await createInvoice(player.telegram_id, optionId);
-      const link = res.data.link;
-      if (window.Telegram?.WebApp?.openInvoice) {
-        window.Telegram.WebApp.openInvoice(link, (status) => {
-          if (status === 'paid') { onPurchased(); onClose(); }
-        });
-      } else {
-        window.open(link, '_blank');
-        onClose();
-      }
-    } catch {
-      alert('Could not process payment. Please try again.');
-    }
+  function handleStarRefill(optionId) {
+    payWithStars({
+      player,
+      product: optionId,
+      onSuccess: () => { onPurchased(); onClose(); },
+      onError: () => alert('Could not process payment. Please try again.'),
+    });
   }
 
   return (
@@ -481,21 +474,14 @@ export default function Lobby({ player, onRefresh }) {
     setBattleResult(null);
   }
 
-  async function handleAutoPurchase(days) {
-    try {
-      const product = days === 3 ? 'auto_battle_3d' : 'auto_battle_14d';
-      const res  = await createInvoice(player.telegram_id, product);
-      const link = res.data.link;
-      if (window.Telegram?.WebApp?.openInvoice) {
-        window.Telegram.WebApp.openInvoice(link, (status) => {
-          if (status === 'paid') { setShowAutoBattle(false); onRefresh(); }
-        });
-      } else {
-        window.open(link, '_blank');
-      }
-    } catch {
-      alert('Could not create invoice. Please try again.');
-    }
+  function handleAutoPurchase(days) {
+    const product = days === 3 ? 'auto_battle_3d' : 'auto_battle_14d';
+    payWithStars({
+      player,
+      product,
+      onSuccess: () => { setShowAutoBattle(false); onRefresh(); },
+      onError: () => alert('Could not process payment. Please try again.'),
+    });
   }
 
   return (
