@@ -155,6 +155,14 @@ bot.on('message', async (ctx) => {
       await ctx.reply(`✅ +${amt} 💥 Epic Boosters added!`);
     }
 
+    // Star Credits top-up (virtual in-game currency wallet)
+    else if (productKey.startsWith('star_credits_')) {
+      const amt = parseInt(productKey.replace('star_credits_', ''));
+      const { data: p } = await supabase.from('players').select('stars').eq('telegram_id', telegramId).single();
+      await supabase.from('players').update({ stars: (p?.stars || 0) + amt }).eq('telegram_id', telegramId);
+      await ctx.reply(`✅ +${amt.toLocaleString()} ⭐ Star Credits added to your wallet!`);
+    }
+
     // Hammer packs
     else if (productKey.startsWith('hammers_x')) {
       const amt = parseInt(productKey.replace('hammers_x', ''));
