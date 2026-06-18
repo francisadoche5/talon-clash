@@ -176,7 +176,7 @@ export default function App() {
             <span className="text-yellow-300">{Math.floor(player?.energy||0)}/{player?.max_energy}</span>
           </span>
           <span className="flex items-center gap-1">
-            <img src={ASSETS.icons.points} alt="points" style={{width:16,height:16,display:"inline",verticalAlign:"middle"}} />
+            <img src={ASSETS.icons.feathers} alt="feathers" style={{width:16,height:16,display:"inline",verticalAlign:"middle"}} />
             <span className="text-green-300">{player?.feathers?.toLocaleString()}</span>
           </span>
           <span className="flex items-center gap-1">
