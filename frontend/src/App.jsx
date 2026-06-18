@@ -157,38 +157,90 @@ export default function App() {
   return (
     <div className="flex flex-col h-screen bg-amber-950 max-w-md mx-auto relative overflow-hidden">
 
-      {/* Header */}
-      <div className="bg-amber-900 px-4 py-2 flex items-center justify-between border-b border-amber-700">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-amber-600 flex items-center justify-center text-sm font-bold text-white">
+      {/* Premium Header */}
+      <div style={{
+        background: 'linear-gradient(180deg,#5c2e00 0%,#3d1a00 100%)',
+        borderBottom: '1.5px solid #b8742a',
+        boxShadow: '0 3px 16px rgba(0,0,0,0.55)',
+        padding: '10px 14px 8px',
+      }} className="flex items-center justify-between">
+
+        {/* Left — level badge + name + XP */}
+        <div className="flex items-center gap-2.5">
+          {/* Level badge */}
+          <div style={{
+            width: 38, height: 38, borderRadius: '50%',
+            background: 'linear-gradient(145deg,#f5c842,#b87a10)',
+            boxShadow: '0 2px 0 #6b3f00, 0 4px 10px rgba(0,0,0,0.45)',
+            border: '2px solid #f0d060',
+            display:'flex', alignItems:'center', justifyContent:'center',
+            fontWeight: 900, fontSize: 15, color: '#3d1a00',
+            flexShrink: 0,
+          }}>
             {player?.level}
           </div>
+
+          {/* Name + XP bar */}
           <div>
-            <div className="text-amber-100 text-sm font-bold">
-              {player?.display_name?.substring(0, 10) || 'Player'}
+            <div style={{ color: '#fff', fontWeight: 800, fontSize: 13, lineHeight: 1.2,
+              textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>
+              {player?.display_name?.substring(0, 12) || 'Player'}
             </div>
-            <div className="text-amber-400 text-xs">{player?.xp}/{player?.xp_needed} XP</div>
+            <div style={{ color: '#f5c842', fontSize: 10, fontWeight: 700 }}>
+              {player?.xp?.toLocaleString()}/{player?.xp_needed?.toLocaleString()} XP
+            </div>
           </div>
         </div>
-        <div className="flex items-center gap-3 text-xs">
-          <span className="flex items-center gap-1">
-            <span><img src={ASSETS.icons.energy} alt="energy" style={{width:18,height:18,display:'inline',verticalAlign:'middle'}} /></span>
-            <span className="text-yellow-300">{Math.floor(player?.energy||0)}/{player?.max_energy}</span>
-          </span>
-          <span className="flex items-center gap-1">
-            <img src={ASSETS.icons.feathers} alt="feathers" style={{width:16,height:16,display:"inline",verticalAlign:"middle"}} />
-            <span className="text-green-300">{player?.feathers?.toLocaleString()}</span>
-          </span>
-          <span className="flex items-center gap-1">
-            <span>🌾</span>
-            <span className="text-orange-300">{player?.food?.toLocaleString()}</span>
-          </span>
+
+        {/* Right — resources */}
+        <div className="flex items-center gap-2.5">
+          {/* Energy */}
+          <div style={{ display:'flex', alignItems:'center', gap:3,
+            background:'rgba(0,0,0,0.3)', borderRadius:10, padding:'2px 7px',
+            border:'1px solid rgba(255,220,80,0.25)' }}>
+            <img src={ASSETS.icons.energy} alt="energy" style={{width:15,height:15,objectFit:'contain'}} />
+            <span style={{ color:'#ffe566', fontWeight:800, fontSize:11 }}>
+              {Math.floor(player?.energy||0)}/{player?.max_energy}
+            </span>
+          </div>
+          {/* Feathers */}
+          <div style={{ display:'flex', alignItems:'center', gap:3 }}>
+            <img src={ASSETS.icons.feathers} alt="feathers" style={{width:15,height:15,objectFit:'contain'}} />
+            <span style={{ color:'#86efac', fontWeight:800, fontSize:11 }}>
+              {player?.feathers?.toLocaleString()}
+            </span>
+          </div>
+          {/* Food */}
+          <div style={{ display:'flex', alignItems:'center', gap:3 }}>
+            <span style={{ fontSize:14 }}>🌾</span>
+            <span style={{ color:'#fdba74', fontWeight:800, fontSize:11 }}>
+              {player?.food?.toLocaleString()}
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Evolution banner */}
-      <div className="bg-amber-800 py-1 px-4 text-center text-xs text-amber-300">
-        {player?.evolution_name} • Power: {player?.power?.toLocaleString()}
+      {/* Premium Evolution Banner */}
+      <div style={{
+        background: 'linear-gradient(90deg,#3d1a00 0%,#6b3300 40%,#6b3300 60%,#3d1a00 100%)',
+        borderBottom: '1px solid #a06020',
+        padding: '5px 16px',
+        textAlign: 'center',
+        position: 'relative',
+        overflow: 'hidden',
+      }}>
+        {/* Shine sweep */}
+        <div style={{
+          position:'absolute', top:0, left:'-60%', width:'40%', height:'100%',
+          background:'linear-gradient(90deg,transparent,rgba(255,220,80,0.18),transparent)',
+          animation: 'bannerShine 4s ease-in-out infinite',
+          pointerEvents:'none',
+        }} />
+        <style>{`@keyframes bannerShine{0%{left:-60%}60%{left:160%}100%{left:160%}}`}</style>
+        <span style={{ color:'#f5c842', fontWeight:800, fontSize:12,
+          textShadow:'0 0 10px rgba(245,200,66,0.5)', letterSpacing: 0.5 }}>
+          {player?.evolution_name} • Power: {player?.power?.toLocaleString()}
+        </span>
       </div>
 
       {/* Main content */}
@@ -201,17 +253,35 @@ export default function App() {
         {activeTab === 'earn'      && <Earn      player={player} onRefresh={refreshPlayer} />}
       </div>
 
-      {/* Bottom nav */}
-      <div className="bg-amber-900 border-t border-amber-700 flex">
-        {TABS.map(tab => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-            className={`flex-1 py-2 flex flex-col items-center gap-0.5 transition-all ${
-              activeTab === tab.id ? 'bg-amber-700 text-white' : 'text-amber-400'
-            }`}>
-            <span className="text-lg">{tab.icon}</span>
-            <span className="text-xs">{tab.label}</span>
-          </button>
-        ))}
+      {/* Premium Bottom Nav */}
+      <div style={{
+        background: 'linear-gradient(180deg,#3d1a00 0%,#2a0f00 100%)',
+        borderTop: '1.5px solid #8a4a10',
+        boxShadow: '0 -4px 20px rgba(0,0,0,0.5)',
+        display: 'flex',
+      }}>
+        {TABS.map(tab => {
+          const active = activeTab === tab.id;
+          return (
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+              style={{
+                flex: 1, paddingTop: 8, paddingBottom: 8,
+                display:'flex', flexDirection:'column', alignItems:'center', gap: 2,
+                background: active
+                  ? 'linear-gradient(180deg,#6b3300 0%,#4a1f00 100%)'
+                  : 'transparent',
+                borderTop: active ? '2px solid #f5c842' : '2px solid transparent',
+                transition: 'all 0.15s',
+              }}>
+              <span style={{ fontSize: 20 }}>{tab.icon}</span>
+              <span style={{
+                fontSize: 10, fontWeight: 800,
+                color: active ? '#f5c842' : '#9a6030',
+                letterSpacing: 0.3,
+              }}>{tab.label}</span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
