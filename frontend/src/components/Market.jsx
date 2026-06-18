@@ -2,8 +2,24 @@ import { useState } from 'react';
 import { createInvoice } from '../api';
 import ASSETS from '../config/assets';
 
-const FI = ({ size = 16 }) => (
-  <img src={ASSETS.icons.feathers} alt="feathers"
+const PI = ({ size = 16 }) => (
+  <img src={ASSETS.icons.points} alt="points"
+    style={{ width: size, height: size, display: 'inline', verticalAlign: 'middle', objectFit: 'contain' }} />
+);
+const EnergyIcon = ({ size = 20 }) => (
+  <img src={ASSETS.icons.energy} alt="energy"
+    style={{ width: size, height: size, display: 'inline', verticalAlign: 'middle', objectFit: 'contain' }} />
+);
+const HammerIcon = ({ size = 52 }) => (
+  <img src={ASSETS.icons.hammer} alt="hammer"
+    style={{ width: size, height: size, display: 'inline', verticalAlign: 'middle', objectFit: 'contain' }} />
+);
+const BoosterIcon = ({ size = 52 }) => (
+  <img src={ASSETS.icons.booster} alt="booster"
+    style={{ width: size, height: size, display: 'inline', verticalAlign: 'middle', objectFit: 'contain' }} />
+);
+const EpicBoosterIcon = ({ size = 52 }) => (
+  <img src={ASSETS.icons.epicBooster} alt="epic booster"
     style={{ width: size, height: size, display: 'inline', verticalAlign: 'middle', objectFit: 'contain' }} />
 );
 
@@ -11,10 +27,10 @@ const CATEGORIES = ['special_offers', 'chests', 'feathers', 'boosters', 'epic_bo
 const CATEGORY_LABELS = {
   special_offers: '🔥 Special',
   chests:         '📦 Chests',
-  feathers:       'Feathers',
-  boosters:       '⚗️ Boosters',
-  epic_boosters:  '💥 Epic',
-  hammers:        '🔨 Hammers',
+  feathers:       'Points',
+  boosters:       'Boosters',
+  epic_boosters:  'Epic',
+  hammers:        'Hammers',
 };
 
 const CHEST_DATA = [
@@ -52,8 +68,8 @@ const HAMMER_PACKS = [
 ];
 
 const SPECIAL_OFFERS = [
-  { id: 'so1', product: 'special_overcharge', name: 'Overcharge Pack', stock: '100/100', qty: 40,  emoji: '💥', price: 5900, badge: 'HOT DEAL', desc: 'Epic Booster x40' },
-  { id: 'so2', product: 'special_electra',    name: 'Electra Pack',    stock: '100/100', qty: 60,  emoji: '⚡', price: 3500, badge: 'HOT DEAL', desc: 'Booster x60' },
+  { id: 'so1', product: 'special_overcharge', name: 'Overcharge Pack', stock: '100/100', qty: 40,  icon: 'epicBooster', price: 5900, badge: 'HOT DEAL', desc: 'Epic Booster x40' },
+  { id: 'so2', product: 'special_electra',    name: 'Electra Pack',    stock: '100/100', qty: 60,  icon: 'energy',      price: 3500, badge: 'HOT DEAL', desc: 'Booster x60' },
   { id: 'so3', product: 'special_tesla',      name: 'Energy Tesla',    stock: '100/100', multi: true, price: 2000, badge: 'HOT DEAL', desc: 'Feathers x5,000 + Booster x30' },
 ];
 
@@ -112,7 +128,7 @@ export default function Market({ player, onRefresh }) {
         </div>
         <div className="flex justify-center gap-3 pb-2 px-4">
           <div className="bg-amber-900 bg-opacity-70 rounded-full px-3 py-1 flex items-center gap-1.5">
-            <FI size={15} />
+            <PI size={15} />
             <span className="text-amber-200 text-xs font-bold">{(player?.feathers || 0).toLocaleString()}</span>
           </div>
           <div className="bg-amber-900 bg-opacity-70 rounded-full px-3 py-1 flex items-center gap-1.5">
@@ -120,7 +136,7 @@ export default function Market({ player, onRefresh }) {
             <span className="text-amber-200 text-xs font-bold">{(player?.seeds || 0).toLocaleString()}</span>
           </div>
           <div className="bg-amber-900 bg-opacity-70 rounded-full px-3 py-1 flex items-center gap-1.5">
-            <span className="text-sm">🔨</span>
+            <HammerIcon size={18} />
             <span className="text-amber-200 text-xs font-bold">{player?.hammers || 0}</span>
           </div>
         </div>
@@ -135,7 +151,7 @@ export default function Market({ player, onRefresh }) {
               activeCategory === cat ? 'bg-amber-500 text-amber-950' : 'bg-amber-800 text-amber-300'
             }`}>
             {cat === 'feathers'
-              ? <><FI size={13} /> Feathers</>
+              ? <><PI size={13} /> Points</>
               : CATEGORY_LABELS[cat]}
           </button>
         ))}
@@ -175,13 +191,14 @@ export default function Market({ player, onRefresh }) {
                     {offer.name} <span className="font-normal text-amber-700 text-sm">({offer.stock})</span>
                   </div>
                   <div className="flex items-end gap-3 mb-4">
-                    <div className="w-28 h-28 rounded-2xl bg-amber-200 border-2 border-amber-400 flex items-center justify-center text-6xl shadow-inner relative">
-                      {offer.emoji}
+                    <div className="w-28 h-28 rounded-2xl bg-amber-200 border-2 border-amber-400 flex items-center justify-center shadow-inner relative p-2">
+                      <img src={ASSETS.icons[offer.icon]} alt={offer.name}
+                        style={{ width: 80, height: 80, objectFit: 'contain' }} />
                       <div className="absolute -bottom-2 -right-2 bg-amber-800 text-white text-xs font-black rounded-full px-2 py-0.5">x{offer.qty}</div>
                     </div>
                     {offer.multi && (
-                      <div className="w-16 h-16 rounded-2xl bg-amber-200 border-2 border-amber-400 flex items-center justify-center text-3xl shadow-inner relative">
-                        ⚗️
+                      <div className="w-16 h-16 rounded-2xl bg-amber-200 border-2 border-amber-400 flex items-center justify-center shadow-inner relative p-1">
+                        <BoosterIcon size={44} />
                         <div className="absolute -bottom-2 -right-2 bg-amber-800 text-white text-xs font-black rounded-full px-2 py-0.5">x30</div>
                       </div>
                     )}
@@ -229,7 +246,7 @@ export default function Market({ player, onRefresh }) {
         {activeCategory === 'feathers' && (
           <div className="p-4">
             <div className="text-center text-amber-300 font-black text-lg tracking-wide mb-4 flex items-center justify-center gap-2">
-              <FI size={20} /> Feathers
+              <PI size={20} /> Points
             </div>
             <div className="grid grid-cols-2 gap-3">
               {FEATHER_PACKS.map(pack => (
@@ -243,10 +260,10 @@ export default function Market({ player, onRefresh }) {
                   )}
                   <div className="p-3 flex flex-col items-center">
                     <div className="text-amber-900 font-black text-xs mb-2">
-                      Feathers <span className="text-amber-600">({pack.stock})</span>
+                      Points <span className="text-amber-600">({pack.stock})</span>
                     </div>
                     <div className="w-28 h-28 rounded-xl bg-amber-200 border-2 border-amber-400 flex items-center justify-center shadow-inner mb-2 relative p-1">
-                      <FI size={68} />
+                      <PI size={68} />
                       <div className="absolute -bottom-2 -right-2 bg-amber-800 text-white text-xs font-black rounded-full px-2 py-0.5">
                         x{pack.qty.toLocaleString()}
                       </div>
@@ -279,7 +296,7 @@ export default function Market({ player, onRefresh }) {
             {BOOSTER_PACKS.map(pack => (
               <div key={pack.id} className="rounded-2xl flex items-center gap-4 px-4 py-3"
                 style={{ background: 'linear-gradient(135deg,#f5e6a3 0%,#e8d070 50%,#f5e6a3 100%)', border: '2px solid #c8a030', boxShadow: '0 2px 0 #7c6010, inset 0 1px 0 rgba(255,255,255,0.5)' }}>
-                <div className="relative w-16 h-16 flex-shrink-0 flex items-center justify-center text-4xl">⚗️</div>
+                <div className="relative w-16 h-16 flex-shrink-0 flex items-center justify-center"><BoosterIcon size={52} /></div>
                 <div className="flex-1 flex flex-col gap-2">
                   <div className="flex justify-end">
                     <div className="bg-amber-800 text-white text-sm font-black px-4 py-1 rounded-full flex items-center gap-1">
@@ -300,7 +317,7 @@ export default function Market({ player, onRefresh }) {
             {EPIC_BOOSTER_PACKS.map(pack => (
               <div key={pack.id} className="rounded-2xl flex items-center gap-4 px-4 py-3"
                 style={{ background: 'linear-gradient(135deg,#f5e6a3 0%,#e8d070 50%,#f5e6a3 100%)', border: '2px solid #c8a030', boxShadow: '0 2px 0 #7c6010, inset 0 1px 0 rgba(255,255,255,0.5)' }}>
-                <div className="relative w-16 h-16 flex-shrink-0 flex items-center justify-center text-4xl">💥</div>
+                <div className="relative w-16 h-16 flex-shrink-0 flex items-center justify-center"><EpicBoosterIcon size={52} /></div>
                 <div className="flex-1 flex flex-col gap-2">
                   <div className="flex justify-end">
                     <div className="bg-amber-800 text-white text-sm font-black px-4 py-1 rounded-full flex items-center gap-1">
@@ -321,7 +338,7 @@ export default function Market({ player, onRefresh }) {
             {HAMMER_PACKS.map(pack => (
               <div key={pack.id} className="rounded-2xl flex items-center gap-4 px-4 py-3"
                 style={{ background: 'linear-gradient(135deg,#f5e6a3 0%,#e8d070 50%,#f5e6a3 100%)', border: '2px solid #c8a030', boxShadow: '0 2px 0 #7c6010, inset 0 1px 0 rgba(255,255,255,0.5)' }}>
-                <div className="relative w-16 h-16 flex-shrink-0 flex items-center justify-center text-4xl">🔨</div>
+                <div className="relative w-16 h-16 flex-shrink-0 flex items-center justify-center"><HammerIcon size={52} /></div>
                 <div className="flex-1 flex flex-col gap-2">
                   <div className="flex justify-end">
                     <div className="bg-amber-800 text-white text-sm font-black px-4 py-1 rounded-full flex items-center gap-1">
