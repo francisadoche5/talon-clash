@@ -270,6 +270,87 @@ function getLobbyBackground() {
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
+// ── Characteristics Modal ──────────────────────────────────────────────────────
+function CharacteristicsModal({ player, onClose }) {
+  const lvl  = player?.level || 1;
+  const tier = player?.evolution_tier || 1;
+  const atk  = 10 + lvl * 5;
+
+  const stats = [
+    { icon: '👊', label: 'Power',       value: (player?.power || 0).toLocaleString(),       wide: true },
+    { icon: '❤️', label: 'HP',          value: (100 + lvl * 50).toLocaleString() },
+    { icon: '🛡️', label: 'Defence',     value: (5 + lvl * 2).toLocaleString() },
+    { icon: '⚔️', label: 'Attack Min',  value: Math.floor(atk * 0.7).toLocaleString() },
+    { icon: '🗡️', label: 'Attack Max',  value: atk.toLocaleString() },
+    { icon: '💨', label: 'Dodge',       value: `${Math.min((lvl * 0.5).toFixed(1), 30)}%` },
+    { icon: '💀', label: 'Crit',        value: `${(10 + tier * 2).toFixed(1)}%` },
+    { icon: '🔥', label: 'Crit Damage', value: `${150 + tier * 10}.0%` },
+    { icon: '⚡', label: 'Extra Attack', value: `${tier * 5}.0%` },
+    { icon: '✨', label: 'Stun',        value: `${(tier * 2).toFixed(1)}%` },
+    { icon: '🪃', label: 'Parry',       value: `${(lvl * 0.3).toFixed(1)}%` },
+    { icon: '🔰', label: 'Block',       value: `${(tier * 3).toFixed(1)}%` },
+    { icon: '🌀', label: 'Stun Resist', value: '2.0%' },
+    { icon: '🔮', label: 'Crit Resist', value: `${(tier * 3).toFixed(1)}%` },
+  ];
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center"
+      style={{ backdropFilter: 'blur(5px)', background: 'rgba(0,0,0,0.65)' }}
+      onClick={onClose}>
+      <div className="w-full max-w-sm rounded-t-[32px] overflow-hidden flex flex-col"
+        style={{ maxHeight: '85vh', background: 'linear-gradient(160deg,#fdf6e0 0%,#ede1b4 100%)',
+          boxShadow: '0 -16px 60px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.8)' }}
+        onClick={e => e.stopPropagation()}>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 pt-5 pb-3 flex-shrink-0"
+          style={{ background: 'linear-gradient(180deg,#d4a855 0%,#b8842a 100%)', borderRadius: '32px 32px 0 0' }}>
+          <div className="w-8" />
+          <h2 className="font-black text-white text-xl tracking-wide">Characteristics</h2>
+          <button onClick={onClose}
+            className="w-8 h-8 rounded-full bg-white bg-opacity-20 flex items-center justify-center text-white font-black text-lg">✕</button>
+        </div>
+
+        {/* Power hero row */}
+        <div className="flex flex-col items-center py-4 gap-0.5 flex-shrink-0"
+          style={{ background: '#f5e8c0' }}>
+          <div className="text-amber-700 font-bold text-sm">Your power</div>
+          <div className="text-amber-900 font-black text-4xl">{(player?.power || 0).toLocaleString()}</div>
+        </div>
+
+        {/* Stats grid */}
+        <div className="flex-1 overflow-y-auto px-4 pb-6 pt-3">
+          <div className="grid grid-cols-2 gap-2.5">
+            {stats.filter(s => !s.wide).map(s => (
+              <div key={s.label} className="flex items-center gap-2.5 rounded-2xl px-3 py-2.5"
+                style={{ background: '#e8d5b7', border: '1.5px solid #c4a06a' }}>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
+                  style={{ background: 'linear-gradient(145deg,#d4a855,#8a5a10)' }}>
+                  {s.icon}
+                </div>
+                <div className="min-w-0">
+                  <div className="text-amber-700 text-[10px] font-bold leading-tight">{s.label}</div>
+                  <div className="text-amber-900 font-black text-sm leading-tight">{s.value}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Continue button */}
+        <div className="px-4 pb-7 flex-shrink-0">
+          <button onClick={onClose}
+            className="w-full py-3.5 rounded-2xl font-black text-white text-base active:scale-95 transition-transform"
+            style={{ background: 'linear-gradient(180deg,#f4a024 0%,#c97010 100%)',
+              boxShadow: '0 4px 0 #7a3a00, 0 6px 16px rgba(0,0,0,0.25)' }}>
+            Continue
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main Lobby ─────────────────────────────────────────────────────────────────
 export default function Lobby({ player, onRefresh }) {
   const [lobbyBg,         setLobbyBg]         = useState(() => getLobbyBackground());
@@ -280,7 +361,8 @@ export default function Lobby({ player, onRefresh }) {
   const [showAutoBattle,  setShowAutoBattle]  = useState(false);
   const [showEnergyModal, setShowEnergyModal] = useState(false);
   const [autoPrices,      setAutoPrices]      = useState({ days3: 199, days14: 499 });
-  const [lastBattleResult, setLastBattleResult] = useState(null);
+  const [lastBattleResult,      setLastBattleResult]      = useState(null);
+  const [showCharacteristics,   setShowCharacteristics]   = useState(false);
   const [quests,          setQuests]          = useState([]);
   const [showQuestsModal, setShowQuestsModal] = useState(false);
   const [questCycleIndex, setQuestCycleIndex] = useState(0);
@@ -447,6 +529,10 @@ export default function Lobby({ player, onRefresh }) {
         <QuestsModal quests={quests} claimingId={claimingId} onClaim={handleClaimQuest} onClose={() => setShowQuestsModal(false)} />
       )}
 
+      {showCharacteristics && (
+        <CharacteristicsModal player={player} onClose={() => setShowCharacteristics(false)} />
+      )}
+
       <div
         className="relative min-h-full"
         style={{
@@ -461,21 +547,26 @@ export default function Lobby({ player, onRefresh }) {
 
         <div className="relative z-10 p-4 flex flex-col gap-4">
 
-        {/* Bird Display */}
-        <div className="rounded-2xl p-6 text-center relative overflow-hidden" style={{ minHeight: 200, background: 'rgba(0,0,0,0.25)', backdropFilter: 'blur(4px)', border: '1px solid rgba(255,255,255,0.1)' }}>
-          <div className="absolute inset-0 opacity-20" style={{ background: 'radial-gradient(circle,#4a90d9 0%,transparent 70%)' }} />
-          <div className="flex justify-center mb-2 relative z-10">
-            <img src={getBirdUrl(player?.evolution_tier || 1)} alt={player?.evolution_name || 'Bird'}
-              className="w-24 h-24 object-contain drop-shadow-2xl"
-              style={{ filter: 'drop-shadow(0 0 16px rgba(251,191,36,0.5))' }} />
-          </div>
-          <div className="text-amber-300 font-bold text-lg relative z-10">{player?.evolution_name}</div>
-          <div className="text-amber-400 text-sm relative z-10">Power: {player?.power?.toLocaleString()}</div>
-          <div className="flex justify-center gap-6 mt-3 relative z-10">
-            <div className="text-center"><div className="text-red-400 text-xs">HP</div><div className="text-white text-sm font-bold">{100 + (player?.level||1)*50}</div></div>
-            <div className="text-center"><div className="text-orange-400 text-xs">ATK</div><div className="text-white text-sm font-bold">{10 + (player?.level||1)*5}</div></div>
-            <div className="text-center"><div className="text-blue-400 text-xs">DEF</div><div className="text-white text-sm font-bold">{5 + (player?.level||1)*2}</div></div>
-          </div>
+        {/* Bird Display — floating image only, no card */}
+        <div className="flex flex-col items-center gap-3 pt-2 pb-1">
+
+          {/* Power badge — tap to open Characteristics */}
+          <button
+            onClick={() => setShowCharacteristics(true)}
+            className="flex items-center gap-2 px-4 py-1.5 rounded-full font-bold text-white active:scale-95 transition-transform"
+            style={{ background: 'rgba(0,0,0,0.45)', border: '1px solid rgba(255,255,255,0.2)', backdropFilter: 'blur(6px)', fontSize: 14 }}>
+            <span>👊</span>
+            <span>Power: {(player?.power || 0).toLocaleString()}</span>
+            <span style={{ fontSize: 11, opacity: 0.8 }}>▾</span>
+          </button>
+
+          {/* Bird image only — large, floating */}
+          <img
+            src={getBirdUrl(player?.evolution_tier || 1)}
+            alt={player?.evolution_name || 'Bird'}
+            className="object-contain drop-shadow-2xl"
+            style={{ width: 180, height: 180, filter: 'drop-shadow(0 0 28px rgba(251,191,36,0.65))' }}
+          />
         </div>
 
         {/* Daily Quests — shortcut into the full quest list (tap to open, swipe to preview) */}
