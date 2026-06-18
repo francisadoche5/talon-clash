@@ -462,7 +462,7 @@ export default function Lobby({ player, onRefresh }) {
         <div className="relative z-10 p-4 flex flex-col gap-4">
 
         {/* Bird Display */}
-        <div className="bg-gradient-to-b from-blue-900 to-blue-950 rounded-2xl p-6 text-center relative overflow-hidden" style={{ minHeight: 200 }}>
+        <div className="rounded-2xl p-6 text-center relative overflow-hidden" style={{ minHeight: 200, background: 'rgba(0,0,0,0.25)', backdropFilter: 'blur(4px)', border: '1px solid rgba(255,255,255,0.1)' }}>
           <div className="absolute inset-0 opacity-20" style={{ background: 'radial-gradient(circle,#4a90d9 0%,transparent 70%)' }} />
           <div className="flex justify-center mb-2 relative z-10">
             <img src={getBirdUrl(player?.evolution_tier || 1)} alt={player?.evolution_name || 'Bird'}
