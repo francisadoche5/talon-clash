@@ -304,6 +304,7 @@ export default function BattleArena({ player, result, onClose }) {
     { label:'EXP',      icon: ASSETS.icons.exp,      value: rewards.xp    },
     { label:'Glory',    icon: ASSETS.icons.glory,     value: rewards.glory },
     { label:'Feathers', icon: ASSETS.icons.feathers,  value: rewards.feathers ?? rewards.dust },
+    won && rewards.stars  ? { label:'Stars',  icon: '⭐', value: rewards.stars } : null,
     won && rewards.crowns != null ? { label:'Crowns', icon: ASSETS.icons.crown, value: rewards.crowns } : null,
   ].filter(r => r && r.value != null);
 
