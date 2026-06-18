@@ -133,7 +133,7 @@ export default function Market({ player, onRefresh }) {
           </div>
           <div className="bg-amber-900 bg-opacity-70 rounded-full px-3 py-1 flex items-center gap-1.5">
             <span className="text-sm">⭐</span>
-            <span className="text-amber-200 text-xs font-bold">{(player?.seeds || 0).toLocaleString()}</span>
+            <span className="text-amber-200 text-xs font-bold">{(player?.feathers || 0).toLocaleString()}</span>
           </div>
           <div className="bg-amber-900 bg-opacity-70 rounded-full px-3 py-1 flex items-center gap-1.5">
             <HammerIcon size={18} />
