@@ -55,4 +55,38 @@ router.get('/:id/leaderboard', async (req, res) => {
   }
 });
 
+// Consume 1 Booster or Epic Booster from the player's stockpile to refill energy.
+// Boosters: +250 energy. Epic Boosters: +750 energy. Allowed to overflow past max_energy.
+const BOOSTER_ENERGY = { booster: 250, epic_booster: 750 };
+router.post('/:id/use-booster', async (req, res) => {
+  try {
+    const { type } = req.body;
+    if (!BOOSTER_ENERGY[type]) {
+      return res.status(400).json({ error: 'Invalid booster type. Use "booster" or "epic_booster".' });
+    }
+
+    const telegramId = req.params.id;
+    const column = type === 'epic_booster' ? 'epic_boosters' : 'boosters';
+
+    const { data: player } = await supabase
+      .from('players').select(`${column}, energy`).eq('telegram_id', telegramId).single();
+
+    if (!player) return res.status(404).json({ error: 'Player not found' });
+    if ((player[column] || 0) < 1) {
+      return res.status(400).json({ error: `No ${type === 'epic_booster' ? 'Epic Boosters' : 'Boosters'} left.` });
+    }
+
+    const newCount  = player[column] - 1;
+    const newEnergy = (player.energy || 0) + BOOSTER_ENERGY[type];
+
+    await supabase.from('players')
+      .update({ [column]: newCount, energy: newEnergy })
+      .eq('telegram_id', telegramId);
+
+    res.json({ success: true, [column]: newCount, energy: newEnergy, energy_gained: BOOSTER_ENERGY[type] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
