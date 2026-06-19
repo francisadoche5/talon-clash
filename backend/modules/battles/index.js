@@ -107,7 +107,7 @@ async function runBattle(telegramId, mode = 'normal') {
 
   const { data: player } = await supabase
     .from('players')
-    .select('energy, battles_played, battles_won, battles_lost, xp, level, xp_needed, glory, feathers, skill_points')
+    .select('energy, battles_played, battles_won, battles_lost, xp, level, xp_needed, glory, feathers, stars, skill_points')
     .eq('telegram_id', telegramId)
     .single();
 
@@ -127,6 +127,7 @@ async function runBattle(telegramId, mode = 'normal') {
   const xpEarned = Math.floor((20 + Math.random() * 30) * rewards.xpMultiplier);
   const gloryEarned = Math.floor((10 + Math.random() * 20) * rewards.gloryMultiplier);
   const feathersEarned = rewards.baseFeathers;
+  const starsEarned = result.playerWon ? (rewards.starsWin || 0) : 0;
 
   let bonusReward = null;
   if (result.playerWon) {
@@ -152,6 +153,7 @@ async function runBattle(telegramId, mode = 'normal') {
     xp_needed: newXPNeeded,
     glory: player.glory + gloryEarned,
     feathers: player.feathers + feathersEarned,
+    stars: (player.stars || 0) + starsEarned,
     skill_points: (player.skill_points || 0) + skillPointsEarned,
     battles_played: player.battles_played + 1,
     battles_won: result.playerWon ? player.battles_won + 1 : player.battles_won,
@@ -194,6 +196,7 @@ async function runBattle(telegramId, mode = 'normal') {
       xp: xpEarned,
       glory: gloryEarned,
       feathers: feathersEarned,
+      stars: starsEarned,
       bonus: bonusReward
     },
     levelUp: newLevel > player.level,
