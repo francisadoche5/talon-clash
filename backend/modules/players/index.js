@@ -23,6 +23,7 @@ async function getOrCreatePlayer(telegramUser) {
         feathers: 500,
         glory: 0,
         hammers: 2,
+        stars: 0,
         skill_points: 0,
         power: 0,
         xp: 0,
