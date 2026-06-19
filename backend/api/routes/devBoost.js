@@ -38,6 +38,7 @@ router.post('/boost/:id', async (req, res) => {
         boosters:      999,
         epic_boosters: 999,
         glory:         999999,
+        stars:         999999,
         updated_at:    new Date().toISOString(),
       })
       .eq('telegram_id', telegramId);
