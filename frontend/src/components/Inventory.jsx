@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getInventory, equipItem, burnItem, forgeItem } from '../api';
+import { getInventory, equipItem, burnItem, forgeItem, useBooster } from '../api';
 import { getBirdUrl } from '../birdImages';
 
 const RARITY_COLORS = {
@@ -72,6 +72,19 @@ export default function Inventory({ player, onRefresh }) {
     }
   }
 
+  async function handleUseBooster(type) {
+    try {
+      const res = await useBooster(player.telegram_id, type);
+      onRefresh();
+      const label = type === 'epic_booster' ? 'Epic Booster' : 'Booster';
+      setMessage({ type: 'success', text: `Used ${label}! +${res.data.energy_gained} ⚡ energy` });
+      setTimeout(() => setMessage(null), 2000);
+    } catch (err) {
+      setMessage({ type: 'error', text: err.response?.data?.error || 'Failed' });
+      setTimeout(() => setMessage(null), 2000);
+    }
+  }
+
   const equipped = items.filter(i => i.is_equipped);
   const unequipped = items.filter(i => !i.is_equipped);
 
@@ -112,6 +125,31 @@ export default function Inventory({ player, onRefresh }) {
           {message.text}
         </div>
       )}
+
+      {/* Boosters — stockpile bought from the Market, used here for an instant energy refill */}
+      <div className="text-amber-400 text-sm font-bold mb-2">Boosters</div>
+      <div className="grid grid-cols-2 gap-2 mb-4">
+        <div className="bg-blue-950 border-2 border-blue-700 rounded-xl p-3 flex flex-col items-center gap-1">
+          <span className="text-2xl">⚗️</span>
+          <span className="text-white text-sm font-bold">x{player?.boosters || 0}</span>
+          <span className="text-blue-300 text-[10px]">+250 ⚡ energy</span>
+          <button onClick={() => handleUseBooster('booster')} disabled={!(player?.boosters > 0)}
+            className="w-full mt-1 py-1.5 rounded-lg text-xs font-bold text-white disabled:opacity-40"
+            style={{ background: '#2563eb' }}>
+            Use
+          </button>
+        </div>
+        <div className="bg-purple-950 border-2 border-purple-700 rounded-xl p-3 flex flex-col items-center gap-1">
+          <span className="text-2xl">💥</span>
+          <span className="text-white text-sm font-bold">x{player?.epic_boosters || 0}</span>
+          <span className="text-purple-300 text-[10px]">+750 ⚡ energy</span>
+          <button onClick={() => handleUseBooster('epic_booster')} disabled={!(player?.epic_boosters > 0)}
+            className="w-full mt-1 py-1.5 rounded-lg text-xs font-bold text-white disabled:opacity-40"
+            style={{ background: '#7c3aed' }}>
+            Use
+          </button>
+        </div>
+      </div>
 
       {/* Equipped */}
       {equipped.length > 0 && (
