@@ -169,14 +169,14 @@ function RewardTile({ label, icon, value, delay = 0 }) {
   if (value == null) return null;
   return (
     <div className="reward-pop flex flex-col items-center gap-1" style={{ animationDelay:`${delay}s` }}>
-      <p className="text-xs font-bold text-gray-500">{label}</p>
-      <div className="w-[72px] h-[72px] rounded-[18px] flex items-center justify-center"
+      <p className="text-[10px] font-bold text-gray-500">{label}</p>
+      <div className="w-[54px] h-[54px] rounded-[14px] flex items-center justify-center"
         style={{ background:'linear-gradient(145deg,#f5e8b0 0%,#c9a840 100%)',
-          boxShadow:'0 5px 0 #8a6810, 0 8px 18px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.55)',
+          boxShadow:'0 4px 0 #8a6810, 0 6px 14px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.55)',
           border:'1.5px solid #d4a830' }}>
         {typeof icon === 'string' && icon.startsWith('http')
-          ? <img src={icon} alt={label} style={{ width:48, height:48, objectFit:'contain', filter:'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }} />
-          : <span style={{ fontSize:38, filter:'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}>{icon}</span>}
+          ? <img src={icon} alt={label} style={{ width:34, height:34, objectFit:'contain', filter:'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }} />
+          : <span style={{ fontSize:26, filter:'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}>{icon}</span>}
       </div>
       <p className="text-sm font-black text-gray-700">+{value}</p>
     </div>
@@ -477,14 +477,14 @@ export default function BattleArena({ player, result, onClose }) {
                 </div>
 
                 {/* Rewards */}
-                <div className="px-5 pb-5">
-                  <p className="text-center font-black text-gray-700 text-base mb-4">Your rewards</p>
-                  <div className="flex justify-center gap-4 flex-wrap">
+                <div className="px-4 pb-5">
+                  <p className="text-center font-black text-gray-700 text-sm mb-3">Your rewards</p>
+                  <div className="flex justify-center gap-2 flex-nowrap overflow-x-auto px-1">
                     {rewardTiles.map((r,i) => (
                       <RewardTile key={r.label} label={r.label} icon={r.icon} value={r.value} delay={0.2+i*0.08} />
                     ))}
                   </div>
-                  <p className="text-center text-xs text-gray-400 mt-4">vs {result?.opponent?.display_name}</p>
+                  <p className="text-center text-xs text-gray-400 mt-3">vs {result?.opponent?.display_name}</p>
                 </div>
 
                 {/* Continue — inside card, always visible */}
