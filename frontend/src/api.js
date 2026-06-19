@@ -28,4 +28,5 @@ export const getSkills       = (id)                        => API.get(`/api/skil
 export const upgradeSkill    = (telegramId, skillType)     => API.post('/api/skills/upgrade',      { telegram_id: telegramId, skill_type: skillType });
 export const getPublicConfig = ()                          => API.get('/api/config');
 export const createInvoice   = (telegram_id, product)      => API.post('/api/payments/invoice',    { telegram_id, product });
+export const purchaseProduct = (telegram_id, product)      => API.post('/api/payments/purchase',   { telegram_id, product });
 export const devBoost        = (telegramId, secret)         => API.post(`/api/dev/boost/${telegramId}`, { secret });
