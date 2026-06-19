@@ -78,7 +78,7 @@ const STAR_CREDIT_PACKS = [
 const SPECIAL_OFFERS = [
   { id: 'so1', product: 'special_overcharge', name: 'Overcharge Pack', stock: '100/100', qty: 40,  icon: 'epicBooster', price: 5900, badge: 'HOT DEAL', desc: 'Epic Booster x40' },
   { id: 'so2', product: 'special_electra',    name: 'Electra Pack',    stock: '100/100', qty: 60,  icon: 'energy',      price: 3500, badge: 'HOT DEAL', desc: 'Booster x60' },
-  { id: 'so3', product: 'special_tesla',      name: 'Energy Tesla',    stock: '100/100', multi: true, icon: 'epicBooster', price: 2000, badge: 'HOT DEAL', desc: 'Feathers x5,000 + Booster x30' },
+  { id: 'so3', product: 'special_tesla',      name: 'Energy Tesla',    stock: '100/100', multi: true, qty: 5, icon: 'epicBooster', price: 2000, badge: 'HOT DEAL', desc: 'Feathers x5,000 + Booster x30' },
 ];
 
 function StarsBuyButton({ label, price, onClick, large = false }) {
