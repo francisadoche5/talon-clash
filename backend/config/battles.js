@@ -11,7 +11,8 @@ const BATTLE_CONFIG = {
       win: {
         xpMultiplier: 1,
         gloryMultiplier: 1,
-        baseFeathers: 50
+        baseFeathers: 50,
+        starsWin: 1
       },
       lose: {
         xpMultiplier: 1,
@@ -36,7 +37,8 @@ const BATTLE_CONFIG = {
       win: {
         xpMultiplier: 2,
         gloryMultiplier: 2,
-        baseFeathers: 200
+        baseFeathers: 200,
+        starsWin: 5
       },
       lose: {
         xpMultiplier: 2,
