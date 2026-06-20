@@ -5,6 +5,7 @@ import Lobby from './components/Lobby';
 import Market from './components/Market';
 import Inventory from './components/Inventory';
 import { EAGLE_ICON_URL, BIRD_ANIMATION_CSS } from './birdImages';
+import { useLanguage } from './i18n/LanguageContext';
 
 if (typeof document !== 'undefined' && !document.getElementById('bird-anim-css')) {
   const s = document.createElement('style');
@@ -17,12 +18,12 @@ import SkillTree from './components/SkillTree';
 import Earn from './components/Earn';
 
 const TABS = [
-  { id: 'market',    label: 'Market',    icon: '🏪' },
-  { id: 'inventory', label: 'Inventory', icon: '🎒' },
-  { id: 'lobby',     label: 'Lobby',     icon: '⚔️' },
-  { id: 'clans',     label: 'Clans',     icon: '👥' },
-  { id: 'skills',    label: 'Skills',    icon: '🌳' },
-  { id: 'earn',      label: 'Earn',      icon: '💰' },
+  { id: 'market',    labelKey: 'nav.market',    icon: '🏪' },
+  { id: 'inventory', labelKey: 'nav.inventory', icon: '🎒' },
+  { id: 'lobby',     labelKey: 'nav.lobby',     icon: '⚔️' },
+  { id: 'clans',     labelKey: 'nav.clans',     icon: '👥' },
+  { id: 'skills',    labelKey: 'nav.skills',    icon: '🌳' },
+  { id: 'earn',      labelKey: 'nav.earn',      icon: '💰' },
 ];
 
 // Loading messages that cycle while waiting for Render cold start
@@ -41,7 +42,9 @@ export default function App() {
   const [error,     setError]     = useState(null);
   const [loadMsg,   setLoadMsg]   = useState(LOADING_MESSAGES[0]);
   const [retrying,  setRetrying]  = useState(false);
+  const [showLanguagePicker, setShowLanguagePicker] = useState(false);
   const msgIdx = useRef(0);
+  const { t, language, setLanguage, languages } = useLanguage();
 
   useEffect(() => { initApp(); }, []);
 
@@ -71,8 +74,11 @@ export default function App() {
         first_name: 'Test',
         username: 'testuser',
       };
+      // Carries the referrer's id when the player opened the bot via a
+      // referral deep link (https://t.me/<bot>?start=ref_<telegram_id>).
+      const startParam = tg?.initDataUnsafe?.start_param;
 
-      const res = await login(telegramUser);
+      const res = await login(telegramUser, startParam);
       setPlayer(res.data.player);
     } catch (err) {
       const isTimeout = err.code === 'ECONNABORTED' || err.message?.includes('timeout');
@@ -156,6 +162,43 @@ export default function App() {
   // ── Main app ────────────────────────────────────────────────────────────────
   return (
     <div className="flex flex-col h-screen bg-amber-950 max-w-md mx-auto relative overflow-hidden">
+
+      {/* Language switcher — always available, top-right corner */}
+      <button onClick={() => setShowLanguagePicker(true)}
+        style={{
+          position: 'absolute', top: 8, right: 8, zIndex: 40,
+          background: 'rgba(0,0,0,0.45)', border: '1px solid rgba(255,220,80,0.35)',
+          borderRadius: 999, padding: '4px 9px',
+          display: 'flex', alignItems: 'center', gap: 4,
+          color: '#f5c842', fontWeight: 800, fontSize: 12,
+        }}>
+        <span>🌐</span>
+        <span>{languages.find(l => l.code === language)?.flag || '🏳️'}</span>
+      </button>
+
+      {showLanguagePicker && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-end z-50"
+          onClick={() => setShowLanguagePicker(false)}>
+          <div onClick={e => e.stopPropagation()}
+            className="w-full max-w-md mx-auto bg-amber-900 rounded-t-3xl p-5 pb-7">
+            <div className="text-amber-300 font-black text-center mb-4">{t('common.language')}</div>
+            <div className="grid grid-cols-2 gap-2">
+              {languages.map(l => (
+                <button key={l.code}
+                  onClick={() => { setLanguage(l.code); setShowLanguagePicker(false); }}
+                  className="flex items-center gap-2 rounded-xl px-3 py-2.5"
+                  style={{
+                    background: l.code === language ? '#f4a024' : 'rgba(0,0,0,0.3)',
+                    color: l.code === language ? '#3d1a00' : '#fff',
+                  }}>
+                  <span style={{ fontSize: 18 }}>{l.flag}</span>
+                  <span className="font-bold text-sm">{l.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Premium Header — lobby only */}
       {activeTab === 'lobby' && <div style={{
@@ -271,7 +314,7 @@ export default function App() {
                 fontSize: 10, fontWeight: 800,
                 color: active ? '#f5c842' : '#9a6030',
                 letterSpacing: 0.3,
-              }}>{tab.label}</span>
+              }}>{t(tab.labelKey)}</span>
             </button>
           );
         })}
