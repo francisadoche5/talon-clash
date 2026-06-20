@@ -1,7 +1,12 @@
 const supabase = require('../../supabase');
 const { getEvolutionByPower } = require('../../config/evolutions');
 
-async function getOrCreatePlayer(telegramUser) {
+// Feathers awarded to the referrer the moment someone they invited opens the
+// game for the first time. Matches the "Earn feathers for every friend you
+// invite" copy shown on the Earn tab.
+const REFERRAL_REWARD_FEATHERS = 500;
+
+async function getOrCreatePlayer(telegramUser, referrerId) {
   const { id, username, first_name, last_name } = telegramUser;
   const displayName = first_name + (last_name ? ' ' + last_name : '');
 
@@ -12,6 +17,18 @@ async function getOrCreatePlayer(telegramUser) {
     .single();
 
   if (!player) {
+    // Only trust a referrer that (a) isn't the new player themselves and
+    // (b) actually exists as a player already.
+    let validReferrerId = null;
+    if (referrerId && String(referrerId) !== String(id)) {
+      const { data: referrer } = await supabase
+        .from('players')
+        .select('telegram_id')
+        .eq('telegram_id', referrerId)
+        .single();
+      if (referrer) validReferrerId = referrer.telegram_id;
+    }
+
     const { data: newPlayer } = await supabase
       .from('players')
       .insert({
@@ -30,17 +47,40 @@ async function getOrCreatePlayer(telegramUser) {
         xp_needed: 1000,
         level: 1,
         evolution_tier: 1,
-        evolution_name: 'Hatchling'
+        evolution_name: 'Hatchling',
+        referred_by: validReferrerId,
       })
       .select()
       .single();
 
     await supabase.from('player_skills').insert({ player_id: id });
 
+    if (validReferrerId) {
+      const { data: referrerRow } = await supabase
+        .from('players')
+        .select('feathers')
+        .eq('telegram_id', validReferrerId)
+        .single();
+      await supabase.from('players')
+        .update({ feathers: (referrerRow?.feathers || 0) + REFERRAL_REWARD_FEATHERS })
+        .eq('telegram_id', validReferrerId);
+    }
+
     return newPlayer;
   }
 
   return player;
+}
+
+// Everyone whose `referred_by` points at this player — used by the
+// Invite Friends dashboard so invited friends actually show up there.
+async function getReferredPlayers(telegramId) {
+  const { data: referred } = await supabase
+    .from('players')
+    .select('telegram_id, display_name, username, level, power, evolution_name, created_at')
+    .eq('referred_by', telegramId)
+    .order('created_at', { ascending: false });
+  return referred || [];
 }
 
 async function updateEvolution(telegramId, power) {
@@ -127,7 +167,15 @@ async function regenEnergy(telegramId) {
 
   if (regenAmount <= 0) return player.energy;
 
-  const newEnergy = Math.min(player.max_energy, player.energy + regenAmount);
+  // IMPORTANT: never regen past max, but also never DECREASE energy that is
+  // already above max (e.g. from a paid refill that's allowed to overflow).
+  // Previously this always did Math.min(max, energy + regen), which would
+  // silently claw back overflowed energy back down to max the next time the
+  // player's data was fetched (e.g. right after buying a +750 refill).
+  let newEnergy = player.energy;
+  if (player.energy < player.max_energy) {
+    newEnergy = Math.min(player.max_energy, player.energy + regenAmount);
+  }
 
   await supabase
     .from('players')
@@ -140,4 +188,4 @@ async function regenEnergy(telegramId) {
   return newEnergy;
 }
 
-module.exports = { getOrCreatePlayer, updateEvolution, calculatePower, regenEnergy };
+module.exports = { getOrCreatePlayer, updateEvolution, calculatePower, regenEnergy, getReferredPlayers };
