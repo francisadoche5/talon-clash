@@ -37,6 +37,7 @@ router.post('/ad-claim', async (req, res) => {
       .from('players')
       .update({
         energy:            newEnergy,
+        energy_updated_at: new Date().toISOString(),
         ads_watched_today: newAdsCount,
         ads_reset_date:    today,
       })
