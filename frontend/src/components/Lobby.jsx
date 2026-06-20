@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { fight, getPublicConfig, getQuests, claimQuest, devBoost, useBooster, stopAutoBattle } from '../api';
+import { fight, getPublicConfig, getQuests, claimQuest, devBoost, useBooster } from '../api';
 import { payWithStars } from '../starsPayment';
 import BattleArena from './BattleArena';
 import { getBirdUrl } from '../birdImages';
@@ -383,7 +383,7 @@ function CharacteristicsModal({ player, onClose }) {
 }
 
 // ── Main Lobby ─────────────────────────────────────────────────────────────────
-export default function Lobby({ player, onRefresh, showEnergyModal, setShowEnergyModal, onNavigateToSkills }) {
+export default function Lobby({ player, onRefresh, showEnergyModal, setShowEnergyModal, autoBattleEngaged, setAutoBattleEngaged, onNavigateToSkills }) {
   const { t } = useLanguage();
   const [lobbyBg,         setLobbyBg]         = useState(() => getLobbyBackground());
   const [mode,            setMode]            = useState('normal');
@@ -406,7 +406,6 @@ export default function Lobby({ player, onRefresh, showEnergyModal, setShowEnerg
   const [showQuestsModal, setShowQuestsModal] = useState(false);
   const [questCycleIndex, setQuestCycleIndex] = useState(0);
   const [claimingId,      setClaimingId]      = useState(null);
-  const [stoppingAuto,    setStoppingAuto]    = useState(false);
 
   const energyCost = mode === 'epic' ? 200 : 25;
   const hasEnergy  = (player?.energy || 0) >= energyCost;
@@ -523,43 +522,51 @@ export default function Lobby({ player, onRefresh, showEnergyModal, setShowEnerg
     });
   }
 
-  async function handleStopAutoBattle() {
-    setStoppingAuto(true);
-    try {
-      await stopAutoBattle(player.telegram_id);
-      onRefresh();
-    } catch (err) {
-      alert(err.response?.data?.error || 'Could not stop Auto Battle. Please try again.');
-    } finally {
-      setStoppingAuto(false);
-    }
-  }
-
   // ── Auto Battle plan status ──
+  // Owning the plan (auto_battle_active + not expired) only unlocks the
+  // feature. It is never enough on its own to start fighting — the player
+  // has to pick a mode and tap "Start Auto Battle" themselves, every
+  // session. autoBattleEngaged is that explicit choice; it always starts
+  // false on a fresh app load, so logging in never launches a battle.
   const autoBattleExpired = player?.auto_battle_expires_at
     ? new Date(player.auto_battle_expires_at) <= new Date()
     : false;
-  const autoBattleOn = !!player?.auto_battle_active && !autoBattleExpired;
+  const autoBattlePlanActive = !!player?.auto_battle_active && !autoBattleExpired;
+  const autoBattleOn = autoBattlePlanActive && autoBattleEngaged;
+
+  // If the plan lapses or is cancelled, also drop the "engaged" switch so a
+  // later repurchase doesn't silently resume fighting on its own.
+  useEffect(() => {
+    if (!autoBattlePlanActive) setAutoBattleEngaged(false);
+  }, [autoBattlePlanActive]);
+
+  function handleStartAutoBattle() {
+    setAutoBattleEngaged(true);
+  }
+
+  function handleStopAutoBattle() {
+    setAutoBattleEngaged(false);
+  }
 
   // Pause the loop while another full-screen overlay is open so an automatic
   // fight doesn't suddenly take over what the player is looking at.
   const autoBattleBlocked = showAutoBattle || showEnergyModal || showEpicInfo ||
     showQuestsModal || showCharacteristics || showDevPanel;
 
-  // While the plan is active, poll for energy regen so the loop notices once
-  // there's enough energy to fight again — without this, energy would only
-  // ever update when the player does something that calls onRefresh().
+  // While engaged, poll for energy regen so the loop notices once there's
+  // enough energy to fight again — without this, energy would only ever
+  // update when the player does something that calls onRefresh().
   useEffect(() => {
     if (!autoBattleOn) return;
     const id = setInterval(() => onRefresh(), 15000);
     return () => clearInterval(id);
   }, [autoBattleOn]);
 
-  // Fires the next automatic battle whenever the plan is active, the energy
-  // bar holds enough for the current mode, and nothing else is showing.
-  // Stops the moment energy runs out and resumes on its own once it's
-  // regenerated — keeps going until the plan expires, the player taps
-  // STOP AUTO BATTLE, or they leave the Lobby/close the app.
+  // Fires the next automatic battle whenever the player has engaged Auto
+  // Battle, the energy bar holds enough for the current mode, and nothing
+  // else is showing. Stops the moment energy runs out and resumes on its
+  // own once it's regenerated — keeps going until the plan expires, the
+  // player taps STOP AUTO BATTLE, or they leave the Lobby/close the app.
   useEffect(() => {
     if (!autoBattleOn || autoBattleBlocked) return;
     if (battling || battleResult) return;
@@ -944,8 +951,12 @@ export default function Lobby({ player, onRefresh, showEnergyModal, setShowEnerg
                 <h2 className="text-xl font-black text-amber-900">Auto Battle</h2>
                 <button onClick={() => setShowAutoBattle(false)} className="text-red-500 text-2xl font-black">✕</button>
               </div>
-              <div className="mx-5 mb-1"><div className="rounded-xl py-2 text-center font-black text-base text-amber-100" style={{ background: '#7a5230' }}>{autoBattleOn?'✅ Active':'Inactive'}</div></div>
-              {autoBattleOn && player?.auto_battle_expires_at && (
+              <div className="mx-5 mb-1">
+                <div className="rounded-xl py-2 text-center font-black text-base text-amber-100" style={{ background: '#7a5230' }}>
+                  {autoBattleOn ? '✅ Running' : autoBattlePlanActive ? '🔓 Unlocked — not running' : 'Inactive'}
+                </div>
+              </div>
+              {autoBattlePlanActive && player?.auto_battle_expires_at && (
                 <p className="text-center text-amber-800 text-xs font-bold mb-2">
                   {(() => {
                     const msLeft = Math.max(0, new Date(player.auto_battle_expires_at) - new Date());
@@ -962,16 +973,42 @@ export default function Lobby({ player, onRefresh, showEnergyModal, setShowEnerg
                 <p className="text-amber-900 font-bold text-sm text-center">
                   {autoBattleOn
                     ? `Your bird is fighting on its own in ${mode === 'epic' ? 'Epic' : 'Normal'} mode. It pauses when energy runs out and picks back up once it regenerates.`
+                    : autoBattlePlanActive
+                    ? 'Pick a mode, then tap Start. Your bird will only fight automatically once you start it — it never starts on its own.'
                     : 'Unlock AutoBattle to speed up your progress!'}
                 </p>
               </div>
 
+              {/* Plan owned but not running — choose mode, then start */}
+              {autoBattlePlanActive && !autoBattleOn && (
+                <div className="mx-5 mb-3 flex rounded-2xl overflow-hidden" style={{ border: '2px solid #b8956a' }}>
+                  <button onClick={() => setMode('normal')}
+                    className="flex-1 py-3 font-black text-sm"
+                    style={{ background: mode === 'normal' ? '#f4a024' : '#e8d5b7', color: mode === 'normal' ? '#3d1a00' : '#8a6a40' }}>
+                    ⚔ Normal
+                  </button>
+                  <button onClick={() => { setMode('epic'); setShowEpicInfo(true); }}
+                    className="flex-1 py-3 font-black text-sm"
+                    style={{ background: mode === 'epic' ? '#a855f7' : '#e8d5b7', color: mode === 'epic' ? '#fff' : '#8a6a40' }}>
+                    ✦ Epic
+                  </button>
+                </div>
+              )}
+
               {autoBattleOn ? (
                 <div className="mx-5 mb-3">
-                  <button onClick={handleStopAutoBattle} disabled={stoppingAuto}
-                    className="w-full py-4 rounded-2xl font-black text-white text-lg disabled:opacity-60"
+                  <button onClick={handleStopAutoBattle}
+                    className="w-full py-4 rounded-2xl font-black text-white text-lg"
                     style={{ background: 'linear-gradient(180deg,#f87171 0%,#dc2626 100%)', border: '3px solid #b91c1c' }}>
-                    {stoppingAuto ? 'Stopping…' : 'STOP AUTO BATTLE'}
+                    STOP AUTO BATTLE
+                  </button>
+                </div>
+              ) : autoBattlePlanActive ? (
+                <div className="mx-5 mb-3">
+                  <button onClick={handleStartAutoBattle}
+                    className="w-full py-4 rounded-2xl font-black text-white text-lg"
+                    style={{ background: 'linear-gradient(180deg,#4ade80 0%,#16a34a 100%)', border: '3px solid #166534' }}>
+                    START AUTO BATTLE
                   </button>
                 </div>
               ) : (
