@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { payWithStars } from '../starsPayment';
 import ASSETS from '../config/assets';
+import { useLanguage } from '../i18n/LanguageContext';
 
 const FeatherIcon = ({ size = 16 }) => (
   <img src={ASSETS.icons.feathers} alt="feathers"
@@ -24,15 +25,6 @@ const EpicBoosterIcon = ({ size = 52 }) => (
 );
 
 const CATEGORIES = ['special_offers', 'star_credits', 'chests', 'feathers', 'boosters', 'epic_boosters', 'hammers'];
-const CATEGORY_LABELS = {
-  special_offers: '🔥 Special',
-  star_credits:   '⭐ Star Credits',
-  chests:         '📦 Chests',
-  feathers:       'Feathers',
-  boosters:       'Boosters',
-  epic_boosters:  'Epic',
-  hammers:        'Hammers',
-};
 
 const CHEST_DATA = [
   { key: 'chest_common',   product: 'chest_common',   img: ASSETS.ui.chestCommon,   label: 'Common',   price: 49,   stock: '5/5' },
@@ -93,8 +85,19 @@ function StarsBuyButton({ label, price, onClick, large = false }) {
 }
 
 export default function Market({ player, onRefresh }) {
+  const { t } = useLanguage();
   const [activeCategory, setActiveCategory] = useState('special_offers');
   const [message, setMessage] = useState(null);
+
+  const CATEGORY_LABELS = {
+    special_offers: `🔥 ${t('market.special')}`,
+    star_credits:   `⭐ ${t('market.starCredits')}`,
+    chests:         `📦 ${t('market.chests')}`,
+    feathers:       t('market.feathers'),
+    boosters:       t('market.boosters'),
+    epic_boosters:  t('market.epicBoosters'),
+    hammers:        t('market.hammers'),
+  };
 
   function showMsg(type, text) {
     setMessage({ type, text });
@@ -129,7 +132,7 @@ export default function Market({ player, onRefresh }) {
         </div>
         <div className="px-4 pt-2 pb-1 text-center">
           <div className="text-yellow-300 font-black text-2xl tracking-widest drop-shadow" style={{ textShadow: '2px 2px 0 #7c4a00' }}>
-            STORE
+            {t('market.store')}
           </div>
         </div>
         <div className="flex justify-center gap-3 pb-2 px-4">
@@ -157,7 +160,7 @@ export default function Market({ player, onRefresh }) {
               activeCategory === cat ? 'bg-amber-500 text-amber-950' : 'bg-amber-800 text-amber-300'
             }`}>
             {cat === 'feathers'
-              ? <><FeatherIcon size={13} /> Feathers</>
+              ? <><FeatherIcon size={13} /> {t('market.feathers')}</>
               : CATEGORY_LABELS[cat]}
           </button>
         ))}
@@ -173,7 +176,7 @@ export default function Market({ player, onRefresh }) {
       {/* Stars notice */}
       <div className="mx-4 mt-2 px-3 py-1.5 rounded-xl bg-blue-900 bg-opacity-60 flex items-center gap-2">
         <span className="text-yellow-300 text-sm">⭐</span>
-        <span className="text-blue-200 text-xs font-bold">Pays with Star Credits first, Telegram Stars if you're short</span>
+        <span className="text-blue-200 text-xs font-bold">{t('market.paysWith')}</span>
       </div>
 
       {/* ── Content ── */}
@@ -182,7 +185,7 @@ export default function Market({ player, onRefresh }) {
         {/* SPECIAL OFFERS */}
         {activeCategory === 'special_offers' && (
           <div className="p-4 flex flex-col gap-4">
-            <div className="text-center text-amber-300 font-black text-lg tracking-wide">Special offers</div>
+            <div className="text-center text-amber-300 font-black text-lg tracking-wide">{t('market.special')}</div>
             {SPECIAL_OFFERS.map(offer => (
               <div key={offer.id} className="relative rounded-2xl overflow-hidden"
                 style={{ background: 'linear-gradient(135deg,#f5deb3 0%,#e8c99a 100%)', border: '2px solid #c8a96e' }}>
@@ -220,7 +223,7 @@ export default function Market({ player, onRefresh }) {
         {/* STAR CREDITS — top up the virtual wallet with real Telegram Stars */}
         {activeCategory === 'star_credits' && (
           <div className="p-4 flex flex-col gap-3">
-            <div className="text-center text-amber-300 font-black text-lg tracking-wide mb-1">Star Credits</div>
+            <div className="text-center text-amber-300 font-black text-lg tracking-wide mb-1">{t('market.starCredits')}</div>
             <div className="text-center text-amber-500 text-xs mb-2 px-2">
               Top up your wallet once, then spend Star Credits in the store without a payment popup every time.
             </div>
@@ -248,7 +251,7 @@ export default function Market({ player, onRefresh }) {
         {/* CHESTS */}
         {activeCategory === 'chests' && (
           <div className="p-4">
-            <div className="text-center text-amber-300 font-black text-lg tracking-wide mb-4">Chests</div>
+            <div className="text-center text-amber-300 font-black text-lg tracking-wide mb-4">{t('market.chests')}</div>
             <div className="grid grid-cols-2 gap-3">
               {CHEST_DATA.map(chest => (
                 <div key={chest.key} className="relative rounded-2xl overflow-hidden"
