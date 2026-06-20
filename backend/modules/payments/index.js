@@ -29,9 +29,14 @@ async function fulfillProduct(telegramId, productKey) {
       const { data: pl } = await supabase.from('players')
         .select('energy').eq('telegram_id', telegramId).single();
       // Always adds on top of current energy — allowed to overflow past max_energy,
-      // since this is a paid refill, not a passive regen tick.
+      // since this is a paid refill, not a passive regen tick. We also bump
+      // energy_updated_at so the next passive regen tick doesn't compute a huge
+      // elapsed-time delta and clamp this overflow back down to max_energy.
       await supabase.from('players')
-        .update({ energy: (pl?.energy || 0) + p.amount }).eq('telegram_id', telegramId);
+        .update({
+          energy: (pl?.energy || 0) + p.amount,
+          energy_updated_at: new Date().toISOString(),
+        }).eq('telegram_id', telegramId);
       return { type: 'energy', amount: p.amount };
     }
 
