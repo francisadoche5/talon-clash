@@ -43,6 +43,7 @@ export default function App() {
   const [loadMsg,   setLoadMsg]   = useState(LOADING_MESSAGES[0]);
   const [retrying,  setRetrying]  = useState(false);
   const [showLanguagePicker, setShowLanguagePicker] = useState(false);
+  const [showEnergyModal,    setShowEnergyModal]     = useState(false);
   const msgIdx = useRef(0);
   const { t, language, setLanguage, languages } = useLanguage();
 
@@ -205,7 +206,7 @@ export default function App() {
         background: 'linear-gradient(180deg,#5c2e00 0%,#3d1a00 100%)',
         borderBottom: '1.5px solid #b8742a',
         boxShadow: '0 3px 16px rgba(0,0,0,0.55)',
-        padding: '10px 14px 8px',
+        padding: '10px 60px 8px 14px',
       }} className="flex items-center justify-between">
 
         {/* Left — level badge + name + XP */}
@@ -236,15 +237,23 @@ export default function App() {
         </div>
 
         {/* Right — resources */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-1.5">
           {/* Energy */}
           <div style={{ display:'flex', alignItems:'center', gap:3,
-            background:'rgba(0,0,0,0.3)', borderRadius:10, padding:'2px 7px',
+            background:'rgba(0,0,0,0.3)', borderRadius:10, padding:'2px 4px 2px 7px',
             border:'1px solid rgba(255,220,80,0.25)' }}>
             <img src={ASSETS.icons.energy} alt="energy" style={{width:15,height:15,objectFit:'contain'}} />
             <span style={{ color:'#ffe566', fontWeight:800, fontSize:11 }}>
               {Math.floor(player?.energy||0)}/{player?.max_energy}
             </span>
+            <button onClick={() => setShowEnergyModal(true)} aria-label="Restore energy"
+              style={{
+                width:16, height:16, borderRadius:999, marginLeft:1, flexShrink:0,
+                display:'flex', alignItems:'center', justifyContent:'center',
+                background:'linear-gradient(180deg,#fde047,#ca8a04)',
+                color:'#3d1a00', fontWeight:900, fontSize:11, lineHeight:1,
+                border:'1px solid rgba(255,255,255,0.5)',
+              }}>+</button>
           </div>
           {/* Feathers */}
           <div style={{ display:'flex', alignItems:'center', gap:3 }}>
@@ -281,7 +290,9 @@ export default function App() {
 
       {/* Main content */}
       <div className="flex-1 min-h-0" style={{ overflow: activeTab === 'lobby' ? 'hidden' : 'auto' }}>
-        {activeTab === 'lobby'     && <Lobby     player={player} onRefresh={refreshPlayer} />}
+        {activeTab === 'lobby'     && <Lobby     player={player} onRefresh={refreshPlayer}
+          showEnergyModal={showEnergyModal} setShowEnergyModal={setShowEnergyModal}
+          onNavigateToSkills={() => setActiveTab('skills')} />}
         {activeTab === 'market'    && <Market    player={player} onRefresh={refreshPlayer} />}
         {activeTab === 'inventory' && <Inventory player={player} onRefresh={refreshPlayer} />}
         {activeTab === 'clans'     && <Clans     player={player} onRefresh={refreshPlayer} />}
