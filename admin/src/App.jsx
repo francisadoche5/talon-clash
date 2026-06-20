@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  adminLogin, getStats, getPlayers, banPlayer,
+  adminLogin, getStats, getPlayers, banPlayer, setPlayerCredits,
   getStoreItems, saveStoreItem, deleteStoreItem,
   getQuests, saveQuest, getAnnouncements,
   createAnnouncement, getConfig, updateConfig,
@@ -18,6 +18,7 @@ export default function App() {
   const [data, setData] = useState({});
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
+  const [creditEdits, setCreditEdits] = useState({});
 
   useEffect(() => {
     if (token) loadTab(activeTab);
@@ -57,6 +58,24 @@ export default function App() {
   function showMsg(text, type = 'success') {
     setMessage({ text, type });
     setTimeout(() => setMessage(null), 3000);
+  }
+
+  async function handleSaveCredits(telegramId) {
+    const raw = creditEdits[telegramId];
+    if (raw === undefined) return;
+    const amount = parseInt(raw, 10);
+    if (isNaN(amount) || amount < 0) {
+      showMsg('Enter a valid non-negative number', 'error');
+      return;
+    }
+    try {
+      await setPlayerCredits(telegramId, amount);
+      setCreditEdits(prev => { const next = { ...prev }; delete next[telegramId]; return next; });
+      loadTab('Players');
+      showMsg('Star Credits updated!');
+    } catch {
+      showMsg('Failed to update Star Credits', 'error');
+    }
   }
 
   // LOGIN SCREEN
@@ -189,6 +208,23 @@ export default function App() {
                     <div><span className="text-slate-400">Power </span><span className="text-amber-300 font-bold">{p.power?.toLocaleString()}</span></div>
                     <div><span className="text-slate-400">Level </span><span className="text-slate-200">{p.level}</span></div>
                   </div>
+
+                  {/* Star Credits editor */}
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-slate-400 text-sm flex-shrink-0">⭐ Star Credits</span>
+                    <input
+                      type="number"
+                      min="0"
+                      value={creditEdits[p.telegram_id] !== undefined ? creditEdits[p.telegram_id] : (p.stars ?? 0)}
+                      onChange={e => setCreditEdits(prev => ({ ...prev, [p.telegram_id]: e.target.value }))}
+                      className="flex-1 bg-slate-700 text-white rounded-lg px-3 py-1.5 text-sm outline-none"
+                    />
+                    <button onClick={() => handleSaveCredits(p.telegram_id)}
+                      className="bg-amber-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex-shrink-0">
+                      Save
+                    </button>
+                  </div>
+
                   <button onClick={async () => {
                     await banPlayer(p.telegram_id, 'Admin ban', !p.is_banned);
                     loadTab('Players');
