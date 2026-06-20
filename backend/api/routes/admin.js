@@ -92,6 +92,32 @@ router.post('/players/ban', adminAuth, async (req, res) => {
   }
 });
 
+// Lets an admin directly set a player's Star Credits (virtual currency)
+// balance — e.g. to grant a refund or correct a support issue.
+router.post('/players/credits', adminAuth, async (req, res) => {
+  try {
+    const { telegram_id, stars } = req.body;
+    if (telegram_id === undefined || stars === undefined) {
+      return res.status(400).json({ error: 'Missing telegram_id or stars' });
+    }
+    const amount = parseInt(stars, 10);
+    if (isNaN(amount) || amount < 0) {
+      return res.status(400).json({ error: 'stars must be a non-negative number' });
+    }
+
+    const { error } = await supabase
+      .from('players')
+      .update({ stars: amount })
+      .eq('telegram_id', telegram_id);
+
+    if (error) return res.status(500).json({ error: error.message });
+
+    res.json({ success: true, telegram_id, stars: amount });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.get('/store', adminAuth, async (req, res) => {
   try {
     const { data: items } = await supabase
