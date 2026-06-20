@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
-import { fight, getPublicConfig, getQuests, claimQuest, devBoost } from '../api';
+import { fight, getPublicConfig, getQuests, claimQuest, devBoost, useBooster } from '../api';
 import { payWithStars } from '../starsPayment';
 import BattleArena from './BattleArena';
 import { getBirdUrl } from '../birdImages';
 import axios from 'axios';
 import ASSETS from '../config/assets';
+import { useLanguage } from '../i18n/LanguageContext';
 
 const EI = ({ size = 22 }) => (
   <img src={ASSETS.icons.energy} alt="energy"
@@ -33,6 +34,7 @@ async function claimAdEnergy(telegramId) {
 
 // ── Energy Modal ───────────────────────────────────────────────────────────────
 function EnergyModal({ player, onClose, onPurchased }) {
+  const { t } = useLanguage();
   const energy    = Math.floor(player?.energy    || 0);
   const maxEnergy = player?.max_energy || 400;
 
@@ -44,9 +46,32 @@ function EnergyModal({ player, onClose, onPurchased }) {
   const [adMsg,     setAdMsg]     = useState(null);
 
   const STAR_OPTIONS = [
-    { id: 'energy_250', amount: 250, price: 250, icon: ASSETS.icons.energy,      top: '#5bb8ff', mid: '#2d7dd2', bot: '#1a5fa0', shadow: '#0d3d70', border: '#7fcfff' },
-    { id: 'energy_750', amount: 750, price: 750, icon: ASSETS.icons.epicBooster, top: '#a78bfa', mid: '#7c3aed', bot: '#5b21b6', shadow: '#3b0e8f', border: '#c4b5fd' },
+    { id: 'energy_250', amount: 250, price: 250, icon: ASSETS.icons.energy,      top: '#5bb8ff', mid: '#2d7dd2', bot: '#1a5fa0', shadow: '#0d3d70', border: '#7fcfff', boosterType: 'booster',      owned: player?.boosters || 0 },
+    { id: 'energy_750', amount: 750, price: 750, icon: ASSETS.icons.epicBooster, top: '#a78bfa', mid: '#7c3aed', bot: '#5b21b6', shadow: '#3b0e8f', border: '#c4b5fd', boosterType: 'epic_booster', owned: player?.epic_boosters || 0 },
   ];
+
+  const [usingBooster, setUsingBooster] = useState(false);
+
+  // If the player already owns a Booster/Epic Booster (bought from the
+  // Market), use one of those for a free, instant refill instead of
+  // charging Stars again. Falls back to the Stars purchase flow once their
+  // stock of that booster type runs out.
+  async function handleOptionClick(opt) {
+    if (opt.owned > 0) {
+      setUsingBooster(true);
+      try {
+        await useBooster(player.telegram_id, opt.boosterType);
+        onPurchased();
+        onClose();
+      } catch (err) {
+        alert(err.response?.data?.error || 'Could not use booster. Please try again.');
+      } finally {
+        setUsingBooster(false);
+      }
+      return;
+    }
+    handleStarRefill(opt.id);
+  }
 
   async function handleWatchAd() {
     if (adsLeft <= 0) return;
@@ -92,7 +117,7 @@ function EnergyModal({ player, onClose, onPurchased }) {
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-1">
           <div className="w-8" />
-          <h2 className="font-black text-gray-800 text-xl tracking-wide">Energy</h2>
+          <h2 className="font-black text-gray-800 text-xl tracking-wide">{t('energy.title')}</h2>
           <button onClick={onClose}
             className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-500 font-black text-lg">✕</button>
         </div>
@@ -105,8 +130,8 @@ function EnergyModal({ player, onClose, onPurchased }) {
             <span style={{ fontSize: 22 }}><EI size={28} /></span>
             <span>{energy}/{maxEnergy}</span>
           </div>
-          <p className="text-amber-700 text-sm font-bold mt-1">+0.17 <EI size={14} /> each 10 seconds</p>
-          <p className="text-amber-600 font-black text-sm mt-1">Restore energy instantly</p>
+          <p className="text-amber-700 text-sm font-bold mt-1">{t('energy.regenRate')}</p>
+          <p className="text-amber-600 font-black text-sm mt-1">{t('energy.restoreInstantly')}</p>
         </div>
 
         {/* Ad message */}
@@ -129,7 +154,7 @@ function EnergyModal({ player, onClose, onPurchased }) {
             {/* FREE badge */}
             <div className="flex items-center justify-center py-1.5 font-black text-white text-xs gap-1"
               style={{ background: 'linear-gradient(180deg,#6abf47 0%,#4aa024 100%)' }}>
-              FREE
+              {t('energy.free')}
             </div>
 
             {/* Icon area */}
@@ -146,28 +171,36 @@ function EnergyModal({ player, onClose, onPurchased }) {
             <div className="py-2 font-black text-white text-xs text-center flex flex-col items-center"
               style={{ background: 'linear-gradient(180deg,#6abf47 0%,#4aa024 100%)' }}>
               {watching ? (
-                <span>Loading…</span>
+                <span>{t('common.loading')}</span>
               ) : adsLeft <= 0 ? (
-                <span>Limit reached</span>
+                <span>{t('energy.limitReached')}</span>
               ) : (
                 <>
-                  <span>Watch Ad</span>
+                  <span>{t('energy.watchAd')}</span>
                   <span className="opacity-80 text-[10px]">{adsLeft}/{adsLimit} left today</span>
                 </>
               )}
             </div>
           </button>
 
-          {/* ── Options 2 & 3: Star purchases ── */}
+          {/* ── Options 2 & 3: Star purchases (or USE if a Booster is already owned) ── */}
           {STAR_OPTIONS.map((opt) => (
             <button key={opt.id}
-              onClick={() => handleStarRefill(opt.id)}
-              className="flex-1 rounded-2xl overflow-hidden active:scale-95 transition-transform"
+              onClick={() => handleOptionClick(opt)}
+              disabled={usingBooster}
+              className="relative flex-1 rounded-2xl overflow-hidden active:scale-95 transition-transform disabled:opacity-60"
               style={{ boxShadow: `0 4px 0 ${opt.shadow}, 0 6px 20px rgba(0,0,0,0.3)` }}>
+
+              {/* Owned-stock badge — shows how many Boosters/Epic Boosters are in stock */}
+              {opt.owned > 0 && (
+                <div className="absolute top-1 right-1 z-10 bg-black bg-opacity-60 text-white text-[10px] font-black rounded-full px-1.5 py-0.5 border border-white border-opacity-30">
+                  x{opt.owned}
+                </div>
+              )}
 
               <div className="flex items-center justify-center py-1.5 font-black text-white text-xs"
                 style={{ background: `linear-gradient(180deg,${opt.top} 0%,${opt.mid} 100%)` }}>
-                +⊕
+                {opt.owned > 0 ? t('energy.owned') : '+⊕'}
               </div>
 
               <div className="flex flex-col items-center justify-center py-3 gap-2"
@@ -181,7 +214,7 @@ function EnergyModal({ player, onClose, onPurchased }) {
 
               <div className="py-2 font-black text-white text-sm text-center"
                 style={{ background: `linear-gradient(180deg,${opt.top} 0%,${opt.mid} 100%)` }}>
-                {opt.price} ⭐
+                {opt.owned > 0 ? t('energy.use') : `${opt.price} ⭐`}
               </div>
             </button>
           ))}
@@ -193,6 +226,7 @@ function EnergyModal({ player, onClose, onPurchased }) {
 
 // ── Daily Quests Modal — full list with progress + claim ───────────────────────
 function QuestsModal({ quests, claimingId, onClaim, onClose }) {
+  const { t } = useLanguage();
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center"
       style={{ backdropFilter: 'blur(5px)', background: 'rgba(0,0,0,0.65)' }}>
@@ -203,7 +237,7 @@ function QuestsModal({ quests, claimingId, onClaim, onClose }) {
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-3 flex-shrink-0">
           <div className="w-8" />
-          <h2 className="font-black text-gray-800 text-xl tracking-wide">Daily Quests</h2>
+          <h2 className="font-black text-gray-800 text-xl tracking-wide">{t('lobby.dailyQuests')}</h2>
           <button onClick={onClose}
             className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-500 font-black text-lg">✕</button>
         </div>
@@ -265,6 +299,7 @@ function getLobbyBackground() {
 
 // ── Characteristics Modal ──────────────────────────────────────────────────────
 function CharacteristicsModal({ player, onClose }) {
+  const { t } = useLanguage();
   const lvl  = player?.level || 1;
   const tier = player?.evolution_tier || 1;
   const atk  = 10 + lvl * 5;
@@ -299,7 +334,7 @@ function CharacteristicsModal({ player, onClose }) {
         <div className="flex items-center justify-between px-5 pt-5 pb-3 flex-shrink-0"
           style={{ background: 'linear-gradient(180deg,#d4a855 0%,#b8842a 100%)', borderRadius: '32px 32px 0 0' }}>
           <div className="w-8" />
-          <h2 className="font-black text-white text-xl tracking-wide">Characteristics</h2>
+          <h2 className="font-black text-white text-xl tracking-wide">{t('lobby.characteristics')}</h2>
           <button onClick={onClose}
             className="w-8 h-8 rounded-full bg-white bg-opacity-20 flex items-center justify-center text-white font-black text-lg">✕</button>
         </div>
@@ -307,7 +342,7 @@ function CharacteristicsModal({ player, onClose }) {
         {/* Power hero row */}
         <div className="flex flex-col items-center py-4 gap-0.5 flex-shrink-0"
           style={{ background: '#f5e8c0' }}>
-          <div className="text-amber-700 font-bold text-sm">Your power</div>
+          <div className="text-amber-700 font-bold text-sm">{t('lobby.yourPower')}</div>
           <div className="text-amber-900 font-black text-4xl">{(player?.power || 0).toLocaleString()}</div>
         </div>
 
@@ -336,7 +371,7 @@ function CharacteristicsModal({ player, onClose }) {
             className="w-full py-3.5 rounded-2xl font-black text-white text-base active:scale-95 transition-transform"
             style={{ background: 'linear-gradient(180deg,#f4a024 0%,#c97010 100%)',
               boxShadow: '0 4px 0 #7a3a00, 0 6px 16px rgba(0,0,0,0.25)' }}>
-            Continue
+            {t('lobby.continue')}
           </button>
         </div>
       </div>
@@ -346,6 +381,7 @@ function CharacteristicsModal({ player, onClose }) {
 
 // ── Main Lobby ─────────────────────────────────────────────────────────────────
 export default function Lobby({ player, onRefresh }) {
+  const { t } = useLanguage();
   const [lobbyBg,         setLobbyBg]         = useState(() => getLobbyBackground());
   const [mode,            setMode]            = useState('normal');
   const [battling,        setBattling]        = useState(false);
@@ -689,7 +725,7 @@ export default function Lobby({ player, onRefresh }) {
             <span style={{ fontSize:22 }}>📋</span>
             <div style={{ flex:1, minWidth:0, textAlign:'left' }}>
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8 }}>
-                <div style={{ color:'#f5c842', fontSize:12, fontWeight:800, letterSpacing:0.3 }}>Daily Quests</div>
+                <div style={{ color:'#f5c842', fontSize:12, fontWeight:800, letterSpacing:0.3 }}>{t('lobby.dailyQuests')}</div>
                 {activeQuests[questCycleIndex] && (
                   <div style={{ color:'#86efac', fontSize:11, fontWeight:800, display:'flex', alignItems:'center', gap:3, flexShrink:0 }}>
                     +{activeQuests[questCycleIndex].reward_amount}
@@ -767,7 +803,7 @@ export default function Lobby({ player, onRefresh }) {
             }}
             className="active:scale-95 transition-transform">
             <span style={{ animation: battling ? 'none' : 'swordSpin 2s ease-in-out infinite', display:'inline-block' }}>🔄</span>
-            <span style={{ marginLeft:4 }}>MODE</span>
+            <span style={{ marginLeft:4 }}>{t('lobby.mode')}</span>
           </button>
 
           {/* BATTLE / EPIC center button */}
@@ -807,7 +843,7 @@ export default function Lobby({ player, onRefresh }) {
                 : hasEnergy    ? '0 0 20px rgba(255,200,60,0.9), 0 2px 4px rgba(0,0,0,0.5)'
                 : '0 2px 4px rgba(0,0,0,0.5)',
             }}>
-              {battling ? '⚔️ Searching…' : mode==='epic' ? '✦ EPIC ✦' : '⚔ BATTLE'}
+              {battling ? '⚔️ Searching…' : mode==='epic' ? `✦ ${t('lobby.epic')} ✦` : `⚔ ${t('lobby.battle')}`}
             </span>
           </button>
 
@@ -821,7 +857,7 @@ export default function Lobby({ player, onRefresh }) {
               background:'transparent', letterSpacing:0.5,
             }}
             className="active:scale-95 transition-transform">
-            <span>AUTO</span>
+            <span>{t('lobby.auto')}</span>
             <span style={{ marginLeft:4, fontSize:14 }}>⚙️</span>
           </button>
         </div>
