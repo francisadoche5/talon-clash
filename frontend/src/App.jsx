@@ -44,6 +44,11 @@ export default function App() {
   const [retrying,  setRetrying]  = useState(false);
   const [showLanguagePicker, setShowLanguagePicker] = useState(false);
   const [showEnergyModal,    setShowEnergyModal]     = useState(false);
+  // Owning an active Auto Battle plan only unlocks the feature — it never
+  // starts fighting on its own. The player has to pick a mode and tap
+  // "Start Auto Battle" each session; this flag tracks that explicit choice
+  // and always resets to false on a fresh app load/login.
+  const [autoBattleEngaged,  setAutoBattleEngaged]   = useState(false);
   const msgIdx = useRef(0);
   const { t, language, setLanguage, languages } = useLanguage();
 
@@ -292,6 +297,7 @@ export default function App() {
       <div className="flex-1 min-h-0" style={{ overflow: activeTab === 'lobby' ? 'hidden' : 'auto' }}>
         {activeTab === 'lobby'     && <Lobby     player={player} onRefresh={refreshPlayer}
           showEnergyModal={showEnergyModal} setShowEnergyModal={setShowEnergyModal}
+          autoBattleEngaged={autoBattleEngaged} setAutoBattleEngaged={setAutoBattleEngaged}
           onNavigateToSkills={() => setActiveTab('skills')} />}
         {activeTab === 'market'    && <Market    player={player} onRefresh={refreshPlayer} />}
         {activeTab === 'inventory' && <Inventory player={player} onRefresh={refreshPlayer} />}
