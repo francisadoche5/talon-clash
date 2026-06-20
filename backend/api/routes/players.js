@@ -1,14 +1,24 @@
 const router = require('express').Router();
-const { getOrCreatePlayer, calculatePower, regenEnergy } = require('../../modules/players');
+const { getOrCreatePlayer, calculatePower, regenEnergy, getReferredPlayers } = require('../../modules/players');
 const supabase = require('../../supabase');
+
+// Deep-link start params look like "ref_123456789" — pulls out the referrer's
+// telegram_id, if any.
+function parseReferrerId(startParam) {
+  if (!startParam || typeof startParam !== 'string') return null;
+  const match = startParam.match(/^ref_(\d+)$/);
+  return match ? match[1] : null;
+}
 
 router.post('/login', async (req, res) => {
   try {
-    const { telegram_user } = req.body;
+    const { telegram_user, start_param } = req.body;
     if (!telegram_user) return res.status(400).json({ error: 'No telegram user provided' });
 
+    const referrerId = parseReferrerId(start_param);
+
     await regenEnergy(telegram_user.id);
-    const player = await getOrCreatePlayer(telegram_user);
+    const player = await getOrCreatePlayer(telegram_user, referrerId);
     await calculatePower(player.telegram_id);
 
     const { data: updatedPlayer } = await supabase
@@ -18,6 +28,15 @@ router.post('/login', async (req, res) => {
       .single();
 
     res.json({ success: true, player: updatedPlayer });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/:id/referrals', async (req, res) => {
+  try {
+    const referred = await getReferredPlayers(req.params.id);
+    res.json({ success: true, referred_players: referred });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -80,7 +99,7 @@ router.post('/:id/use-booster', async (req, res) => {
     const newEnergy = (player.energy || 0) + BOOSTER_ENERGY[type];
 
     await supabase.from('players')
-      .update({ [column]: newCount, energy: newEnergy })
+      .update({ [column]: newCount, energy: newEnergy, energy_updated_at: new Date().toISOString() })
       .eq('telegram_id', telegramId);
 
     res.json({ success: true, [column]: newCount, energy: newEnergy, energy_gained: BOOSTER_ENERGY[type] });
