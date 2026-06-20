@@ -60,6 +60,47 @@ async function openChest(telegramId, chestType) {
   return { success: true, item: newItem, cost: config.price };
 }
 
+// Chests bought with Stars/Star Credits are queued in `pending_chests` at
+// purchase time (see modules/payments) instead of being opened immediately.
+// These two functions let the player actually see and open them afterwards —
+// previously nothing ever read from this table, so purchased chests just
+// vanished as far as the player could tell.
+async function getPendingChests(telegramId) {
+  const { data: chests } = await supabase
+    .from('pending_chests')
+    .select('*')
+    .eq('telegram_id', telegramId)
+    .order('created_at', { ascending: false });
+  return chests || [];
+}
+
+async function openPendingChest(telegramId, pendingChestId) {
+  const { data: pending } = await supabase
+    .from('pending_chests')
+    .select('*')
+    .eq('id', pendingChestId)
+    .eq('telegram_id', telegramId)
+    .single();
+
+  if (!pending) return { error: 'Chest not found' };
+
+  const config = CHEST_REWARDS[pending.chest_type];
+  if (!config) return { error: 'Invalid chest type' };
+
+  // Already paid for with Stars/Star Credits at purchase time — no extra
+  // currency cost here, just roll the reward and remove it from the queue.
+  const item = rollChestItem(pending.chest_type);
+
+  const { data: newItem } = await supabase.from('items').insert({
+    player_id: telegramId,
+    ...item
+  }).select().single();
+
+  await supabase.from('pending_chests').delete().eq('id', pendingChestId);
+
+  return { success: true, item: newItem, chest_type: pending.chest_type };
+}
+
 async function buyStoreItem(telegramId, itemId) {
   const { data: storeItem } = await supabase
     .from('store_items')
@@ -90,7 +131,11 @@ async function buyStoreItem(telegramId, itemId) {
   if (storeItem.category === 'boosters') {
     const boostAmount = storeItem.name.includes('x1') ? 50 :
                         storeItem.name.includes('x3') ? 250 : 750;
-    updates.energy = Math.min(player.max_energy, player.energy + boostAmount);
+    // Paid refill — allowed to overflow past max_energy, same as every other
+    // energy purchase path. Bump energy_updated_at so passive regen doesn't
+    // clamp the overflow back down to max_energy on the next tick.
+    updates.energy = (player.energy || 0) + boostAmount;
+    updates.energy_updated_at = new Date().toISOString();
   } else if (storeItem.category === 'hammers') {
     const qty = storeItem.name.includes('x5') ? 5 :
                 storeItem.name.includes('x10') ? 10 : 15;
@@ -102,4 +147,4 @@ async function buyStoreItem(telegramId, itemId) {
   return { success: true, item: storeItem, paid: price };
 }
 
-module.exports = { openChest, buyStoreItem };
+module.exports = { openChest, buyStoreItem, getPendingChests, openPendingChest };
