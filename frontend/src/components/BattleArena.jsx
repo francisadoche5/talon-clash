@@ -183,7 +183,7 @@ function RewardTile({ label, icon, value, delay = 0 }) {
   );
 }
 
-function LevelUpModal({ newLevel, onClose }) {
+function LevelUpModal({ newLevel, onClose, onSelectUpgrade }) {
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center px-4"
       style={{ background:'rgba(0,0,0,0.78)', backdropFilter:'blur(6px)' }}>
@@ -213,7 +213,7 @@ function LevelUpModal({ newLevel, onClose }) {
               </div>
             </div>
           </div>
-          <button onClick={onClose}
+          <button onClick={() => { onSelectUpgrade?.(); onClose(); }}
             className="w-full py-4 rounded-2xl font-black text-base text-white active:translate-y-0.5 transition-transform"
             style={{ background:'linear-gradient(180deg,#4ade80 0%,#16a34a 50%,#166534 100%)',
               boxShadow:'0 5px 0 #052e16', border:'1.5px solid #4ade80', textShadow:'0 1px 3px rgba(0,0,0,0.4)' }}>
@@ -226,7 +226,7 @@ function LevelUpModal({ newLevel, onClose }) {
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
-export default function BattleArena({ player, result, onClose }) {
+export default function BattleArena({ player, result, onClose, onSelectUpgrade, autoPlay }) {
   const [phase,           setPhase]           = useState('entrance');
   const [stepIdx,         setStepIdx]         = useState(0);
   const [showBattleStart, setShowBattleStart] = useState(false);
@@ -298,6 +298,16 @@ export default function BattleArena({ player, result, onClose }) {
     const tN = setTimeout(advanceStep, 950);
     return () => { clearTimeout(tL); clearTimeout(tH); clearTimeout(tN); };
   }, [phase, stepIdx]);
+
+  // Auto Battle: skip the manual "Continue"/"Select Upgrade" taps and roll
+  // straight into the next automatic fight once the result has been shown
+  // briefly. Leveling up is already applied server-side, so there's nothing
+  // to lose by not stopping for the upgrade screen mid-loop.
+  useEffect(() => {
+    if (!autoPlay || phase !== 'result') return;
+    const t = setTimeout(() => onClose(), 2200);
+    return () => clearTimeout(t);
+  }, [autoPlay, phase]);
 
   const rewards    = result?.rewards || {};
   const rewardTiles = [
@@ -508,7 +518,7 @@ export default function BattleArena({ player, result, onClose }) {
         </div>
       )}
 
-      {showLevelUp && <LevelUpModal newLevel={result?.newLevel} onClose={onClose} />}
+      {showLevelUp && <LevelUpModal newLevel={result?.newLevel} onClose={onClose} onSelectUpgrade={onSelectUpgrade} />}
     </div>
   );
 }
