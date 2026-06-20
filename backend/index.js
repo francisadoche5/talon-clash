@@ -45,7 +45,12 @@ const bot = new Telegraf(process.env.BOT_TOKEN);
 
 bot.start(async (ctx) => {
   const user = ctx.from;
-  await getOrCreatePlayer(user);
+  // Deep link of the form https://t.me/<bot>?start=ref_<telegram_id>
+  const startPayload = ctx.startPayload || '';
+  const refMatch = startPayload.match(/^ref_(\d+)$/);
+  const referrerId = refMatch ? refMatch[1] : null;
+
+  await getOrCreatePlayer(user, referrerId);
 
   await ctx.reply(
     `🦅 Welcome to *Talon Clash!*\n\nYou start as a tiny Hatchling and battle your way to become the legendary Shadow Eagle!\n\n⚔️ Battle players\n🎒 Upgrade equipment\n🌳 Build your skill tree\n👥 Join a clan\n\nTap below to start your journey!`,
@@ -125,9 +130,14 @@ bot.on('message', async (ctx) => {
     else if (productKey === 'energy_50' || productKey === 'energy_250' || productKey === 'energy_750') {
       const amounts = { energy_50: 50, energy_250: 250, energy_750: 750 };
       const add     = amounts[productKey];
-      const { data: p } = await supabase.from('players').select('energy, max_energy').eq('telegram_id', telegramId).single();
-      const newEnergy   = Math.min(p?.max_energy || 400, (p?.energy || 0) + add);
-      await supabase.from('players').update({ energy: newEnergy }).eq('telegram_id', telegramId);
+      const { data: p } = await supabase.from('players').select('energy').eq('telegram_id', telegramId).single();
+      // Paid refill — allowed to overflow past max_energy, same as the virtual
+      // Star Credits path. Also bump energy_updated_at so the next passive
+      // regen tick doesn't clamp this back down to max_energy.
+      const newEnergy = (p?.energy || 0) + add;
+      await supabase.from('players')
+        .update({ energy: newEnergy, energy_updated_at: new Date().toISOString() })
+        .eq('telegram_id', telegramId);
       await ctx.reply(`✅ +${add} ⚡ Energy added! Keep fighting! 🦅`);
     }
 
