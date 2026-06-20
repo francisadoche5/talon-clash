@@ -21,6 +21,9 @@ export const getPlayers = (search, page) =>
 export const banPlayer = (telegram_id, reason, banned) =>
   API.post('/api/admin/players/ban', { telegram_id, reason, banned });
 
+export const setPlayerCredits = (telegram_id, stars) =>
+  API.post('/api/admin/players/credits', { telegram_id, stars });
+
 export const getStoreItems = () => API.get('/api/admin/store');
 
 export const saveStoreItem = (item) => API.post('/api/admin/store/item', item);
