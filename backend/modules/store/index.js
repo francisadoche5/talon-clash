@@ -21,15 +21,12 @@ function generateItem(rarity) {
   };
 }
 
+// Each chest tier now guarantees an item of that same rarity — a Common
+// Chest always yields a Common item, an Epic Chest always yields an Epic
+// item, etc. (Previously this rolled a random rarity from a weighted table,
+// so an Epic Chest could occasionally hand back a "Rare" item.)
 function rollChestItem(chestType) {
-  const config = CHEST_REWARDS[chestType];
-  const roll = Math.random() * 100;
-  let cumulative = 0;
-  for (const item of config.items) {
-    cumulative += item.chance;
-    if (roll <= cumulative) return generateItem(item.rarity);
-  }
-  return generateItem('common');
+  return generateItem(chestType);
 }
 
 async function openChest(telegramId, chestType) {
