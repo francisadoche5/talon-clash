@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { fight, getPublicConfig, getQuests, claimQuest, devBoost, useBooster } from '../api';
+import { fight, getPublicConfig, getQuests, claimQuest, devBoost, useBooster, stopAutoBattle } from '../api';
 import { payWithStars } from '../starsPayment';
 import BattleArena from './BattleArena';
 import { getBirdUrl } from '../birdImages';
@@ -191,9 +191,12 @@ function EnergyModal({ player, onClose, onPurchased }) {
               className="relative flex-1 rounded-2xl overflow-hidden active:scale-95 transition-transform disabled:opacity-60"
               style={{ boxShadow: `0 4px 0 ${opt.shadow}, 0 6px 20px rgba(0,0,0,0.3)` }}>
 
-              {/* Owned-stock badge — shows how many Boosters/Epic Boosters are in stock */}
+              {/* Owned-stock badge — shows how many Boosters/Epic Boosters are in stock.
+                  Positioned below the header strip (not top-1) so a wide number
+                  like x999/x1033 doesn't sit on top of the "Owned" label. */}
               {opt.owned > 0 && (
-                <div className="absolute top-1 right-1 z-10 bg-black bg-opacity-60 text-white text-[10px] font-black rounded-full px-1.5 py-0.5 border border-white border-opacity-30">
+                <div className="absolute z-10 bg-black bg-opacity-60 text-white text-[10px] font-black rounded-full px-1.5 py-0.5 border border-white border-opacity-30"
+                  style={{ top: 26, right: 4 }}>
                   x{opt.owned}
                 </div>
               )}
@@ -380,7 +383,7 @@ function CharacteristicsModal({ player, onClose }) {
 }
 
 // ── Main Lobby ─────────────────────────────────────────────────────────────────
-export default function Lobby({ player, onRefresh }) {
+export default function Lobby({ player, onRefresh, showEnergyModal, setShowEnergyModal, onNavigateToSkills }) {
   const { t } = useLanguage();
   const [lobbyBg,         setLobbyBg]         = useState(() => getLobbyBackground());
   const [mode,            setMode]            = useState('normal');
@@ -388,7 +391,6 @@ export default function Lobby({ player, onRefresh }) {
   const [battleResult,    setBattleResult]    = useState(null);
   const [showEpicInfo,    setShowEpicInfo]    = useState(false);
   const [showAutoBattle,  setShowAutoBattle]  = useState(false);
-  const [showEnergyModal, setShowEnergyModal] = useState(false);
 
   // ── Dev panel (tap bird 7× to open) ──
   const [birdTaps,      setBirdTaps]      = useState(0);
@@ -404,6 +406,7 @@ export default function Lobby({ player, onRefresh }) {
   const [showQuestsModal, setShowQuestsModal] = useState(false);
   const [questCycleIndex, setQuestCycleIndex] = useState(0);
   const [claimingId,      setClaimingId]      = useState(null);
+  const [stoppingAuto,    setStoppingAuto]    = useState(false);
 
   const energyCost = mode === 'epic' ? 200 : 25;
   const hasEnergy  = (player?.energy || 0) >= energyCost;
@@ -489,8 +492,8 @@ export default function Lobby({ player, onRefresh }) {
       }).catch(() => {});
   }, []);
 
-  async function handleBattle() {
-    if (!hasEnergy) { setShowEnergyModal(true); return; }
+  async function handleBattle(isAuto = false) {
+    if (!hasEnergy) { if (!isAuto) setShowEnergyModal(true); return; }
     setBattling(true);
     setLastBattleResult(null);
     try {
@@ -520,10 +523,56 @@ export default function Lobby({ player, onRefresh }) {
     });
   }
 
+  async function handleStopAutoBattle() {
+    setStoppingAuto(true);
+    try {
+      await stopAutoBattle(player.telegram_id);
+      onRefresh();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Could not stop Auto Battle. Please try again.');
+    } finally {
+      setStoppingAuto(false);
+    }
+  }
+
+  // ── Auto Battle plan status ──
+  const autoBattleExpired = player?.auto_battle_expires_at
+    ? new Date(player.auto_battle_expires_at) <= new Date()
+    : false;
+  const autoBattleOn = !!player?.auto_battle_active && !autoBattleExpired;
+
+  // Pause the loop while another full-screen overlay is open so an automatic
+  // fight doesn't suddenly take over what the player is looking at.
+  const autoBattleBlocked = showAutoBattle || showEnergyModal || showEpicInfo ||
+    showQuestsModal || showCharacteristics || showDevPanel;
+
+  // While the plan is active, poll for energy regen so the loop notices once
+  // there's enough energy to fight again — without this, energy would only
+  // ever update when the player does something that calls onRefresh().
+  useEffect(() => {
+    if (!autoBattleOn) return;
+    const id = setInterval(() => onRefresh(), 15000);
+    return () => clearInterval(id);
+  }, [autoBattleOn]);
+
+  // Fires the next automatic battle whenever the plan is active, the energy
+  // bar holds enough for the current mode, and nothing else is showing.
+  // Stops the moment energy runs out and resumes on its own once it's
+  // regenerated — keeps going until the plan expires, the player taps
+  // STOP AUTO BATTLE, or they leave the Lobby/close the app.
+  useEffect(() => {
+    if (!autoBattleOn || autoBattleBlocked) return;
+    if (battling || battleResult) return;
+    if (!hasEnergy) return;
+    const t = setTimeout(() => { handleBattle(true); }, 1200);
+    return () => clearTimeout(t);
+  }, [autoBattleOn, autoBattleBlocked, battling, battleResult, hasEnergy, mode, player?.telegram_id]);
+
   return (
     <>
       {battleResult && !battleResult.error && (
-        <BattleArena player={player} result={battleResult} onClose={handleArenaClose} />
+        <BattleArena player={player} result={battleResult} onClose={handleArenaClose}
+          autoPlay={autoBattleOn} onSelectUpgrade={onNavigateToSkills} />
       )}
 
       {/* Searching overlay */}
@@ -850,6 +899,7 @@ export default function Lobby({ player, onRefresh }) {
           {/* AUTO button */}
           <button onClick={() => setShowAutoBattle(true)} disabled={battling}
             style={{
+              position:'relative',
               padding:'0 18px', display:'flex', alignItems:'center', justifyContent:'center',
               fontWeight:800, fontSize:12, flexShrink:0,
               color: battling ? '#6b7280' : mode==='epic' ? '#e9d5ff' : hasEnergy ? '#3d1a00' : '#fff',
@@ -857,6 +907,13 @@ export default function Lobby({ player, onRefresh }) {
               background:'transparent', letterSpacing:0.5,
             }}
             className="active:scale-95 transition-transform">
+            {autoBattleOn && (
+              <span style={{
+                position:'absolute', top:4, right:8, width:8, height:8, borderRadius:999,
+                background:'#22c55e', boxShadow:'0 0 6px #22c55e',
+                animation:'pulse 1.5s ease-in-out infinite',
+              }} />
+            )}
             <span>{t('lobby.auto')}</span>
             <span style={{ marginLeft:4, fontSize:14 }}>⚙️</span>
           </button>
@@ -887,25 +944,51 @@ export default function Lobby({ player, onRefresh }) {
                 <h2 className="text-xl font-black text-amber-900">Auto Battle</h2>
                 <button onClick={() => setShowAutoBattle(false)} className="text-red-500 text-2xl font-black">✕</button>
               </div>
-              <div className="mx-5 mb-3"><div className="rounded-xl py-2 text-center font-black text-base text-amber-100" style={{ background: '#7a5230' }}>{player?.auto_battle_active?'✅ Active':'Inactive'}</div></div>
+              <div className="mx-5 mb-1"><div className="rounded-xl py-2 text-center font-black text-base text-amber-100" style={{ background: '#7a5230' }}>{autoBattleOn?'✅ Active':'Inactive'}</div></div>
+              {autoBattleOn && player?.auto_battle_expires_at && (
+                <p className="text-center text-amber-800 text-xs font-bold mb-2">
+                  {(() => {
+                    const msLeft = Math.max(0, new Date(player.auto_battle_expires_at) - new Date());
+                    const days  = Math.floor(msLeft / 86400000);
+                    const hours = Math.floor((msLeft % 86400000) / 3600000);
+                    return `Expires in ${days}d ${hours}h`;
+                  })()}
+                </p>
+              )}
               <div className="mx-5 mb-3 rounded-2xl overflow-hidden" style={{ height: 160, background: '#c4a882' }}>
                 <div className="w-full h-full flex items-center justify-center text-7xl">⚔️🦅⚔️</div>
               </div>
               <div className="mx-5 mb-4 rounded-2xl p-4" style={{ background: '#d4b896', border: '2px solid #b8956a' }}>
-                <p className="text-amber-900 font-bold text-sm text-center">Unlock AutoBattle to speed up your progress!</p>
+                <p className="text-amber-900 font-bold text-sm text-center">
+                  {autoBattleOn
+                    ? `Your bird is fighting on its own in ${mode === 'epic' ? 'Epic' : 'Normal'} mode. It pauses when energy runs out and picks back up once it regenerates.`
+                    : 'Unlock AutoBattle to speed up your progress!'}
+                </p>
               </div>
-              <div className="flex gap-3 mx-5 mb-3">
-                {[{days:3,price:autoPrices.days3},{days:14,price:autoPrices.days14}].map(o => (
-                  <div key={o.days} className="flex-1 flex flex-col items-center">
-                    <div className="z-10 mb-[-10px] px-3 py-1 rounded-full font-black text-sm text-white" style={{ background:'#3a3a3a' }}>{o.price} ⭐</div>
-                    <button onClick={() => handleAutoPurchase(o.days)}
-                      className="w-full pt-4 pb-3 rounded-2xl font-black text-white text-lg"
-                      style={{ background: 'linear-gradient(180deg,#5bb8ff 0%,#2d7dd2 100%)', border: '3px solid #1a5fa0' }}>
-                      {o.days} DAYS
-                    </button>
-                  </div>
-                ))}
-              </div>
+
+              {autoBattleOn ? (
+                <div className="mx-5 mb-3">
+                  <button onClick={handleStopAutoBattle} disabled={stoppingAuto}
+                    className="w-full py-4 rounded-2xl font-black text-white text-lg disabled:opacity-60"
+                    style={{ background: 'linear-gradient(180deg,#f87171 0%,#dc2626 100%)', border: '3px solid #b91c1c' }}>
+                    {stoppingAuto ? 'Stopping…' : 'STOP AUTO BATTLE'}
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-3 mx-5 mb-3">
+                  {[{days:3,price:autoPrices.days3},{days:14,price:autoPrices.days14}].map(o => (
+                    <div key={o.days} className="flex-1 flex flex-col items-center">
+                      <div className="z-10 mb-[-10px] px-3 py-1 rounded-full font-black text-sm text-white" style={{ background:'#3a3a3a' }}>{o.price} ⭐</div>
+                      <button onClick={() => handleAutoPurchase(o.days)}
+                        className="w-full pt-4 pb-3 rounded-2xl font-black text-white text-lg"
+                        style={{ background: 'linear-gradient(180deg,#5bb8ff 0%,#2d7dd2 100%)', border: '3px solid #1a5fa0' }}>
+                        {o.days} DAYS
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="mx-5 mb-6">
                 <button onClick={() => setShowAutoBattle(false)}
                   className="w-full py-4 rounded-2xl font-black text-amber-900 text-base"
