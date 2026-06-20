@@ -32,4 +32,5 @@ export const getPublicConfig = ()                          => API.get('/api/conf
 export const createInvoice   = (telegram_id, product)      => API.post('/api/payments/invoice',    { telegram_id, product });
 export const purchaseProduct = (telegram_id, product)      => API.post('/api/payments/purchase',   { telegram_id, product });
 export const useBooster      = (telegramId, type)          => API.post(`/api/players/${telegramId}/use-booster`, { type });
+export const stopAutoBattle  = (telegramId)                => API.post(`/api/players/${telegramId}/auto-battle/stop`, {});
 export const devBoost        = (telegramId, secret)         => API.post(`/api/dev/boost/${telegramId}`, { secret });
