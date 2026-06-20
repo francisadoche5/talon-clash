@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import ASSETS from '../config/assets';
-import { getQuests, claimQuest } from '../api';
+import { getQuests, claimQuest, getReferrals } from '../api';
+import { useLanguage } from '../i18n/LanguageContext';
 
 export default function Earn({ player, onRefresh }) {
+  const { t } = useLanguage();
   const [tab, setTab] = useState('daily');
   const [quests, setQuests] = useState([]);
   const [message, setMessage] = useState(null);
@@ -12,16 +14,19 @@ export default function Earn({ player, onRefresh }) {
   const BOT_USERNAME = import.meta.env.VITE_BOT_USERNAME || 'Talonclashbot';
   const referralLink = `https://t.me/${BOT_USERNAME}?start=ref_${player?.telegram_id}`;
 
-  useEffect(() => { loadQuests(); }, []);
+  useEffect(() => { loadQuests(); loadReferrals(); }, []);
 
   async function loadQuests() {
     try {
       const res = await getQuests(player.telegram_id);
       setQuests(res.data.quests || []);
-      // Load referred players if available
-      if (res.data.referred_players) {
-        setInvitedFriends(res.data.referred_players);
-      }
+    } catch {}
+  }
+
+  async function loadReferrals() {
+    try {
+      const res = await getReferrals(player.telegram_id);
+      setInvitedFriends(res.data.referred_players || []);
     } catch {}
   }
 
@@ -82,19 +87,19 @@ export default function Earn({ player, onRefresh }) {
           className={`flex-1 py-2 rounded-xl font-bold text-sm ${
             tab === 'daily' ? 'bg-amber-600 text-white' : 'bg-amber-900 text-amber-400'
           }`}>
-          Daily
+          {t('earn.daily')}
         </button>
         <button onClick={() => setTab('weekly')}
           className={`flex-1 py-2 rounded-xl font-bold text-sm ${
             tab === 'weekly' ? 'bg-amber-600 text-white' : 'bg-amber-900 text-amber-400'
           }`}>
-          Weekly
+          {t('earn.weekly')}
         </button>
         <button onClick={() => setTab('invite')}
           className={`flex-1 py-2 rounded-xl font-bold text-sm ${
             tab === 'invite' ? 'bg-amber-600 text-white' : 'bg-amber-900 text-amber-400'
           }`}>
-          Invite
+          {t('earn.invite')}
         </button>
       </div>
 
@@ -129,8 +134,8 @@ export default function Earn({ player, onRefresh }) {
             <div className="flex items-center gap-3 mb-3">
               <span className="text-3xl">👥</span>
               <div>
-                <div className="text-white font-bold">Invite Friends</div>
-                <div className="text-blue-300 text-xs">Earn feathers for every friend you invite</div>
+                <div className="text-white font-bold">{t('earn.inviteFriends')}</div>
+                <div className="text-blue-300 text-xs">{t('earn.earnFeathers')}</div>
               </div>
             </div>
 
@@ -140,27 +145,27 @@ export default function Earn({ player, onRefresh }) {
                 className={`flex-shrink-0 text-xs px-3 py-1 rounded-lg font-bold transition-all ${
                   copied ? 'bg-green-600 text-white' : 'bg-blue-600 text-white'
                 }`}>
-                {copied ? '✅ Copied!' : 'Copy'}
+                {copied ? `✅ ${t('earn.copied')}` : t('earn.copy')}
               </button>
             </div>
 
             <button onClick={handleShare}
               className="w-full bg-blue-500 text-white py-2 rounded-xl font-bold text-sm">
-              📤 Share via Telegram
+              📤 {t('earn.shareTelegram')}
             </button>
           </div>
 
           {/* Invited Friends List */}
           <div className="bg-amber-900 rounded-2xl p-4">
             <div className="text-white font-bold mb-3 flex items-center justify-between">
-              <span>Invited Friends</span>
+              <span>{t('earn.invitedFriends')}</span>
               <span className="text-amber-400 text-sm">{friends.length} invited</span>
             </div>
 
             {friends.length === 0 ? (
               <div className="text-center py-6">
                 <div className="text-4xl mb-2">🫂</div>
-                <div className="text-amber-400 text-sm">No friends invited yet</div>
+                <div className="text-amber-400 text-sm">{t('earn.noFriendsYet')}</div>
                 <div className="text-amber-600 text-xs mt-1">Share your link above to invite!</div>
               </div>
             ) : (
