@@ -108,4 +108,25 @@ router.post('/:id/use-booster', async (req, res) => {
   }
 });
 
+// Lets a player turn off an active Auto Battle plan early. The Stars/Star
+// Credits already spent on it are not refunded — this just stops the
+// automatic fighting loop on the frontend from continuing to trigger fights.
+router.post('/:id/auto-battle/stop', async (req, res) => {
+  try {
+    const telegramId = req.params.id;
+    const { data: player } = await supabase
+      .from('players').select('auto_battle_active').eq('telegram_id', telegramId).single();
+
+    if (!player) return res.status(404).json({ error: 'Player not found' });
+
+    await supabase.from('players')
+      .update({ auto_battle_active: false })
+      .eq('telegram_id', telegramId);
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
