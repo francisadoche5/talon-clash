@@ -18,6 +18,7 @@ export const getInventory    = (id)                        => API.get(`/api/inve
 export const openPendingChest= (telegramId, chestId)       => API.post('/api/inventory/chest/open', { telegram_id: telegramId, chest_id: chestId });
 export const equipItem       = (telegramId, itemId)        => API.post('/api/inventory/equip',     { telegram_id: telegramId, item_id: itemId });
 export const burnItem        = (telegramId, itemId)        => API.post('/api/inventory/burn',      { telegram_id: telegramId, item_id: itemId });
+export const burnItems       = (telegramId, itemIds)        => API.post('/api/inventory/burn-multiple', { telegram_id: telegramId, item_ids: itemIds });
 export const forgeItem       = (telegramId, itemId)        => API.post('/api/inventory/forge',     { telegram_id: telegramId, item_id: itemId });
 export const getQuests       = (id)                        => API.get(`/api/quests/${id}`);
 export const claimQuest      = (telegramId, questId)       => API.post('/api/quests/claim',        { telegram_id: telegramId, quest_id: questId });
