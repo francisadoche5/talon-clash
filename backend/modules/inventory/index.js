@@ -1,5 +1,24 @@
 const supabase = require('../../supabase');
 
+// Feathers earned for burning an unequipped item, by rarity. Each burn rolls
+// a random amount inside the range (inclusive) rather than a single fixed
+// number — gives burning a bit of variance instead of always paying the same.
+// NOTE: "legendary" wasn't specified in the requested rebalance — its range
+// here is just scaled to sit above "epic" the same way the other tiers scale
+// up from one another. Adjust freely in this one place if that's not right.
+const RARITY_REWARD_RANGE = {
+  common:    [30, 36],
+  uncommon:  [66, 70],
+  rare:      [100, 200],
+  epic:      [300, 500],
+  legendary: [600, 1000],
+};
+
+function rollFeathers(rarity) {
+  const [min, max] = RARITY_REWARD_RANGE[rarity] || RARITY_REWARD_RANGE.common;
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
 async function getInventory(telegramId) {
   const { data: items } = await supabase
     .from('items')
@@ -45,15 +64,7 @@ async function burnItem(telegramId, itemId) {
   if (!item) return { error: 'Item not found' };
   if (item.is_equipped) return { error: 'Cannot burn equipped item' };
 
-  const rarityReward = {
-    common: 50,
-    uncommon: 150,
-    rare: 500,
-    epic: 1500,
-    legendary: 5000
-  };
-
-  const feathersEarned = rarityReward[item.rarity] || 50;
+  const feathersEarned = rollFeathers(item.rarity);
 
   await supabase.from('items').delete().eq('id', itemId);
 
@@ -68,6 +79,53 @@ async function burnItem(telegramId, itemId) {
   }).eq('telegram_id', telegramId);
 
   return { success: true, feathersEarned };
+}
+
+// Burns several unequipped items in one go ("Burn several artifacts").
+// Refuses the whole batch if any selected item is missing, not owned by
+// this player, or currently equipped — so a player can never accidentally
+// lose an equipped item through the bulk flow.
+async function burnItems(telegramId, itemIds) {
+  if (!Array.isArray(itemIds) || itemIds.length === 0) {
+    return { error: 'No items selected' };
+  }
+
+  const uniqueIds = [...new Set(itemIds)];
+
+  const { data: items } = await supabase
+    .from('items')
+    .select('*')
+    .eq('player_id', telegramId)
+    .in('id', uniqueIds);
+
+  if (!items || items.length !== uniqueIds.length) {
+    return { error: 'One or more items not found' };
+  }
+  if (items.some(i => i.is_equipped)) {
+    return { error: 'Cannot burn an equipped item' };
+  }
+
+  const burned = items.map(item => ({
+    id: item.id,
+    name: item.name,
+    rarity: item.rarity,
+    feathersEarned: rollFeathers(item.rarity),
+  }));
+  const feathersEarned = burned.reduce((sum, b) => sum + b.feathersEarned, 0);
+
+  await supabase.from('items').delete().in('id', uniqueIds);
+
+  const { data: player } = await supabase
+    .from('players')
+    .select('feathers')
+    .eq('telegram_id', telegramId)
+    .single();
+
+  await supabase.from('players').update({
+    feathers: (player.feathers || 0) + feathersEarned
+  }).eq('telegram_id', telegramId);
+
+  return { success: true, feathersEarned, burnedCount: burned.length, burned };
 }
 
 async function forgeItem(telegramId, itemId) {
@@ -108,4 +166,4 @@ async function forgeItem(telegramId, itemId) {
   return { success: true, newLevel };
 }
 
-module.exports = { getInventory, equipItem, burnItem, forgeItem };
+module.exports = { getInventory, equipItem, burnItem, burnItems, forgeItem, RARITY_REWARD_RANGE };
