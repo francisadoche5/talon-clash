@@ -7,7 +7,7 @@ const API = axios.create({
 
 export const login           = (telegramUser, startParam)  => API.post('/api/players/login',      { telegram_user: telegramUser, start_param: startParam });
 export const getPlayer       = (id)                        => API.get(`/api/players/${id}`);
-export const getLeaderboard  = ()                          => API.get('/api/players/0/leaderboard');
+export const getLeaderboard  = (id)                        => API.get(`/api/players/${id}/leaderboard`);
 export const getReferrals    = (id)                        => API.get(`/api/players/${id}/referrals`);
 export const fight           = (telegramId, mode)          => API.post('/api/battles/fight',      { telegram_id: telegramId, mode });
 export const getBattleHistory= (id)                        => API.get(`/api/battles/history/${id}`);
