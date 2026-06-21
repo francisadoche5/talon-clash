@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { fight, getPublicConfig, getQuests, claimQuest, devBoost, useBooster } from '../api';
+import { fight, getPublicConfig, getQuests, claimQuest, devBoost, useBooster, getLeaderboard } from '../api';
 import { payWithStars } from '../starsPayment';
 import BattleArena from './BattleArena';
+import Leaderboard from './Leaderboard';
 import { getBirdUrl } from '../birdImages';
 import { getEvolutionProgress } from '../config/evolutions';
 import axios from 'axios';
@@ -403,6 +404,32 @@ function CharacteristicsModal({ player, onClose }) {
   );
 }
 
+// ── Tournament "coming soon" modal ──────────────────────────────────────────
+function TournamentModal({ onClose }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ backdropFilter: 'blur(5px)', background: 'rgba(0,0,0,0.7)' }}
+      onClick={onClose}>
+      <div onClick={e => e.stopPropagation()}
+        className="w-full max-w-sm rounded-3xl p-6 text-center"
+        style={{ background: 'linear-gradient(160deg,#fdf6e0 0%,#ede1b4 100%)',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.6)', border: '1.5px solid rgba(255,255,255,0.4)' }}>
+        <div style={{ fontSize: 44, marginBottom: 6 }}>🏆</div>
+        <h2 className="text-xl font-black text-amber-900 mb-2">Tournament</h2>
+        <p className="text-amber-800 text-sm font-bold leading-relaxed mb-5">
+          Tournament coming soon — get ready to win cash prizes, upgrades and more. Stay tuned!!
+        </p>
+        <button onClick={onClose}
+          className="w-full py-3.5 rounded-2xl font-black text-white text-base active:scale-95 transition-transform"
+          style={{ background: 'linear-gradient(180deg,#f4a024 0%,#c97010 100%)',
+            boxShadow: '0 4px 0 #7a3a00, 0 6px 16px rgba(0,0,0,0.25)' }}>
+          Got it
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Main Lobby ─────────────────────────────────────────────────────────────────
 export default function Lobby({ player, onRefresh, showEnergyModal, setShowEnergyModal, autoBattleEngaged, setAutoBattleEngaged, onNavigateToSkills }) {
   const { t } = useLanguage();
@@ -427,9 +454,20 @@ export default function Lobby({ player, onRefresh, showEnergyModal, setShowEnerg
   const [showQuestsModal, setShowQuestsModal] = useState(false);
   const [questCycleIndex, setQuestCycleIndex] = useState(0);
   const [claimingId,      setClaimingId]      = useState(null);
+  const [showLeaderboard,   setShowLeaderboard]   = useState(false);
+  const [showTournamentInfo, setShowTournamentInfo] = useState(false);
+  const [myRankPreview,     setMyRankPreview]     = useState(null);
 
   const energyCost = mode === 'epic' ? 200 : 25;
   const hasEnergy  = (player?.energy || 0) >= energyCost;
+
+  async function loadMyRank() {
+    if (!player?.telegram_id) return;
+    try {
+      const res = await getLeaderboard(player.telegram_id);
+      setMyRankPreview(res.data?.myRank || null);
+    } catch {}
+  }
 
   async function loadQuests() {
     if (!player?.telegram_id) return;
@@ -445,7 +483,7 @@ export default function Lobby({ player, onRefresh, showEnergyModal, setShowEnerg
     return () => clearInterval(id);
   }, []);
 
-  useEffect(() => { loadQuests(); }, [player?.telegram_id]);
+  useEffect(() => { loadQuests(); loadMyRank(); }, [player?.telegram_id]);
 
   // Only show unclaimed quests in the lobby preview card
   const activeQuests = quests.filter(q => !q.is_claimed);
@@ -521,6 +559,7 @@ export default function Lobby({ player, onRefresh, showEnergyModal, setShowEnerg
       setBattleResult({ ...res.data, mode });
       onRefresh();
       loadQuests();
+      loadMyRank();
     } catch (err) {
       setLastBattleResult({ error: err.response?.data?.error || 'Battle failed' });
     } finally {
@@ -572,7 +611,7 @@ export default function Lobby({ player, onRefresh, showEnergyModal, setShowEnerg
   // Pause the loop while another full-screen overlay is open so an automatic
   // fight doesn't suddenly take over what the player is looking at.
   const autoBattleBlocked = showAutoBattle || showEnergyModal || showEpicInfo ||
-    showQuestsModal || showCharacteristics || showDevPanel;
+    showQuestsModal || showCharacteristics || showDevPanel || showLeaderboard || showTournamentInfo;
 
   // While engaged, poll for energy regen so the loop notices once there's
   // enough energy to fight again — without this, energy would only ever
@@ -720,6 +759,14 @@ export default function Lobby({ player, onRefresh, showEnergyModal, setShowEnerg
         <CharacteristicsModal player={player} onClose={() => setShowCharacteristics(false)} />
       )}
 
+      {showLeaderboard && (
+        <Leaderboard player={player} onClose={() => setShowLeaderboard(false)} />
+      )}
+
+      {showTournamentInfo && (
+        <TournamentModal onClose={() => setShowTournamentInfo(false)} />
+      )}
+
 
       <div
         style={{
@@ -734,6 +781,37 @@ export default function Lobby({ player, onRefresh, showEnergyModal, setShowEnerg
       >
         {/* Dark overlay */}
         <div className="absolute inset-0 pointer-events-none" style={{ background: 'rgba(0,0,0,0.38)' }} />
+
+        {/* Top-left: Leaderboard + Tournament (coming soon) — Lobby homepage only */}
+        <div style={{ position:'absolute', top:8, left:8, zIndex:30, display:'flex', flexDirection:'column', gap:6 }}>
+          <button onClick={() => setShowLeaderboard(true)}
+            className="active:scale-95 transition-transform"
+            style={{
+              display:'flex', alignItems:'center', gap:5, padding:'5px 10px 5px 6px',
+              borderRadius:999, background:'rgba(0,0,0,0.45)', border:'1px solid rgba(255,220,80,0.35)',
+              backdropFilter:'blur(6px)',
+            }}>
+            <span style={{
+              width:22, height:22, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center',
+              background:'linear-gradient(145deg,#fff1a0,#f5a623 45%,#8b5e00 100%)', fontSize:13,
+            }}>🏆</span>
+            <span style={{ color:'#f5c842', fontWeight:800, fontSize:11 }}>Leaderboard</span>
+          </button>
+
+          <button onClick={() => setShowTournamentInfo(true)}
+            className="active:scale-95 transition-transform"
+            style={{
+              display:'flex', alignItems:'center', gap:5, padding:'5px 10px 5px 6px',
+              borderRadius:999, background:'rgba(0,0,0,0.45)', border:'1px solid rgba(167,139,250,0.4)',
+              backdropFilter:'blur(6px)',
+            }}>
+            <span style={{
+              width:22, height:22, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center',
+              background:'linear-gradient(145deg,#c4b5fd,#7c3aed 45%,#4c1d95 100%)', fontSize:12,
+            }}>🎟️</span>
+            <span style={{ color:'#d8b4fe', fontWeight:800, fontSize:11 }}>Tournament</span>
+          </button>
+        </div>
 
         <div style={{ position:'relative', zIndex:10, flex:1, display:'flex', flexDirection:'column', padding:'10px 14px 12px', gap:10, minHeight:0 }}>
 
@@ -770,7 +848,7 @@ export default function Lobby({ player, onRefresh, showEnergyModal, setShowEnerg
           />
         </div>
 
-        {/* Daily Quests — premium card */}
+        {/* Rank (Glory) preview + Daily Quests — share one row */}
         <style>{`
           @keyframes questShine{0%{left:-60%}60%{left:160%}100%{left:160%}}
           @keyframes battleGlow{0%,100%{box-shadow:0 4px 0 #7a3800,0 0 18px rgba(251,191,36,0.35),0 8px 24px rgba(0,0,0,0.4)}50%{box-shadow:0 4px 0 #7a3800,0 0 38px rgba(251,191,36,0.85),0 0 60px rgba(251,191,36,0.3),0 8px 24px rgba(0,0,0,0.4)}}
@@ -779,73 +857,101 @@ export default function Lobby({ player, onRefresh, showEnergyModal, setShowEnerg
           @keyframes swordSpin{0%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}100%{transform:rotate(-8deg)}}
           @keyframes battleShimmer{0%{left:-80%}60%{left:160%}100%{left:160%}}
         `}</style>
-        <button
-          onClick={handleQuestClick}
-          onTouchStart={handleQuestTouchStart}
-          onTouchMove={handleQuestTouchMove}
-          style={{
-            width:'100%', borderRadius:16,
-            background:'linear-gradient(145deg,#4a1f00,#2e1000)',
-            border:'1.5px solid #8a4a10',
-            boxShadow:'0 4px 14px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,200,80,0.12)',
-            padding:'10px 12px', position:'relative', overflow:'hidden',
-            display:'flex', flexDirection:'column', gap:4,
-          }}
-          className="active:scale-95 transition-transform select-none">
-          {/* Shine sweep */}
-          <div style={{
-            position:'absolute',top:0,left:'-60%',width:'35%',height:'100%',
-            background:'linear-gradient(90deg,transparent,rgba(255,210,80,0.15),transparent)',
-            animation:'questShine 5s ease-in-out infinite',pointerEvents:'none',
-          }}/>
-          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-            <span style={{ fontSize:22 }}>📋</span>
-            <div style={{ flex:1, minWidth:0, textAlign:'left' }}>
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8 }}>
-                <div style={{ color:'#f5c842', fontSize:12, fontWeight:800, letterSpacing:0.3 }}>{t('lobby.dailyQuests')}</div>
-                {activeQuests[questCycleIndex] && (
-                  <div style={{ color:'#86efac', fontSize:11, fontWeight:800, display:'flex', alignItems:'center', gap:3, flexShrink:0 }}>
-                    +{activeQuests[questCycleIndex].reward_amount}
-                    <RewardIcon type={activeQuests[questCycleIndex].reward_type} size={12} />
+        <div style={{ display:'flex', gap:8 }}>
+
+          {/* Rank / Glory mini card — tap opens full Leaderboard */}
+          <button onClick={() => setShowLeaderboard(true)}
+            style={{
+              flexBasis:'34%', flexShrink:0, borderRadius:16,
+              background:'linear-gradient(145deg,#4a1f00,#2e1000)',
+              border:'1.5px solid #8a4a10',
+              boxShadow:'0 4px 14px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,200,80,0.12)',
+              padding:'10px 10px', display:'flex', flexDirection:'column',
+              alignItems:'center', justifyContent:'center', gap:3,
+            }}
+            className="active:scale-95 transition-transform select-none">
+            <div style={{ display:'flex', alignItems:'center', gap:4 }}>
+              <span style={{ fontSize:14 }}>🏆</span>
+              <span style={{ color:'#f5c842', fontSize:11, fontWeight:800 }}>
+                {myRankPreview ? `Rank #${myRankPreview.rank}` : 'Rank —'}
+              </span>
+            </div>
+            <div style={{ display:'flex', alignItems:'center', gap:4 }}>
+              <img src={ASSETS.icons.glory} alt="glory" style={{ width:14, height:14, objectFit:'contain' }} />
+              <span style={{ color:'#86efac', fontSize:12, fontWeight:900 }}>
+                {(myRankPreview?.glory ?? player?.glory ?? 0).toLocaleString()}
+              </span>
+            </div>
+          </button>
+
+          <button
+            onClick={handleQuestClick}
+            onTouchStart={handleQuestTouchStart}
+            onTouchMove={handleQuestTouchMove}
+            style={{
+              flex:1, minWidth:0, borderRadius:16,
+              background:'linear-gradient(145deg,#4a1f00,#2e1000)',
+              border:'1.5px solid #8a4a10',
+              boxShadow:'0 4px 14px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,200,80,0.12)',
+              padding:'10px 12px', position:'relative', overflow:'hidden',
+              display:'flex', flexDirection:'column', gap:4,
+            }}
+            className="active:scale-95 transition-transform select-none">
+            {/* Shine sweep */}
+            <div style={{
+              position:'absolute',top:0,left:'-60%',width:'35%',height:'100%',
+              background:'linear-gradient(90deg,transparent,rgba(255,210,80,0.15),transparent)',
+              animation:'questShine 5s ease-in-out infinite',pointerEvents:'none',
+            }}/>
+            <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+              <span style={{ fontSize:22 }}>📋</span>
+              <div style={{ flex:1, minWidth:0, textAlign:'left' }}>
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8 }}>
+                  <div style={{ color:'#f5c842', fontSize:12, fontWeight:800, letterSpacing:0.3 }}>{t('lobby.dailyQuests')}</div>
+                  {activeQuests[questCycleIndex] && (
+                    <div style={{ color:'#86efac', fontSize:11, fontWeight:800, display:'flex', alignItems:'center', gap:3, flexShrink:0 }}>
+                      +{activeQuests[questCycleIndex].reward_amount}
+                      <RewardIcon type={activeQuests[questCycleIndex].reward_type} size={12} />
+                    </div>
+                  )}
+                </div>
+                {activeQuests[questCycleIndex] ? (
+                  <>
+                    <div style={{ color:'rgba(255,200,100,0.7)', fontSize:11, marginTop:1 }}>{activeQuests[questCycleIndex].title}</div>
+                    <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:4 }}>
+                      <div style={{ flex:1, background:'rgba(0,0,0,0.4)', borderRadius:6, height:6, overflow:'hidden' }}>
+                        <div style={{
+                          height:'100%', borderRadius:6, transition:'width 0.4s ease',
+                          width:`${Math.min(100,(activeQuests[questCycleIndex].progress/activeQuests[questCycleIndex].requirement_amount)*100)}%`,
+                          background:'linear-gradient(90deg,#f5c842,#fb923c)',
+                          boxShadow:'0 0 6px rgba(245,200,66,0.6)',
+                        }}/>
+                      </div>
+                      <span style={{ color:'rgba(255,200,80,0.6)', fontSize:10, flexShrink:0 }}>
+                        {Math.min(activeQuests[questCycleIndex].progress,activeQuests[questCycleIndex].requirement_amount)}/{activeQuests[questCycleIndex].requirement_amount}
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ color:'rgba(255,180,60,0.6)', fontSize:11, marginTop:1 }}>
+                    {activeQuests.length === 0 ? (quests.length === 0 ? 'Tap to view quests' : '🎉 All quests complete!') : 'Loading…'}
                   </div>
                 )}
               </div>
-              {activeQuests[questCycleIndex] ? (
-                <>
-                  <div style={{ color:'rgba(255,200,100,0.7)', fontSize:11, marginTop:1 }}>{activeQuests[questCycleIndex].title}</div>
-                  <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:4 }}>
-                    <div style={{ flex:1, background:'rgba(0,0,0,0.4)', borderRadius:6, height:6, overflow:'hidden' }}>
-                      <div style={{
-                        height:'100%', borderRadius:6, transition:'width 0.4s ease',
-                        width:`${Math.min(100,(activeQuests[questCycleIndex].progress/activeQuests[questCycleIndex].requirement_amount)*100)}%`,
-                        background:'linear-gradient(90deg,#f5c842,#fb923c)',
-                        boxShadow:'0 0 6px rgba(245,200,66,0.6)',
-                      }}/>
-                    </div>
-                    <span style={{ color:'rgba(255,200,80,0.6)', fontSize:10, flexShrink:0 }}>
-                      {Math.min(activeQuests[questCycleIndex].progress,activeQuests[questCycleIndex].requirement_amount)}/{activeQuests[questCycleIndex].requirement_amount}
-                    </span>
-                  </div>
-                </>
-              ) : (
-                <div style={{ color:'rgba(255,180,60,0.6)', fontSize:11, marginTop:1 }}>
-                  {activeQuests.length === 0 ? (quests.length === 0 ? 'Tap to view quests' : '🎉 All quests complete!') : 'Loading…'}
-                </div>
-              )}
             </div>
-          </div>
-          {activeQuests.length > 1 && (
-            <div style={{ display:'flex', justifyContent:'center', gap:4 }}>
-              {activeQuests.map((q,i) => (
-                <div key={q.id} style={{
-                  width:5,height:5,borderRadius:'50%',
-                  background: i===questCycleIndex ? '#f5c842' : 'rgba(245,200,66,0.25)',
-                  transition:'background 0.3s',
-                }}/>
-              ))}
-            </div>
-          )}
-        </button>
+            {activeQuests.length > 1 && (
+              <div style={{ display:'flex', justifyContent:'center', gap:4 }}>
+                {activeQuests.map((q,i) => (
+                  <div key={q.id} style={{
+                    width:5,height:5,borderRadius:'50%',
+                    background: i===questCycleIndex ? '#f5c842' : 'rgba(245,200,66,0.25)',
+                    transition:'background 0.3s',
+                  }}/>
+                ))}
+              </div>
+            )}
+          </button>
+        </div>
 
 
         {/* ── Battle Control — animated premium ── */}
@@ -869,7 +975,13 @@ export default function Lobby({ player, onRefresh, showEnergyModal, setShowEnerg
 
           {/* MODE button */}
           <button
-            onClick={() => { const n=mode==='epic'?'normal':'epic'; setMode(n); if(n==='epic') setShowEpicInfo(true); }}
+            onClick={() => {
+              const n = mode === 'epic' ? 'normal' : 'epic';
+              setMode(n);
+              const cost = n === 'epic' ? 200 : 25;
+              if (n === 'epic') setShowEpicInfo(true);
+              else if ((player?.energy || 0) < cost) setShowEnergyModal(true);
+            }}
             disabled={battling}
             style={{
               padding:'0 18px', display:'flex', alignItems:'center', justifyContent:'center',
@@ -956,10 +1068,10 @@ export default function Lobby({ player, onRefresh, showEnergyModal, setShowEnerg
               <h2 className="text-xl font-black text-center mb-4">Welcome to Epic Mode!</h2>
               <p className="text-sm mb-3 text-center">Stronger rivals, greater risks, and even greater prizes!</p>
               <div className="grid grid-cols-2 gap-4 text-xs mb-4">
-                <div><div className="font-bold mb-1">Victory:</div><div>• EXP x2</div><div>• Glory x2</div><div>• Food x250</div></div>
-                <div><div className="font-bold mb-1">Defeat:</div><div>• EXP x2</div><div>• Glory x2</div><div>• <img src={ASSETS.icons.feathers} alt="feathers" style={{width:14,height:14,display:"inline",verticalAlign:"middle"}} /> x150</div><div>• Food x100</div></div>
+                <div><div className="font-bold mb-1">Victory:</div><div>• EXP 170</div><div>• Glory 500</div><div>• Feathers 1000</div><div>• Star 5</div></div>
+                <div><div className="font-bold mb-1">Defeat:</div><div>• EXP 60</div><div>• Glory 150</div><div>• Feathers 250</div></div>
               </div>
-              <button onClick={() => setShowEpicInfo(false)} className="w-full bg-green-500 text-white py-3 rounded-xl font-bold">CLOSE</button>
+              <button onClick={() => { setShowEpicInfo(false); if ((player?.energy || 0) < 200) setShowEnergyModal(true); }} className="w-full bg-green-500 text-white py-3 rounded-xl font-bold">CLOSE</button>
             </div>
           </div>
         )}
