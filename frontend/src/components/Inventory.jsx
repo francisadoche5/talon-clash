@@ -21,6 +21,11 @@ const SLOT_ICONS = {
   mount: '🦅'
 };
 
+const FeatherIcon = ({ size = 14 }) => (
+  <img src={ASSETS.icons.feathers} alt="feathers"
+    style={{ width: size, height: size, display: 'inline', verticalAlign: 'middle', objectFit: 'contain' }} />
+);
+
 const CHEST_IMAGES = {
   common:   ASSETS.ui.chestCommon,
   uncommon: ASSETS.ui.chestUncommon,
@@ -91,7 +96,7 @@ export default function Inventory({ player, onRefresh }) {
       await loadInventory();
       onRefresh();
       setSelected(null);
-      setMessage({ type: 'success', text: `Burned for ${res.data.feathersEarned} 🪶` });
+      setMessage({ type: 'success', text: <>Burned for {res.data.feathersEarned} <FeatherIcon /></> });
       setTimeout(() => setMessage(null), 2000);
     } catch (err) {
       setMessage({ type: 'error', text: err.response?.data?.error || 'Failed' });
@@ -134,7 +139,7 @@ export default function Inventory({ player, onRefresh }) {
       const res = await burnItemsBulk(player.telegram_id, burnSelection);
       await loadInventory();
       onRefresh();
-      setMessage({ type: 'success', text: `Burned ${res.data.burnedCount} items for +${res.data.feathersEarned} 🪶` });
+      setMessage({ type: 'success', text: <>Burned {res.data.burnedCount} items for +{res.data.feathersEarned} <FeatherIcon /></> });
       setTimeout(() => setMessage(null), 2500);
       cancelBurnSelection();
     } catch (err) {
@@ -323,7 +328,7 @@ export default function Inventory({ player, onRefresh }) {
               {!selected.is_equipped && (
                 <button onClick={() => handleBurn(selected)}
                   className="flex-1 bg-red-800 text-white py-3 rounded-xl font-bold">
-                  {t('inventory.burn')} +{formatRange(selected.rarity)} 🪶
+                  {t('inventory.burn')} +{formatRange(selected.rarity)} <FeatherIcon />
                 </button>
               )}
             </div>
@@ -375,7 +380,7 @@ export default function Inventory({ player, onRefresh }) {
             </button>
             <button onClick={handleBulkBurn} disabled={burnSelection.length === 0 || burning}
               className="flex-1 py-3 rounded-xl font-bold text-white bg-red-700 disabled:opacity-40">
-              {burning ? '…' : `${t('inventory.burn')} +${burnTotalLabel} 🪶`}
+              {burning ? '…' : <>{t('inventory.burn')} +{burnTotalLabel} <FeatherIcon /></>}
             </button>
           </div>
 
