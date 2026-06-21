@@ -169,18 +169,20 @@ export default function App() {
   return (
     <div className="flex flex-col h-screen bg-amber-950 max-w-md mx-auto relative overflow-hidden">
 
-      {/* Language switcher — always available, top-right corner */}
-      <button onClick={() => setShowLanguagePicker(true)}
-        style={{
-          position: 'absolute', top: 8, right: 8, zIndex: 40,
-          background: 'rgba(0,0,0,0.45)', border: '1px solid rgba(255,220,80,0.35)',
-          borderRadius: 999, padding: '4px 9px',
-          display: 'flex', alignItems: 'center', gap: 4,
-          color: '#f5c842', fontWeight: 800, fontSize: 12,
-        }}>
-        <span>🌐</span>
-        <span>{languages.find(l => l.code === language)?.flag || '🏳️'}</span>
-      </button>
+      {/* Language switcher — Lobby homepage only */}
+      {activeTab === 'lobby' && (
+        <button onClick={() => setShowLanguagePicker(true)}
+          style={{
+            position: 'absolute', top: 8, right: 8, zIndex: 40,
+            background: 'rgba(0,0,0,0.45)', border: '1px solid rgba(255,220,80,0.35)',
+            borderRadius: 999, padding: '4px 9px',
+            display: 'flex', alignItems: 'center', gap: 4,
+            color: '#f5c842', fontWeight: 800, fontSize: 12,
+          }}>
+          <span>🌐</span>
+          <span>{languages.find(l => l.code === language)?.flag || '🏳️'}</span>
+        </button>
+      )}
 
       {showLanguagePicker && (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-end z-50"
