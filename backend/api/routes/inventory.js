@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const { getInventory, equipItem, burnItem, forgeItem } = require('../../modules/inventory');
+const { getInventory, equipItem, burnItem, burnItems, forgeItem } = require('../../modules/inventory');
 const { getPendingChests, openPendingChest } = require('../../modules/store');
 const { calculatePower } = require('../../modules/players');
 const { updateQuestProgress } = require('../../modules/quests');
@@ -60,6 +60,23 @@ router.post('/burn', async (req, res) => {
     }
 
     const result = await burnItem(telegram_id, item_id);
+    if (result.error) return res.status(400).json(result);
+
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// "Burn several artifacts" — burns a batch of unequipped items in one request.
+router.post('/burn-multiple', async (req, res) => {
+  try {
+    const { telegram_id, item_ids } = req.body;
+    if (!telegram_id || !Array.isArray(item_ids) || item_ids.length === 0) {
+      return res.status(400).json({ error: 'Missing telegram_id or item_ids' });
+    }
+
+    const result = await burnItems(telegram_id, item_ids);
     if (result.error) return res.status(400).json(result);
 
     res.json(result);
