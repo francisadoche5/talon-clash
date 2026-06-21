@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const { getOrCreatePlayer, calculatePower, regenEnergy, getReferredPlayers } = require('../../modules/players');
+const { getOrCreatePlayer, calculatePower, getCombatStats, regenEnergy, getReferredPlayers } = require('../../modules/players');
 const supabase = require('../../supabase');
 
 // Deep-link start params look like "ref_123456789" — pulls out the referrer's
@@ -27,7 +27,11 @@ router.post('/login', async (req, res) => {
       .eq('telegram_id', player.telegram_id)
       .single();
 
-    res.json({ success: true, player: updatedPlayer });
+    // ATK/HP shown in the UI must reflect equipped gear, not just level —
+    // attach the real combat stats alongside the raw player row.
+    const stats = await getCombatStats(player.telegram_id, updatedPlayer);
+
+    res.json({ success: true, player: { ...updatedPlayer, attack: stats.attack, hp: stats.hp, defense: stats.defense } });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -54,7 +58,9 @@ router.get('/:id', async (req, res) => {
 
     if (!player) return res.status(404).json({ error: 'Player not found' });
 
-    res.json({ success: true, player });
+    const stats = await getCombatStats(req.params.id, player);
+
+    res.json({ success: true, player: { ...player, attack: stats.attack, hp: stats.hp, defense: stats.defense } });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
