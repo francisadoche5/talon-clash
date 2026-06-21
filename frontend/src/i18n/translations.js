@@ -30,6 +30,8 @@ const translations = {
     'lobby.dailyQuests': 'Daily Quests', 'lobby.battle': 'BATTLE', 'lobby.epic': 'EPIC',
     'lobby.mode': 'MODE', 'lobby.auto': 'AUTO', 'lobby.power': 'Power',
     'lobby.characteristics': 'Characteristics', 'lobby.yourPower': 'Your power', 'lobby.continue': 'Continue',
+    'lobby.maxEvolution': 'Max form', 'lobby.powerToNext': 'power to next evolution',
+    'lobby.maxEvolutionReached': 'Maximum evolution reached!',
 
     'energy.title': 'Energy', 'energy.restoreInstantly': 'Restore energy instantly',
     'energy.regenRate': '+0.17 ⚡ each 10 seconds', 'energy.free': 'FREE', 'energy.watchAd': 'Watch Ad',
@@ -44,6 +46,12 @@ const translations = {
     'inventory.open': 'Open', 'inventory.opening': 'Opening…', 'inventory.awesome': 'Awesome!',
     'inventory.youGotItem': 'You got an item!', 'inventory.equip': 'Equip', 'inventory.forge': 'Forge',
     'inventory.burn': 'Burn', 'inventory.close': 'Close',
+    'inventory.burnSeveral': 'Burn several', 'inventory.burnSeveralArtifacts': 'Burn several artifacts',
+    'inventory.deselectAll': 'Deselect all', 'inventory.selectAll': 'Select all',
+    'inventory.itemsSelected': 'items selected', 'inventory.back': 'Back',
+    'inventory.cancel': 'Cancel', 'inventory.selectItemsToBurn': 'Tap items below to select them for burning',
+    'inventory.noItemsToBurn': 'No unequipped items to burn',
+
 
     'earn.daily': 'Daily', 'earn.weekly': 'Weekly', 'earn.invite': 'Invite',
     'earn.inviteFriends': 'Invite Friends', 'earn.earnFeathers': 'Earn feathers for every friend you invite!',
