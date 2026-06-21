@@ -96,18 +96,15 @@ async function updateEvolution(telegramId, power) {
   return evolution;
 }
 
-async function calculatePower(telegramId) {
-  const { data: player } = await supabase
-    .from('players')
-    .select('*')
-    .eq('telegram_id', telegramId)
-    .single();
-
-  const { data: skills } = await supabase
-    .from('player_skills')
-    .select('*')
-    .eq('player_id', telegramId)
-    .single();
+// Computes a player's real, current combat stats — base (from level) plus
+// every bonus from their currently-equipped items. This is the single
+// source of truth for ATK/HP/DEF so the numbers shown in the UI (Inventory,
+// Characteristics modal) always match what actually went into Power,
+// instead of the UI re-deriving a level-only number that ignores gear.
+async function getCombatStats(telegramId, playerRow) {
+  const player = playerRow || (
+    await supabase.from('players').select('*').eq('telegram_id', telegramId).single()
+  ).data;
 
   const { data: items } = await supabase
     .from('items')
@@ -128,6 +125,18 @@ async function calculatePower(telegramId) {
   }
 
   const power = (attack * 10) + (hp * 2) + (defense * 5);
+
+  return { attack, hp, defense, power };
+}
+
+async function calculatePower(telegramId) {
+  const { data: player } = await supabase
+    .from('players')
+    .select('*')
+    .eq('telegram_id', telegramId)
+    .single();
+
+  const { power } = await getCombatStats(telegramId, player);
 
   await supabase
     .from('players')
@@ -188,4 +197,4 @@ async function regenEnergy(telegramId) {
   return newEnergy;
 }
 
-module.exports = { getOrCreatePlayer, updateEvolution, calculatePower, regenEnergy, getReferredPlayers };
+module.exports = { getOrCreatePlayer, updateEvolution, calculatePower, getCombatStats, regenEnergy, getReferredPlayers };
