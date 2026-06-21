@@ -147,6 +147,13 @@ async function claimQuestReward(telegramId, questId) {
     is_claimed: true,
   }).eq('id', pq.id);
 
+  // Let meta-quests like "Complete 20 Daily Quests" know a daily quest was
+  // just claimed. Guarded to daily quests only, so this never fires for the
+  // meta-quest claiming itself (that one is weekly).
+  if (quest.reset_type === 'daily') {
+    await updateQuestProgress(telegramId, 'daily_quests_completed', 1);
+  }
+
   return {
     success: true,
     reward:  { type: quest.reward_type, amount: quest.reward_amount },
