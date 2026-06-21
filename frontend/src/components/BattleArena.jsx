@@ -59,30 +59,12 @@ function SpriteAnimator({ tier, animState = 'idle', flip = false, targetW = 160,
     ctx.clearRect(0, 0, dispW, dispH);
     const col = frameIdx % sheet.cols;
     const row = Math.floor(frameIdx / sheet.cols);
+    // The sprite sheets already ship with a transparent (alpha-masked)
+    // background baked in — drawImage preserves that alpha as-is. We used
+    // to also run a manual "strip anything light/low-saturation" pass here,
+    // but that treated white/silver armor and pale feathers the same as the
+    // background and erased chunks of those birds. Don't repeat that.
     ctx.drawImage(img, col * frameW, row * frameH, frameW, frameH, 0, 0, dispW, dispH);
-    try {
-      const id   = ctx.getImageData(0, 0, dispW, dispH);
-      const data = id.data;
-      const len  = dispW * dispH;
-      for (let i = 0; i < data.length; i += 4) {
-        const r = data[i], g = data[i+1], b = data[i+2];
-        const avg = (r+g+b)/3, variance = Math.max(Math.abs(r-g),Math.abs(g-b),Math.abs(r-b));
-        if (avg > 145 && variance < 65) data[i+3] = 0;
-      }
-      const wasRemoved = new Uint8Array(len);
-      for (let p = 0; p < len; p++) if (data[p*4+3] === 0) wasRemoved[p] = 1;
-      for (let y = 0; y < dispH; y++) {
-        for (let x = 0; x < dispW; x++) {
-          const p = y*dispW+x;
-          if (wasRemoved[p]) continue;
-          const nbr = (x>0&&wasRemoved[p-1])||(x<dispW-1&&wasRemoved[p+1])||(y>0&&wasRemoved[p-dispW])||(y<dispH-1&&wasRemoved[p+dispW]);
-          if (!nbr) continue;
-          const i = p*4, avg=(data[i]+data[i+1]+data[i+2])/3, variance=Math.max(Math.abs(data[i]-data[i+1]),Math.abs(data[i+1]-data[i+2]),Math.abs(data[i]-data[i+2]));
-          if (avg > 120 && variance < 80) data[i+3] = 0;
-        }
-      }
-      ctx.putImageData(id, 0, 0);
-    } catch (_) {}
   }, [dispW, dispH, frameW, frameH, sheet.cols]);
 
   useEffect(() => {
