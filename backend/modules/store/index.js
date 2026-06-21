@@ -144,4 +144,4 @@ async function buyStoreItem(telegramId, itemId) {
   return { success: true, item: storeItem, paid: price };
 }
 
-module.exports = { openChest, buyStoreItem, getPendingChests, openPendingChest };
+module.exports = { openChest, buyStoreItem, getPendingChests, openPendingChest, rollChestItem };
