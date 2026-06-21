@@ -109,9 +109,14 @@ export default function Market({ player, onRefresh }) {
       player,
       product: productId,
       onSuccess: (data) => {
-        showMsg('success', data.method === 'virtual_stars'
-          ? '✅ Purchased with Star Credits!'
-          : '✅ Purchase successful!');
+        const item = data.result?.item;
+        if (item) {
+          showMsg('success', `🎉 You got a ${item.rarity} ${item.name}! Check your Inventory.`);
+        } else {
+          showMsg('success', data.method === 'virtual_stars'
+            ? '✅ Purchased with Star Credits!'
+            : '✅ Purchase successful!');
+        }
         onRefresh();
       },
       onCancelled: () => showMsg('error', 'Purchase cancelled.'),
