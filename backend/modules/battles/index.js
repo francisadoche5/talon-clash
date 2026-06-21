@@ -124,10 +124,10 @@ async function runBattle(telegramId, mode = 'normal') {
   const result = simulateBattle(playerStats, opponentStats);
 
   const rewards = result.playerWon ? config.rewards.win : config.rewards.lose;
-  const xpEarned = Math.floor((20 + Math.random() * 30) * rewards.xpMultiplier);
-  const gloryEarned = Math.floor((10 + Math.random() * 20) * rewards.gloryMultiplier);
-  const feathersEarned = rewards.baseFeathers;
-  const starsEarned = result.playerWon ? (rewards.starsWin || 0) : 0;
+  const xpEarned = rewards.xp;
+  const gloryEarned = rewards.glory;
+  const feathersEarned = rewards.feathers;
+  const starsEarned = rewards.stars || 0;
 
   let bonusReward = null;
   if (result.playerWon) {
