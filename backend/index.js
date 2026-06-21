@@ -3,6 +3,8 @@ const express = require('express');
 const cors = require('cors');
 const { Telegraf } = require('telegraf');
 const { getOrCreatePlayer } = require('./modules/players');
+const { rollChestItem } = require('./modules/store');
+const { updateQuestProgress } = require('./modules/quests');
 
 const app  = express();
 const PORT = process.env.PORT || 3001;
@@ -181,17 +183,14 @@ bot.on('message', async (ctx) => {
       await ctx.reply(`✅ +${amt} 🔨 Hammers added!`);
     }
 
-    // Chest purchases
+    // Chest purchases — granted immediately, same as the virtual Star
+    // Credits path, so nothing is left stuck in a "pending" queue.
     else if (productKey.startsWith('chest_')) {
       const chestType = productKey.replace('chest_', '');
-      // Chest opening is handled by the existing store route
-      // Just record the purchase and let frontend open it
-      await supabase.from('pending_chests').insert({
-        telegram_id: telegramId,
-        chest_type:  chestType,
-        created_at:  new Date().toISOString(),
-      });
-      await ctx.reply(`✅ ${chestType.charAt(0).toUpperCase() + chestType.slice(1)} Chest purchased! Open it in your inventory. 📦`);
+      const item = rollChestItem(chestType);
+      await supabase.from('items').insert({ player_id: telegramId, ...item });
+      await updateQuestProgress(telegramId, 'chests_opened', 1);
+      await ctx.reply(`✅ ${chestType.charAt(0).toUpperCase() + chestType.slice(1)} Chest opened — you got a ${item.rarity} ${item.name}! 📦`);
     }
 
     // Special packs
