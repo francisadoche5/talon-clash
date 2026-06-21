@@ -3,6 +3,7 @@ import { fight, getPublicConfig, getQuests, claimQuest, devBoost, useBooster } f
 import { payWithStars } from '../starsPayment';
 import BattleArena from './BattleArena';
 import { getBirdUrl } from '../birdImages';
+import { getEvolutionProgress } from '../config/evolutions';
 import axios from 'axios';
 import ASSETS from '../config/assets';
 import { useLanguage } from '../i18n/LanguageContext';
@@ -305,12 +306,15 @@ function CharacteristicsModal({ player, onClose }) {
   const { t } = useLanguage();
   const lvl  = player?.level || 1;
   const tier = player?.evolution_tier || 1;
-  const atk  = 10 + lvl * 5;
+  const atk  = player?.attack ?? (10 + lvl * 5);
+  const hp   = player?.hp ?? (100 + lvl * 50);
+  const def  = player?.defense ?? (5 + lvl * 2);
+  const { current: evoTier, next: nextEvoTier, progressPct, powerToNext } = getEvolutionProgress(player?.power || 0);
 
   const stats = [
     { icon: '👊', label: 'Power',       value: (player?.power || 0).toLocaleString(),       wide: true },
-    { icon: '❤️', label: 'HP',          value: (100 + lvl * 50).toLocaleString() },
-    { icon: '🛡️', label: 'Defence',     value: (5 + lvl * 2).toLocaleString() },
+    { icon: '❤️', label: 'HP',          value: hp.toLocaleString() },
+    { icon: '🛡️', label: 'Defence',     value: def.toLocaleString() },
     { icon: '⚔️', label: 'Attack Min',  value: Math.floor(atk * 0.7).toLocaleString() },
     { icon: '🗡️', label: 'Attack Max',  value: atk.toLocaleString() },
     { icon: '💨', label: 'Dodge',       value: `${Math.min((lvl * 0.5).toFixed(1), 30)}%` },
@@ -347,6 +351,23 @@ function CharacteristicsModal({ player, onClose }) {
           style={{ background: '#f5e8c0' }}>
           <div className="text-amber-700 font-bold text-sm">{t('lobby.yourPower')}</div>
           <div className="text-amber-900 font-black text-4xl">{(player?.power || 0).toLocaleString()}</div>
+
+          {/* Next bird evolution progress */}
+          <div className="w-full px-6 mt-2">
+            <div className="flex justify-between items-center mb-1 text-xs font-bold text-amber-800">
+              <span>{evoTier.name}</span>
+              <span>{nextEvoTier ? nextEvoTier.name : t('lobby.maxEvolution')}</span>
+            </div>
+            <div className="w-full h-3 rounded-full overflow-hidden" style={{ background: '#c4a06a' }}>
+              <div className="h-full rounded-full transition-all duration-500"
+                style={{ width: `${progressPct}%`, background: 'linear-gradient(90deg,#f4a024,#c97010)' }} />
+            </div>
+            <div className="text-center text-[11px] text-amber-700 font-bold mt-1">
+              {nextEvoTier
+                ? `${powerToNext.toLocaleString()} ${t('lobby.powerToNext')}`
+                : t('lobby.maxEvolutionReached')}
+            </div>
+          </div>
         </div>
 
         {/* Stats grid */}
