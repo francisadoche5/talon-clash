@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getInventory, equipItem, burnItem, forgeItem, openPendingChest } from '../api';
+import { getInventory, equipItem, burnItem, burnItems as burnItemsBulk, forgeItem, openPendingChest } from '../api';
 import { getBirdUrl } from '../birdImages';
 import ASSETS from '../config/assets';
 import { useLanguage } from '../i18n/LanguageContext';
@@ -28,9 +28,24 @@ const CHEST_IMAGES = {
   epic:     ASSETS.ui.chestEpic,
 };
 
-// Mirrors backend/modules/inventory's burnItem rarityReward table, just for
-// showing the player what they'll get before they tap Sell.
-const SELL_VALUE = { common: 50, uncommon: 150, rare: 500, epic: 1500, legendary: 5000 };
+// Mirrors backend/modules/inventory's RARITY_REWARD_RANGE — just for showing
+// the player what they'll get before they tap Burn. The actual amount paid
+// out is rolled server-side and may land anywhere in this range.
+const SELL_VALUE_RANGE = {
+  common:    [30, 36],
+  uncommon:  [66, 70],
+  rare:      [100, 200],
+  epic:      [300, 500],
+  legendary: [600, 1000],
+};
+
+function rarityRange(rarity) {
+  return SELL_VALUE_RANGE[rarity] || SELL_VALUE_RANGE.common;
+}
+function formatRange(rarity) {
+  const [min, max] = rarityRange(rarity);
+  return min === max ? `${min}` : `${min}-${max}`;
+}
 
 export default function Inventory({ player, onRefresh }) {
   const { t } = useLanguage();
@@ -41,6 +56,11 @@ export default function Inventory({ player, onRefresh }) {
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState(null);
+
+  // ── Burn several artifacts (multi-select burn) ──
+  const [burnMode, setBurnMode] = useState(false);
+  const [burnSelection, setBurnSelection] = useState([]); // array of item ids
+  const [burning, setBurning] = useState(false);
 
   useEffect(() => { loadInventory(); }, []);
 
@@ -90,6 +110,41 @@ export default function Inventory({ player, onRefresh }) {
     }
   }
 
+  function startBurnSelection() {
+    setSelected(null);
+    setBurnSelection([]);
+    setBurnMode(true);
+  }
+
+  function cancelBurnSelection() {
+    setBurnMode(false);
+    setBurnSelection([]);
+  }
+
+  function toggleBurnSelect(item) {
+    setBurnSelection(prev =>
+      prev.includes(item.id) ? prev.filter(id => id !== item.id) : [...prev, item.id]
+    );
+  }
+
+  async function handleBulkBurn() {
+    if (burnSelection.length === 0) return;
+    setBurning(true);
+    try {
+      const res = await burnItemsBulk(player.telegram_id, burnSelection);
+      await loadInventory();
+      onRefresh();
+      setMessage({ type: 'success', text: `Burned ${res.data.burnedCount} items for +${res.data.feathersEarned} 🪶` });
+      setTimeout(() => setMessage(null), 2500);
+      cancelBurnSelection();
+    } catch (err) {
+      setMessage({ type: 'error', text: err.response?.data?.error || 'Failed to burn items' });
+      setTimeout(() => setMessage(null), 2500);
+    } finally {
+      setBurning(false);
+    }
+  }
+
   async function handleOpenChest(chest) {
     setOpening(chest.id);
     try {
@@ -109,6 +164,15 @@ export default function Inventory({ player, onRefresh }) {
   const equipped = items.filter(i => i.is_equipped);
   const unequipped = items.filter(i => !i.is_equipped);
 
+  const burnSelectedItems = unequipped.filter(i => burnSelection.includes(i.id));
+  const burnTotal = burnSelectedItems.reduce((acc, item) => {
+    const [min, max] = rarityRange(item.rarity);
+    return { min: acc.min + min, max: acc.max + max };
+  }, { min: 0, max: 0 });
+  const burnTotalLabel = burnTotal.min === burnTotal.max
+    ? `${burnTotal.min}`
+    : `${burnTotal.min}-${burnTotal.max}`;
+
   return (
     <div className="p-4">
       {/* Bird portrait */}
@@ -127,7 +191,7 @@ export default function Inventory({ player, onRefresh }) {
       <div className="bg-amber-900 rounded-xl p-3 flex justify-around mb-4 text-center">
         <div>
           <div className="text-xs text-orange-400">ATK</div>
-          <div className="font-bold">{10 + (player?.level || 1) * 5}</div>
+          <div className="font-bold">{player?.attack ?? (10 + (player?.level || 1) * 5)}</div>
         </div>
         <div>
           <div className="text-xs text-amber-400">Power</div>
@@ -135,7 +199,7 @@ export default function Inventory({ player, onRefresh }) {
         </div>
         <div>
           <div className="text-xs text-red-400">HP</div>
-          <div className="font-bold">{100 + (player?.level || 1) * 50}</div>
+          <div className="font-bold">{player?.hp ?? (100 + (player?.level || 1) * 50)}</div>
         </div>
       </div>
 
@@ -176,7 +240,7 @@ export default function Inventory({ player, onRefresh }) {
           <div className="text-amber-400 text-sm font-bold mb-2">{t('inventory.equipped')}</div>
           <div className="grid grid-cols-3 gap-2 mb-4">
             {equipped.map(item => (
-              <div key={item.id} onClick={() => setSelected(item)}
+              <div key={item.id} onClick={() => !burnMode && setSelected(item)}
                 className={`border-2 rounded-xl p-2 cursor-pointer ${RARITY_COLORS[item.rarity]} ring-2 ring-yellow-400`}>
                 <div className="text-2xl text-center">{SLOT_ICONS[item.slot]}</div>
                 <div className="text-white text-xs text-center mt-1 truncate">{item.name}</div>
@@ -188,8 +252,16 @@ export default function Inventory({ player, onRefresh }) {
       )}
 
       {/* Inventory */}
-      <div className="text-amber-400 text-sm font-bold mb-2">
-        {t('inventory.inventory')} ({unequipped.length})
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-amber-400 text-sm font-bold">
+          {t('inventory.inventory')} ({unequipped.length})
+        </div>
+        {!burnMode && unequipped.length > 0 && (
+          <button onClick={startBurnSelection}
+            className="text-xs font-bold text-red-300 bg-red-950 border border-red-800 rounded-lg px-2.5 py-1">
+            🔥 {t('inventory.burnSeveral')}
+          </button>
+        )}
       </div>
       {loading ? (
         <div className="text-center text-amber-400">{t('common.loading')}</div>
@@ -198,20 +270,31 @@ export default function Inventory({ player, onRefresh }) {
           No items yet. Buy a chest in Market to get your first one!
         </div>
       ) : (
-        <div className="grid grid-cols-3 gap-2">
-          {unequipped.map(item => (
-            <div key={item.id} onClick={() => setSelected(item)}
-              className={`border-2 rounded-xl p-2 cursor-pointer ${RARITY_COLORS[item.rarity]}`}>
-              <div className="text-2xl text-center">{SLOT_ICONS[item.slot]}</div>
-              <div className="text-white text-xs text-center mt-1 truncate">{item.name}</div>
-              <div className="text-gray-400 text-xs text-center">Lvl {item.level}</div>
-            </div>
-          ))}
+        <div className="grid grid-cols-3 gap-2" style={{ paddingBottom: burnMode ? 180 : 0 }}>
+          {unequipped.map(item => {
+            const isPicked = burnSelection.includes(item.id);
+            return (
+              <div key={item.id}
+                onClick={() => burnMode ? toggleBurnSelect(item) : setSelected(item)}
+                className={`relative border-2 rounded-xl p-2 cursor-pointer ${RARITY_COLORS[item.rarity]} ${isPicked ? 'ring-2 ring-red-500' : ''}`}>
+                {burnMode && (
+                  <div className={`absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs border-2 ${
+                    isPicked ? 'bg-red-600 border-red-300 text-white' : 'bg-black bg-opacity-40 border-gray-400'
+                  }`}>
+                    {isPicked ? '✓' : ''}
+                  </div>
+                )}
+                <div className="text-2xl text-center">{SLOT_ICONS[item.slot]}</div>
+                <div className="text-white text-xs text-center mt-1 truncate">{item.name}</div>
+                <div className="text-gray-400 text-xs text-center">Lvl {item.level}</div>
+              </div>
+            );
+          })}
         </div>
       )}
 
       {/* Item Detail Modal */}
-      {selected && (
+      {selected && !burnMode && (
         <div className="fixed inset-0 bg-black bg-opacity-80 flex items-end z-50">
           <div className="w-full bg-amber-900 rounded-t-3xl p-6">
             <div className={`border-2 rounded-xl p-4 mb-4 ${RARITY_COLORS[selected.rarity]}`}>
@@ -240,7 +323,7 @@ export default function Inventory({ player, onRefresh }) {
               {!selected.is_equipped && (
                 <button onClick={() => handleBurn(selected)}
                   className="flex-1 bg-red-800 text-white py-3 rounded-xl font-bold">
-                  {t('inventory.burn')} +{SELL_VALUE[selected.rarity] || 50} 🪶
+                  {t('inventory.burn')} +{formatRange(selected.rarity)} 🪶
                 </button>
               )}
             </div>
@@ -274,6 +357,52 @@ export default function Inventory({ player, onRefresh }) {
               {t('inventory.awesome')}
             </button>
           </div>
+        </div>
+      )}
+      {/* Burn Several Artifacts — bottom sheet, stays open while the player
+          taps items in the grid above to build their selection. */}
+      {burnMode && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-amber-900 border-t-2 border-amber-600 rounded-t-3xl p-5"
+          style={{ boxShadow: '0 -8px 30px rgba(0,0,0,0.5)' }}>
+          <div className="text-amber-300 font-black text-center mb-3">
+            🔥 {t('inventory.burnSeveralArtifacts')}
+          </div>
+
+          <div className="flex gap-2 mb-3">
+            <button onClick={cancelBurnSelection} disabled={burning}
+              className="flex-1 py-3 rounded-xl font-bold text-amber-900 bg-amber-200 disabled:opacity-50">
+              {t('inventory.back')}
+            </button>
+            <button onClick={handleBulkBurn} disabled={burnSelection.length === 0 || burning}
+              className="flex-1 py-3 rounded-xl font-bold text-white bg-red-700 disabled:opacity-40">
+              {burning ? '…' : `${t('inventory.burn')} +${burnTotalLabel} 🪶`}
+            </button>
+          </div>
+
+          {burnSelection.length > 0 && (
+            <button onClick={() => setBurnSelection([])} disabled={burning}
+              className="w-full py-2 mb-3 rounded-xl font-bold text-amber-300 border border-amber-600 disabled:opacity-50">
+              {t('inventory.deselectAll')}
+            </button>
+          )}
+
+          <div className="text-center text-sm text-amber-400 mb-2">
+            {burnSelection.length === 0
+              ? t('inventory.selectItemsToBurn')
+              : `${burnSelection.length} ${t('inventory.itemsSelected')}`}
+          </div>
+
+          {burnSelectedItems.length > 0 && (
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {burnSelectedItems.map(item => (
+                <div key={item.id}
+                  className={`relative flex-shrink-0 w-14 h-14 border-2 rounded-xl flex items-center justify-center text-xl ${RARITY_COLORS[item.rarity]}`}>
+                  {SLOT_ICONS[item.slot]}
+                  <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-600 border-2 border-amber-900 text-white text-xs flex items-center justify-center">✓</div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
