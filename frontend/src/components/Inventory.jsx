@@ -28,6 +28,10 @@ const CHEST_IMAGES = {
   epic:     ASSETS.ui.chestEpic,
 };
 
+// Mirrors backend/modules/inventory's burnItem rarityReward table, just for
+// showing the player what they'll get before they tap Sell.
+const SELL_VALUE = { common: 50, uncommon: 150, rare: 500, epic: 1500, legendary: 5000 };
+
 export default function Inventory({ player, onRefresh }) {
   const { t } = useLanguage();
   const [items, setItems] = useState([]);
@@ -191,7 +195,7 @@ export default function Inventory({ player, onRefresh }) {
         <div className="text-center text-amber-400">{t('common.loading')}</div>
       ) : unequipped.length === 0 ? (
         <div className="text-center text-amber-500 text-sm mt-4">
-          No items. Open chests in Market!
+          No items yet. Buy a chest in Market to get your first one!
         </div>
       ) : (
         <div className="grid grid-cols-3 gap-2">
@@ -236,7 +240,7 @@ export default function Inventory({ player, onRefresh }) {
               {!selected.is_equipped && (
                 <button onClick={() => handleBurn(selected)}
                   className="flex-1 bg-red-800 text-white py-3 rounded-xl font-bold">
-                  {t('inventory.burn')}
+                  {t('inventory.burn')} +{SELL_VALUE[selected.rarity] || 50} 🪶
                 </button>
               )}
             </div>
