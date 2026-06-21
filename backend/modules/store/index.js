@@ -21,12 +21,40 @@ function generateItem(rarity) {
   };
 }
 
-// Each chest tier now guarantees an item of that same rarity — a Common
-// Chest always yields a Common item, an Epic Chest always yields an Epic
-// item, etc. (Previously this rolled a random rarity from a weighted table,
-// so an Epic Chest could occasionally hand back a "Rare" item.)
+// Rolls the rarity of the item a chest produces.
+//
+// BUG FIX: this previously just returned `generateItem(chestType)` directly,
+// which silently ignored the weighted `items` chance table in
+// CHEST_REWARDS entirely. That meant an Epic Chest could ONLY ever produce
+// an "epic" item — the configured 10% Legendary chance never actually had
+// any code path that could roll it, which is why 40 Epic Chest opens
+// produced zero Legendaries (it wasn't bad luck, the odds were silently 0%).
+//
+// Fix: roll from the chest's configured `items` table, but only consider
+// entries at the chest's own rarity tier or ABOVE (no downgrades — e.g. an
+// Uncommon Chest can never hand back a plain Common item), renormalizing
+// the chances among just those eligible entries. This keeps the "no
+// downgrade" guarantee while restoring the upgrade chance (Epic Chest →
+// Legendary, Rare Chest → Epic, etc.) that the config always intended.
+const RARITY_ORDER = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
+
 function rollChestItem(chestType) {
-  return generateItem(chestType);
+  const config = CHEST_REWARDS[chestType];
+  const baseIndex = RARITY_ORDER.indexOf(chestType);
+
+  const eligible = (config?.items || []).filter(
+    entry => RARITY_ORDER.indexOf(entry.rarity) >= baseIndex
+  );
+
+  if (eligible.length === 0) return generateItem(chestType);
+
+  const totalChance = eligible.reduce((sum, entry) => sum + entry.chance, 0);
+  let roll = Math.random() * totalChance;
+  for (const entry of eligible) {
+    roll -= entry.chance;
+    if (roll <= 0) return generateItem(entry.rarity);
+  }
+  return generateItem(eligible[eligible.length - 1].rarity); // float rounding safety net
 }
 
 async function openChest(telegramId, chestType) {
