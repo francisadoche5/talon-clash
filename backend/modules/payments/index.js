@@ -1,5 +1,7 @@
 const supabase = require('../../supabase');
 const { STATIC_PRODUCTS } = require('../../config/payments');
+const { rollChestItem } = require('../store');
+const { updateQuestProgress } = require('../quests');
 
 // Grants whatever a product gives (energy, feathers, boosters, hammers, chests,
 // auto battle, clan unlock, star credits, special bundles...). Used by:
@@ -81,13 +83,21 @@ async function fulfillProduct(telegramId, productKey) {
     }
 
     case 'chest': {
-      // Matches the existing real-payment chest flow: queued, opened from inventory.
-      await supabase.from('pending_chests').insert({
-        telegram_id: telegramId,
-        chest_type: p.chest_type,
-        created_at: new Date().toISOString(),
-      });
-      return { type: 'chest', chest_type: p.chest_type };
+      // Used to queue into `pending_chests` and require a separate "open" tap
+      // in Inventory. That extra step was where purchased chests were
+      // silently getting lost, and since nothing was ever actually opened,
+      // the "Open N Chests" quest never advanced either. Now the item is
+      // rolled and handed over the moment the chest is bought — one action,
+      // matching rarity guaranteed, no separate step to forget or fail on.
+      const item = rollChestItem(p.chest_type);
+      const { data: newItem } = await supabase.from('items').insert({
+        player_id: telegramId,
+        ...item,
+      }).select().single();
+
+      await updateQuestProgress(telegramId, 'chests_opened', 1);
+
+      return { type: 'chest', chest_type: p.chest_type, item: newItem };
     }
 
     case 'special': {
