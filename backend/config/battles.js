@@ -3,22 +3,17 @@
 // Change any value here without touching battle logic
 // ============================================
 
+// Reward amounts are flat, fixed numbers per the agreed reward table —
+// no RNG/multiplier involved for the base xp/glory/feathers/stars payout.
+// (The bonusRewards table below is a separate, additional chance-based
+// bonus roll that only fires on a win — untouched by that rebalance.)
 const BATTLE_CONFIG = {
   normal: {
     energyCost: 25,
     color: "yellow",
     rewards: {
-      win: {
-        xpMultiplier: 1,
-        gloryMultiplier: 1,
-        baseFeathers: 50,
-        starsWin: 1
-      },
-      lose: {
-        xpMultiplier: 1,
-        gloryMultiplier: 1,
-        baseFeathers: 25
-      }
+      win:  { xp: 20, glory: 50, feathers: 20, stars: 1 },
+      lose: { xp: 6,  glory: 20, feathers: 8,  stars: 0 }
     },
     bonusRewards: [
       { type: "feathers", amount: 200,  chance: 40 },
@@ -34,17 +29,8 @@ const BATTLE_CONFIG = {
     energyCost: 200,
     color: "purple",
     rewards: {
-      win: {
-        xpMultiplier: 2,
-        gloryMultiplier: 2,
-        baseFeathers: 200,
-        starsWin: 5
-      },
-      lose: {
-        xpMultiplier: 2,
-        gloryMultiplier: 2,
-        baseFeathers: 150
-      }
+      win:  { xp: 170, glory: 500, feathers: 1000, stars: 5 },
+      lose: { xp: 60,  glory: 150, feathers: 250,  stars: 0 }
     },
     bonusRewards: [
       { type: "feathers", amount: 500,  chance: 45 },
