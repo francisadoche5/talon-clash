@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const { getOrCreatePlayer, calculatePower, getCombatStats, regenEnergy, getReferredPlayers } = require('../../modules/players');
+const { getOrCreatePlayer, calculatePower, getCombatStats, regenEnergy, getReferredPlayers, getLeaderboard } = require('../../modules/players');
 const supabase = require('../../supabase');
 
 // Deep-link start params look like "ref_123456789" — pulls out the referrer's
@@ -68,13 +68,8 @@ router.get('/:id', async (req, res) => {
 
 router.get('/:id/leaderboard', async (req, res) => {
   try {
-    const { data: top } = await supabase
-      .from('players')
-      .select('telegram_id, display_name, power, evolution_name, evolution_tier, glory')
-      .order('power', { ascending: false })
-      .limit(100);
-
-    res.json({ success: true, leaderboard: top });
+    const { leaderboard, myRank } = await getLeaderboard(req.params.id);
+    res.json({ success: true, leaderboard, myRank });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
