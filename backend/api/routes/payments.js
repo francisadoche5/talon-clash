@@ -81,7 +81,7 @@ router.post('/purchase', async (req, res) => {
           .update({ stars: balance - p.stars })
           .eq('telegram_id', telegram_id);
 
-        await fulfillProduct(telegram_id, product);
+        const result = await fulfillProduct(telegram_id, product);
 
         return res.json({
           success: true,
@@ -89,6 +89,7 @@ router.post('/purchase', async (req, res) => {
           paid: p.stars,
           remaining_stars: balance - p.stars,
           product_meta: { type: p.type, stars: p.stars },
+          result,
         });
       }
     }
