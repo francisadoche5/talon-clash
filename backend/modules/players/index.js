@@ -197,4 +197,39 @@ async function regenEnergy(telegramId) {
   return newEnergy;
 }
 
-module.exports = { getOrCreatePlayer, updateEvolution, calculatePower, getCombatStats, regenEnergy, getReferredPlayers };
+// Glory-ranked leaderboard for the Lobby's Leaderboard screen. Rank is
+// purely glory-based — whoever has more Glory sits higher, ties broken by
+// whoever reached that Glory total first (created_at) so the order is
+// stable. Also resolves the requesting player's own rank/glory (by
+// counting how many players currently have strictly more Glory than them)
+// so their position can be shown even when they're outside the top 100.
+async function getLeaderboard(telegramId) {
+  const { data: top } = await supabase
+    .from('players')
+    .select('telegram_id, display_name, username, power, evolution_name, evolution_tier, glory')
+    .order('glory', { ascending: false })
+    .order('created_at', { ascending: true })
+    .limit(100);
+
+  let myRank = null;
+  if (telegramId) {
+    const { data: me } = await supabase
+      .from('players')
+      .select('telegram_id, display_name, username, power, evolution_name, evolution_tier, glory')
+      .eq('telegram_id', telegramId)
+      .single();
+
+    if (me) {
+      const { count } = await supabase
+        .from('players')
+        .select('telegram_id', { count: 'exact', head: true })
+        .gt('glory', me.glory || 0);
+
+      myRank = { ...me, glory: me.glory || 0, rank: (count || 0) + 1 };
+    }
+  }
+
+  return { leaderboard: top || [], myRank };
+}
+
+module.exports = { getOrCreatePlayer, updateEvolution, calculatePower, getCombatStats, regenEnergy, getReferredPlayers, getLeaderboard };
