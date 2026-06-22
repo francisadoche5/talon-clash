@@ -569,7 +569,18 @@ export default function Lobby({ player, onRefresh, showEnergyModal, setShowEnerg
 
   function handleArenaClose() {
     setLastBattleResult(battleResult);
+    const playedMode = battleResult?.mode || mode;
+    const cost = playedMode === 'epic' ? 200 : 25;
+    const remaining = typeof battleResult?.energyRemaining === 'number'
+      ? battleResult.energyRemaining
+      : player?.energy;
     setBattleResult(null);
+    // Surface the "restore energy instantly" modal on its own the moment the
+    // player lands back on the Lobby with too little energy for the mode
+    // they just fought in — they shouldn't have to tap BATTLE again first.
+    if (typeof remaining === 'number' && remaining < cost) {
+      setShowEnergyModal(true);
+    }
   }
 
   function handleAutoPurchase(days) {
@@ -862,7 +873,7 @@ export default function Lobby({ player, onRefresh, showEnergyModal, setShowEnerg
           {/* Rank / Glory mini card — tap opens full Leaderboard */}
           <button onClick={() => setShowLeaderboard(true)}
             style={{
-              flexBasis:'34%', flexShrink:0, borderRadius:16,
+              flex:1, minWidth:0, borderRadius:16,
               background:'linear-gradient(145deg,#4a1f00,#2e1000)',
               border:'1.5px solid #8a4a10',
               boxShadow:'0 4px 14px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,200,80,0.12)',
@@ -1068,7 +1079,7 @@ export default function Lobby({ player, onRefresh, showEnergyModal, setShowEnerg
               <h2 className="text-xl font-black text-center mb-4">Welcome to Epic Mode!</h2>
               <p className="text-sm mb-3 text-center">Stronger rivals, greater risks, and even greater prizes!</p>
               <div className="grid grid-cols-2 gap-4 text-xs mb-4">
-                <div><div className="font-bold mb-1">Victory:</div><div>• EXP 170</div><div>• Glory 500</div><div>• Feathers 1000</div><div>• Star 5</div></div>
+                <div><div className="font-bold mb-1">Victory:</div><div>• EXP 170</div><div>• Glory 500</div><div>• Feathers 1000 or 500</div><div>• Star 5</div></div>
                 <div><div className="font-bold mb-1">Defeat:</div><div>• EXP 60</div><div>• Glory 150</div><div>• Feathers 250</div></div>
               </div>
               <button onClick={() => { setShowEpicInfo(false); if ((player?.energy || 0) < 200) setShowEnergyModal(true); }} className="w-full bg-green-500 text-white py-3 rounded-xl font-bold">CLOSE</button>
