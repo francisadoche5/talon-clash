@@ -2,6 +2,16 @@ const supabase = require('../../supabase');
 const { BATTLE_CONFIG, STAT_CONFIG, CRIT_CONFIG, BLOCK_CONFIG, rollBonusReward } = require('../../config/battles');
 const { calculatePower } = require('../players');
 
+// Some reward fields (e.g. Epic Win feathers) are configured as an array
+// of equally-likely amounts instead of one fixed number — this resolves
+// either shape to a single number.
+function resolveRewardAmount(value) {
+  if (Array.isArray(value)) {
+    return value[Math.floor(Math.random() * value.length)];
+  }
+  return value;
+}
+
 async function getPlayerStats(telegramId) {
   const { data: player } = await supabase
     .from('players')
@@ -126,7 +136,7 @@ async function runBattle(telegramId, mode = 'normal') {
   const rewards = result.playerWon ? config.rewards.win : config.rewards.lose;
   const xpEarned = rewards.xp;
   const gloryEarned = rewards.glory;
-  const feathersEarned = rewards.feathers;
+  const feathersEarned = resolveRewardAmount(rewards.feathers);
   const starsEarned = rewards.stars || 0;
 
   let bonusReward = null;
@@ -192,6 +202,8 @@ async function runBattle(telegramId, mode = 'normal') {
     opponentStats: { hp: opponentStats.hp, attack: opponentStats.attack },
     playerHPEnd: result.playerHPEnd,
     opponentHPEnd: result.opponentHPEnd,
+    energyRemaining: player.energy - config.energyCost,
+    energyCost: config.energyCost,
     rewards: {
       xp: xpEarned,
       glory: gloryEarned,
