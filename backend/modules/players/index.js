@@ -1,5 +1,6 @@
 const supabase = require('../../supabase');
 const { getEvolutionByPower } = require('../../config/evolutions');
+const { FAKE_LEADERBOARD_PLAYERS } = require('../../config/fakeLeaderboard');
 
 // Feathers awarded to the referrer the moment someone they invited opens the
 // game for the first time. Matches the "Earn feathers for every friend you
@@ -203,13 +204,25 @@ async function regenEnergy(telegramId) {
 // stable. Also resolves the requesting player's own rank/glory (by
 // counting how many players currently have strictly more Glory than them)
 // so their position can be shown even when they're outside the top 100.
+//
+// Real rows are merged with a small set of placeholder ("fake") entries
+// (see config/fakeLeaderboard.js) so the board doesn't look empty while
+// the real player base is small. Because the merge is just "combine, then
+// sort by Glory", real players naturally rank above — and eventually push
+// out of the visible list — any fake entry they out-earn. No cleanup step
+// is needed as the real community grows.
 async function getLeaderboard(telegramId) {
-  const { data: top } = await supabase
+  const { data: realPlayers } = await supabase
     .from('players')
     .select('telegram_id, display_name, username, power, evolution_name, evolution_tier, glory')
     .order('glory', { ascending: false })
     .order('created_at', { ascending: true })
     .limit(100);
+
+  const combined = [...(realPlayers || []), ...FAKE_LEADERBOARD_PLAYERS]
+    .sort((a, b) => (b.glory || 0) - (a.glory || 0));
+
+  const top = combined.slice(0, 100);
 
   let myRank = null;
   if (telegramId) {
@@ -220,16 +233,20 @@ async function getLeaderboard(telegramId) {
       .single();
 
     if (me) {
-      const { count } = await supabase
+      const myGlory = me.glory || 0;
+
+      const { count: realAbove } = await supabase
         .from('players')
         .select('telegram_id', { count: 'exact', head: true })
-        .gt('glory', me.glory || 0);
+        .gt('glory', myGlory);
 
-      myRank = { ...me, glory: me.glory || 0, rank: (count || 0) + 1 };
+      const fakeAbove = FAKE_LEADERBOARD_PLAYERS.filter(f => f.glory > myGlory).length;
+
+      myRank = { ...me, glory: myGlory, rank: (realAbove || 0) + fakeAbove + 1 };
     }
   }
 
-  return { leaderboard: top || [], myRank };
+  return { leaderboard: top, myRank };
 }
 
 module.exports = { getOrCreatePlayer, updateEvolution, calculatePower, getCombatStats, regenEnergy, getReferredPlayers, getLeaderboard };
