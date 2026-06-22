@@ -29,7 +29,9 @@ const BATTLE_CONFIG = {
     energyCost: 200,
     color: "purple",
     rewards: {
-      win:  { xp: 170, glory: 500, feathers: 1000, stars: 5 },
+      // Epic Win feathers is randomized between two amounts (50/50) rather
+      // than a fixed number — see resolveFeathersReward() in modules/battles.
+      win:  { xp: 170, glory: 500, feathers: [1000, 500], stars: 5 },
       lose: { xp: 60,  glory: 150, feathers: 250,  stars: 0 }
     },
     bonusRewards: [
