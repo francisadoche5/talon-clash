@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { payWithStars } from '../starsPayment';
 import ASSETS from '../config/assets';
 import { useLanguage } from '../i18n/LanguageContext';
+import RewardRevealOverlay from './RewardRevealOverlay';
 
 const FeatherIcon = ({ size = 16 }) => (
   <img src={ASSETS.icons.feathers} alt="feathers"
@@ -88,6 +89,8 @@ export default function Market({ player, onRefresh }) {
   const { t } = useLanguage();
   const [activeCategory, setActiveCategory] = useState('special_offers');
   const [message, setMessage] = useState(null);
+  const [chestReveal, setChestReveal] = useState(null); // { img, item } once a chest purchase succeeds
+  const [cracked, setCracked] = useState(false);          // has the player tapped the breathing chest yet
 
   const CATEGORY_LABELS = {
     special_offers: `🔥 ${t('market.special')}`,
@@ -122,6 +125,33 @@ export default function Market({ player, onRefresh }) {
       onCancelled: () => showMsg('error', 'Purchase cancelled.'),
       onError: (msg) => showMsg('error', msg),
     });
+  }
+
+  // Chests get the full cinematic reveal instead of a toast. The purchase
+  // already returns the won item, so by the time the overlay shows up we
+  // know everything we need — "cracking" the chest is just presentation.
+  function handleBuyChest(chest) {
+    payWithStars({
+      player,
+      product: chest.product,
+      onSuccess: (data) => {
+        const item = data.result?.item;
+        if (item) {
+          setChestReveal({ img: chest.img, item });
+          setCracked(false);
+        } else {
+          showMsg('success', '✅ Purchase successful!');
+        }
+        onRefresh();
+      },
+      onCancelled: () => showMsg('error', 'Purchase cancelled.'),
+      onError: (msg) => showMsg('error', msg),
+    });
+  }
+
+  function closeChestReveal() {
+    setChestReveal(null);
+    setCracked(false);
   }
 
   return (
@@ -275,7 +305,7 @@ export default function Market({ player, onRefresh }) {
                       <img src={chest.img} alt={chest.label} className="w-full h-full object-contain drop-shadow-lg" />
                     </div>
                     <div className="w-full mt-1">
-                      <StarsBuyButton price={chest.price} onClick={() => handleStarsPurchase(chest.product)} />
+                      <StarsBuyButton price={chest.price} onClick={() => handleBuyChest(chest)} />
                     </div>
                   </div>
                 </div>
@@ -395,6 +425,17 @@ export default function Market({ player, onRefresh }) {
         )}
 
       </div>
+
+      {chestReveal && (
+        <RewardRevealOverlay
+          chestImg={chestReveal.img}
+          item={chestReveal.item}
+          cracked={cracked}
+          onCrack={() => setCracked(true)}
+          onClose={closeChestReveal}
+          continueLabel={t('inventory.awesome')}
+        />
+      )}
     </div>
   );
 }
