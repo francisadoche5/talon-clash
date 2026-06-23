@@ -301,8 +301,10 @@ export default function Market({ player, onRefresh }) {
                     <div className="text-amber-900 font-black text-sm mb-2">
                       {chest.label} <span className="text-amber-600 font-normal">({chest.stock})</span>
                     </div>
-                    <div className="w-36 h-36 relative mb-2">
-                      <img src={chest.img} alt={chest.label} className="w-full h-full object-contain drop-shadow-lg" />
+                    <div className="w-36 h-36 relative mb-2 cursor-pointer active:scale-95 transition-transform"
+                      onClick={() => handleBuyChest(chest)}>
+                      <img src={chest.img} alt={chest.label} className="w-full h-full object-contain drop-shadow-lg"
+                        style={{ animation: 'chestBreathe 1.8s ease-in-out infinite' }} />
                     </div>
                     <div className="w-full mt-1">
                       <StarsBuyButton price={chest.price} onClick={() => handleBuyChest(chest)} />
@@ -311,6 +313,7 @@ export default function Market({ player, onRefresh }) {
                 </div>
               ))}
             </div>
+            <style>{`@keyframes chestBreathe { 0%,100%{transform:scale(1);} 50%{transform:scale(1.08);} }`}</style>
           </div>
         )}
 
