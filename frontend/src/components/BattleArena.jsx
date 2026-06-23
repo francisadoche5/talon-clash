@@ -76,10 +76,22 @@ function SpriteAnimator({ tier, animState = 'idle', flip = false, targetW = 160,
 
   useEffect(() => { if (loadedRef.current && imgRef.current) drawFrame(imgRef.current, fi); }, [fi, drawFrame]);
 
+  // The full frame height is often 2x the visible character.
+  // Clip to clipH and shift the canvas up so the character bottom-aligns,
+  // ensuring sword tips, wings and feet are all visible.
+  const offsetY = Math.max(0, dispH - clipH);
+
   return (
-    <canvas ref={canvasRef} width={dispW} height={dispH}
-      style={{ display:'block', transform: flip?'scaleX(-1)':undefined,
-        filter: glowColor?`drop-shadow(0 0 6px ${glowColor})`:undefined }} />
+    <div style={{
+      width: dispW, height: clipH,
+      overflow: 'hidden', position: 'relative',
+      transform: flip ? 'scaleX(-1)' : undefined,
+      filter: glowColor ? `drop-shadow(0 0 6px ${glowColor})` : undefined,
+      flexShrink: 0,
+    }}>
+      <canvas ref={canvasRef} width={dispW} height={dispH}
+        style={{ display: 'block', position: 'absolute', top: -offsetY }} />
+    </div>
   );
 }
 
