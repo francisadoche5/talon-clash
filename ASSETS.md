@@ -60,6 +60,14 @@ All asset URLs live in ONE place only:
 | `file_00000000338471f498849bccea66f7df.png` | chest-uncommon |
 | `file_000000002fb871f4a915225a1259bad9.png` | chest-rare |
 | `file_00000000a8c871f49a283a43f2bc0982.png` | chest-epic |
+| `glow-common.webp` / `glow-uncommon.webp` / `glow-rare.webp` / `glow-epic.webp` / `glow-legendary.webp` | rarity glow burst — reward-reveal effect, all 5 tiers |
+| `cloud-uncommon.webp` / `cloud-rare.webp` / `cloud-epic.webp` / `cloud-legendary.webp` | rarity cloud puff — reward-reveal effect (no common tier by design) |
+| `magic-circle-common.webp` / `magic-circle-uncommon.webp` / `magic-circle-rare.webp` / `magic-circle-epic.webp` / `magic-circle-legendary.webp` | rotating rune circle — reward-reveal effect, all 5 tiers |
+| `particles-common.webp` / `particles-uncommon.webp` / `particles-rare.webp` / `particles-epic.webp` / `particles-legendary.webp` | particle burst — reward-reveal effect, all 5 tiers |
+| `floating-stars-common.webp` / `floating-stars-uncommon.webp` / `floating-stars-rare.webp` / `floating-stars-epic.webp` / `floating-stars-legendary.webp` | orbiting stars — reward-reveal effect, all 5 tiers |
+| `reward-shine-common.webp` / `reward-shine-uncommon.webp` / `reward-shine-rare.webp` / `reward-shine-epic.webp` / `reward-shine-legendary.webp` | starburst shine behind reward item — reward-reveal effect, all 5 tiers |
+| `collection-of-glowing-golden-bird-feathers.webp` | legendary-only drifting feathers flourish |
+| `divine-feather-trail.webp` | system-wide trail behind the rising reward (all rarities) |
 
 ### assets/sprites/
 | Filename | Purpose |
