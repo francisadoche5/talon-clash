@@ -43,6 +43,57 @@ const ASSETS = {
       `${CDN}/assets/ui/Lobby%20bg%20night%202.webp`,
     ],
   },
+  // Rarity-tiered reward-reveal effects, used in the chest-opening animation
+  // sequence (see Inventory.jsx RewardReveal). Each is keyed by rarity;
+  // `cloud` has no `common` entry by design — the cloud layer is simply
+  // skipped for common-rarity reveals.
+  effects: {
+    glow: {
+      common:    `${CDN}/assets/ui/glow-common.webp`,
+      uncommon:  `${CDN}/assets/ui/glow-uncommon.webp`,
+      rare:      `${CDN}/assets/ui/glow-rare.webp`,
+      epic:      `${CDN}/assets/ui/glow-epic.webp`,
+      legendary: `${CDN}/assets/ui/glow-legendary.webp`,
+    },
+    cloud: {
+      uncommon:  `${CDN}/assets/ui/cloud-uncommon.webp`,
+      rare:      `${CDN}/assets/ui/cloud-rare.webp`,
+      epic:      `${CDN}/assets/ui/cloud-epic.webp`,
+      legendary: `${CDN}/assets/ui/cloud-legendary.webp`,
+    },
+    magicCircle: {
+      common:    `${CDN}/assets/ui/magic-circle-common.webp`,
+      uncommon:  `${CDN}/assets/ui/magic-circle-uncommon.webp`,
+      rare:      `${CDN}/assets/ui/magic-circle-rare.webp`,
+      epic:      `${CDN}/assets/ui/magic-circle-epic.webp`,
+      legendary: `${CDN}/assets/ui/magic-circle-legendary.webp`,
+    },
+    particles: {
+      common:    `${CDN}/assets/ui/particles-common.webp`,
+      uncommon:  `${CDN}/assets/ui/particles-uncommon.webp`,
+      rare:      `${CDN}/assets/ui/particles-rare.webp`,
+      epic:      `${CDN}/assets/ui/particles-epic.webp`,
+      legendary: `${CDN}/assets/ui/particles-legendary.webp`,
+    },
+    floatingStars: {
+      common:    `${CDN}/assets/ui/floating-stars-common.webp`,
+      uncommon:  `${CDN}/assets/ui/floating-stars-uncommon.webp`,
+      rare:      `${CDN}/assets/ui/floating-stars-rare.webp`,
+      epic:      `${CDN}/assets/ui/floating-stars-epic.webp`,
+      legendary: `${CDN}/assets/ui/floating-stars-legendary.webp`,
+    },
+    rewardShine: {
+      common:    `${CDN}/assets/ui/reward-shine-common.webp`,
+      uncommon:  `${CDN}/assets/ui/reward-shine-uncommon.webp`,
+      rare:      `${CDN}/assets/ui/reward-shine-rare.webp`,
+      epic:      `${CDN}/assets/ui/reward-shine-epic.webp`,
+      legendary: `${CDN}/assets/ui/reward-shine-legendary.webp`,
+    },
+    // Legendary-only flourish: feathers drifting down behind the reward.
+    legendaryFeathers: `${CDN}/assets/ui/collection-of-glowing-golden-bird-feathers.webp`,
+    // System-wide signature trail, used behind the reward as it rises.
+    featherTrail: `${CDN}/assets/ui/divine-feather-trail.webp`,
+  },
   sprites: {
     // Sprite sheets
     tier1: `${CDN}/assets/sprites/bird-tier1-sheet.webp`,
